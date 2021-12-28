@@ -24,7 +24,6 @@ The following command will create an executable jar.
 
 ```
 ./gradlew bootJar
-
 ```
 
 ### Build and Run
@@ -32,17 +31,13 @@ The following command will create an executable jar.
 The following command runs build the project and runs it.
 
 ```
-
 ./gradlew bootRun
-
 ```
 
 ## Check health
 
 ```
-
 curl localhost:8080/actuator/health
-
 ```
 
 ### Variables
