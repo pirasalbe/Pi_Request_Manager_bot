@@ -7,7 +7,7 @@ package com.pirasalbe.model;
  *
  */
 public enum UserRole {
-	USER(0), CONTRIBUTOR(1), ADMIN(2), SUPERADMIN(3);
+	USER(0), CONTRIBUTOR(1), MANAGER(2), SUPERADMIN(3);
 
 	private int authorityLevel;
 

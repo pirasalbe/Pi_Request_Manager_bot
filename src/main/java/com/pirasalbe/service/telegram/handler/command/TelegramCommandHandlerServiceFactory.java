@@ -25,10 +25,14 @@ public class TelegramCommandHandlerServiceFactory {
 	@Autowired
 	private TelegramAliveCommandHandlerService aliveCommandHandlerService;
 
+	@Autowired
+	private TelegramHelpCommandHandlerService helpCommandHandlerService;
+
 	@PostConstruct
 	public void initializeHandlers() {
 		commandHandlers = new LinkedHashSet<>();
 		commandHandlers.add(aliveCommandHandlerService);
+		commandHandlers.add(helpCommandHandlerService);
 	}
 
 	public TelegramCommandHandler getTelegramCommandHandler(Message message) {
