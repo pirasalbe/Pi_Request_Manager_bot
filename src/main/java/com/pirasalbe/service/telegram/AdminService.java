@@ -1,10 +1,14 @@
 package com.pirasalbe.service.telegram;
 
+import java.util.ArrayList;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.pirasalbe.model.Pagination;
 import com.pirasalbe.model.UserRole;
+import com.pirasalbe.model.database.Admin;
 
 /**
  * Service that manages the admin table
@@ -24,7 +28,13 @@ public class AdminService {
 	}
 
 	public void insertAdmin(Long id, UserRole role) {
+		// TODO add or update
 		LOGGER.info("New admin: [{}] with role [{}]", id, role);
+	}
+
+	public Pagination<Admin> list(int offset, int limit) {
+		// TODO list item
+		return new Pagination<>(12, new ArrayList<>());
 	}
 
 }

@@ -1,5 +1,8 @@
 package com.pirasalbe.service.telegram.handler.command;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -10,7 +13,9 @@ import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.Keyboard;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pirasalbe.model.Pagination;
 import com.pirasalbe.model.UserRole;
+import com.pirasalbe.model.database.Admin;
 import com.pirasalbe.model.telegram.TelegramHandlerResult;
 import com.pirasalbe.service.telegram.AdminService;
 import com.pirasalbe.utils.TelegramUtils;
@@ -52,17 +57,83 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 
 		String text = TelegramUtils.getText(update);
 		if (text.startsWith(COMMAND_LIST)) {
-
+			// navigate users
+			sendMessage = listUsers(update);
 		} else if (text.startsWith(COMMAND_ADD)) {
+			// add user
 			sendMessage = addUser(update);
 		} else if (text.startsWith(COMMAND_REMOVE)) {
-
+			// remove user
+			// TODO
 		} else {
 			// show keyboard
 			sendMessage = showActions(update);
 		}
 
 		return TelegramHandlerResult.reply(sendMessage);
+	}
+
+	private SendMessage listUsers(Update update) {
+		SendMessage sendMessage = null;
+
+		if (update.callbackQuery() != null) {
+			int offset = 0;
+			int limit = 10;
+
+			// get limit and offset from string
+			String[] parts = update.callbackQuery().data().substring(COMMAND_LIST.length()).trim().split(" ");
+			if (parts.length == 2) {
+				offset = Integer.parseInt(parts[0]);
+				limit = Integer.parseInt(parts[1]);
+			}
+
+			Pagination<Admin> pagination = adminService.list(offset, limit);
+			sendMessage = getResponseFromPagination(update, offset, limit, pagination);
+		} else {
+			sendMessage = new SendMessage(TelegramUtils.getChatId(update), "Something went wrong");
+		}
+
+		return sendMessage;
+	}
+
+	private SendMessage getResponseFromPagination(Update update, int offset, int limit, Pagination<Admin> pagination) {
+		// message text
+		StringBuilder builder = new StringBuilder("<b>Admins</b>").append("\n");
+		long totalPages = pagination.getTotalItems() / limit;
+		if (pagination.getTotalItems() % limit != 0) {
+			totalPages++;
+		}
+		builder.append("Page ").append(offset / limit + 1).append(" of ").append(totalPages);
+
+		// create message
+		SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update), builder.toString());
+		sendMessage.parseMode(ParseMode.HTML);
+
+		// prepare keyboard
+		InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
+		sendMessage.replyMarkup(keyboard);
+		pagination.getElements().forEach(
+				admin -> keyboard.addRow(new InlineKeyboardButton(admin.getId() + " - " + admin.getRole().name())));
+
+		// add navigation buttons
+		List<InlineKeyboardButton> navigationButtons = new ArrayList<>();
+		if (offset > 0) {
+			InlineKeyboardButton previous = new InlineKeyboardButton("Previous page");
+			int newOffset = offset - limit >= 0 ? offset - limit : 0;
+			previous.callbackData(COMMAND_LIST + " " + newOffset + " " + limit);
+			navigationButtons.add(previous);
+		}
+		if (offset + limit < pagination.getTotalItems()) {
+			InlineKeyboardButton next = new InlineKeyboardButton("Next page");
+			int newOffset = offset + limit;
+			next.callbackData(COMMAND_LIST + " " + newOffset + " " + limit);
+			navigationButtons.add(next);
+		}
+		if (!navigationButtons.isEmpty()) {
+			keyboard.addRow(navigationButtons.toArray(new InlineKeyboardButton[0]));
+		}
+
+		return sendMessage;
 	}
 
 	private SendMessage addUser(Update update) {
@@ -123,7 +194,7 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 	}
 
 	private Keyboard getAdminsKeyboard() {
-		InlineKeyboardButton listButton = new InlineKeyboardButton("List").callbackData(COMMAND_LIST + " 0 10");
+		InlineKeyboardButton listButton = new InlineKeyboardButton("List").callbackData(COMMAND_LIST);
 		InlineKeyboardButton addButton = new InlineKeyboardButton("Add").callbackData(COMMAND_ADD);
 		InlineKeyboardButton removeButton = new InlineKeyboardButton("Remove").callbackData(COMMAND_REMOVE);
 
