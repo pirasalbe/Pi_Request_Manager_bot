@@ -12,7 +12,9 @@ Being an open-source repo, you can download and use the bot however you like, bu
 
 ## Commands
 
-- `/start` and `/help`: show an help message.
+Only admins can execute commands.
+
+- `/start` and `/alive`: replies if the bot is alive.
 
 # Features
 
