@@ -9,7 +9,7 @@ import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.pengrad.telegrambot.model.Message;
+import com.pengrad.telegrambot.model.Update;
 
 /**
  * Service that gives the right handler of a command message
@@ -39,14 +39,14 @@ public class TelegramCommandHandlerServiceFactory {
 		commandHandlers.add(superAdminCommandHandlerService);
 	}
 
-	public TelegramCommandHandler getTelegramCommandHandler(Message message) {
+	public TelegramCommandHandler getTelegramCommandHandler(Update update) {
 		TelegramCommandHandler result = null;
 
 		boolean found = false;
 		Iterator<TelegramCommandHandler> iterator = commandHandlers.iterator();
 		while (iterator.hasNext() && !found) {
 			TelegramCommandHandler handler = iterator.next();
-			if (handler.shouldHandle(message)) {
+			if (handler.shouldHandle(update)) {
 				found = true;
 				result = handler;
 			}

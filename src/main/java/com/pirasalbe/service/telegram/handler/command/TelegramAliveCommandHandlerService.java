@@ -6,7 +6,7 @@ import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
-import com.pengrad.telegrambot.model.Message;
+import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.model.UserRole;
 import com.pirasalbe.model.telegram.TelegramHandlerResult;
@@ -25,8 +25,8 @@ public class TelegramAliveCommandHandlerService implements TelegramCommandHandle
 	private static final UserRole ROLE = UserRole.USER;
 
 	@Override
-	public boolean shouldHandle(Message message) {
-		return COMMANDS.contains(message.text());
+	public boolean shouldHandle(Update update) {
+		return update.message() != null && COMMANDS.contains(update.message().text());
 	}
 
 	@Override
@@ -35,9 +35,9 @@ public class TelegramAliveCommandHandlerService implements TelegramCommandHandle
 	}
 
 	@Override
-	public TelegramHandlerResult<SendMessage> handleCommand(Message message) {
-		SendMessage sendMessage = new SendMessage(message.chat().id(), "Bot up!");
-		sendMessage.replyToMessageId(message.messageId());
+	public TelegramHandlerResult<SendMessage> handleCommand(Update update) {
+		SendMessage sendMessage = new SendMessage(update.message().chat().id(), "Bot up!");
+		sendMessage.replyToMessageId(update.message().messageId());
 
 		return TelegramHandlerResult.reply(sendMessage);
 	}

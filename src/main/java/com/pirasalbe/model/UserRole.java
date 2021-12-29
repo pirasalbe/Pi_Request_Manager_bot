@@ -1,5 +1,8 @@
 package com.pirasalbe.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Role that a user can have
  *
@@ -17,5 +20,16 @@ public enum UserRole {
 
 	public int getAuthorityLevel() {
 		return authorityLevel;
+	}
+
+	public static String getRoles() {
+		List<String> names = new ArrayList<>();
+		for (UserRole role : UserRole.values()) {
+			if (role.authorityLevel > 0) {
+				names.add(role.name());
+			}
+		}
+
+		return String.join("/", names);
 	}
 }

@@ -16,7 +16,7 @@ public class TelegramHandlerResult<T extends AbstractSendRequest<?>> {
 
 	private T response;
 
-	public TelegramHandlerResult(boolean shouldReply, T response) {
+	private TelegramHandlerResult(boolean shouldReply, T response) {
 		super();
 		this.shouldReply = shouldReply;
 		this.response = response;

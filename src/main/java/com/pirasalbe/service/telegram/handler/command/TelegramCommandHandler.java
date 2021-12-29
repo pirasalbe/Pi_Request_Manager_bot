@@ -1,6 +1,6 @@
 package com.pirasalbe.service.telegram.handler.command;
 
-import com.pengrad.telegrambot.model.Message;
+import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.model.UserRole;
 import com.pirasalbe.model.telegram.TelegramHandlerResult;
@@ -16,10 +16,10 @@ public interface TelegramCommandHandler {
 	/**
 	 * Checks if it should manage the message
 	 *
-	 * @param message Command to check
+	 * @param update Command to check
 	 * @return True if it should manage it
 	 */
-	boolean shouldHandle(Message message);
+	boolean shouldHandle(Update update);
 
 	/**
 	 * Returns the minimum role to user the command
@@ -31,8 +31,8 @@ public interface TelegramCommandHandler {
 	/**
 	 * Manage the message
 	 *
-	 * @param message Message arrived
+	 * @param update Message arrived
 	 */
-	TelegramHandlerResult<SendMessage> handleCommand(Message message);
+	TelegramHandlerResult<SendMessage> handleCommand(Update update);
 
 }
