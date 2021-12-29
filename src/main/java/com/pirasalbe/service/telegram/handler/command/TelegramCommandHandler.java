@@ -16,10 +16,10 @@ public interface TelegramCommandHandler {
 	/**
 	 * Checks if it should manage the message
 	 *
-	 * @param text Command to check
+	 * @param message Command to check
 	 * @return True if it should manage it
 	 */
-	boolean shouldHandle(String command);
+	boolean shouldHandle(Message message);
 
 	/**
 	 * Returns the minimum role to user the command

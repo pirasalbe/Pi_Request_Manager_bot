@@ -16,7 +16,7 @@ public class AdminService {
 	public UserRole getAuthority(Long id) {
 		// TODO implement DB
 		// default value is USER
-		return UserRole.USER;
+		return UserRole.SUPERADMIN;
 	}
 
 }

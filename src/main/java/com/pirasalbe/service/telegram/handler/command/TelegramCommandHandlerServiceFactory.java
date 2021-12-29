@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import com.pengrad.telegrambot.model.Message;
 
 /**
- * Service that gives the right handler of a message
+ * Service that gives the right handler of a command message
  *
  * @author pirasalbe
  *
@@ -28,11 +28,15 @@ public class TelegramCommandHandlerServiceFactory {
 	@Autowired
 	private TelegramHelpCommandHandlerService helpCommandHandlerService;
 
+	@Autowired
+	private TelegramSuperAdminCommandHandlerService superAdminCommandHandlerService;
+
 	@PostConstruct
 	public void initializeHandlers() {
 		commandHandlers = new LinkedHashSet<>();
 		commandHandlers.add(aliveCommandHandlerService);
 		commandHandlers.add(helpCommandHandlerService);
+		commandHandlers.add(superAdminCommandHandlerService);
 	}
 
 	public TelegramCommandHandler getTelegramCommandHandler(Message message) {
@@ -42,7 +46,7 @@ public class TelegramCommandHandlerServiceFactory {
 		Iterator<TelegramCommandHandler> iterator = commandHandlers.iterator();
 		while (iterator.hasNext() && !found) {
 			TelegramCommandHandler handler = iterator.next();
-			if (handler.shouldHandle(message.text())) {
+			if (handler.shouldHandle(message)) {
 				found = true;
 				result = handler;
 			}

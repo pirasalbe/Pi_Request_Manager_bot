@@ -1,9 +1,5 @@
 package com.pirasalbe.service.telegram.handler.command;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.model.Message;
@@ -12,7 +8,7 @@ import com.pirasalbe.model.UserRole;
 import com.pirasalbe.model.telegram.TelegramHandlerResult;
 
 /**
- * Service to manage commands from the telegram bot
+ * Service to manage /help
  *
  * @author pirasalbe
  *
@@ -20,13 +16,13 @@ import com.pirasalbe.model.telegram.TelegramHandlerResult;
 @Component
 public class TelegramHelpCommandHandlerService implements TelegramCommandHandler {
 
-	private static final Set<String> COMMANDS = new HashSet<>(Arrays.asList("/start", "/alive"));
+	private static final String COMMAND = "/help";
 
 	private static final UserRole ROLE = UserRole.USER;
 
 	@Override
-	public boolean shouldHandle(String command) {
-		return COMMANDS.contains(command);
+	public boolean shouldHandle(Message message) {
+		return message.text().startsWith(COMMAND);
 	}
 
 	@Override
@@ -36,7 +32,8 @@ public class TelegramHelpCommandHandlerService implements TelegramCommandHandler
 
 	@Override
 	public TelegramHandlerResult<SendMessage> handleCommand(Message message) {
-		SendMessage sendMessage = new SendMessage(message.chat().id(), "Bot up!");
+		// TODO implement help
+		SendMessage sendMessage = new SendMessage(message.chat().id(), "TODO");
 		sendMessage.replyToMessageId(message.messageId());
 
 		return TelegramHandlerResult.reply(sendMessage);

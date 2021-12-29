@@ -1,9 +1,5 @@
 package com.pirasalbe.service.telegram.handler.command;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.model.Message;
@@ -12,21 +8,22 @@ import com.pirasalbe.model.UserRole;
 import com.pirasalbe.model.telegram.TelegramHandlerResult;
 
 /**
- * Service to manage /alive and /start
+ * Service to manage SuperAdmin commands
  *
  * @author pirasalbe
  *
  */
 @Component
-public class TelegramAliveCommandHandlerService implements TelegramCommandHandler {
+public class TelegramSuperAdminCommandHandlerService implements TelegramCommandHandler {
 
-	private static final Set<String> COMMANDS = new HashSet<>(Arrays.asList("/start", "/alive"));
+	private static final String COMMAND = "/admins";
 
-	private static final UserRole ROLE = UserRole.USER;
+	private static final UserRole ROLE = UserRole.SUPERADMIN;
 
 	@Override
 	public boolean shouldHandle(Message message) {
-		return COMMANDS.contains(message.text());
+		// allow only in PM
+		return message.text().equals(COMMAND) && message.chat().id().equals(message.from().id());
 	}
 
 	@Override
@@ -36,7 +33,7 @@ public class TelegramAliveCommandHandlerService implements TelegramCommandHandle
 
 	@Override
 	public TelegramHandlerResult<SendMessage> handleCommand(Message message) {
-		SendMessage sendMessage = new SendMessage(message.chat().id(), "Bot up!");
+		SendMessage sendMessage = new SendMessage(message.chat().id(), "TODO");
 		sendMessage.replyToMessageId(message.messageId());
 
 		return TelegramHandlerResult.reply(sendMessage);
