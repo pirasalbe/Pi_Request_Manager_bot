@@ -9,9 +9,8 @@ import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.Update;
 import com.pirasalbe.configuration.TelegramConfiguration;
-import com.pirasalbe.service.telegram.handler.TelegramCommandHandlerService;
-import com.pirasalbe.service.telegram.handler.TelegramHandlerService;
-import com.pirasalbe.service.telegram.handler.TelegramUnknownHandlerService;
+import com.pirasalbe.model.telegram.TelegramHandlerResult;
+import com.pirasalbe.service.telegram.handler.TelegramHandlerServiceFactory;
 
 /**
  * Service to manage the telegram bot
@@ -25,10 +24,7 @@ public class TelegramService {
 	private TelegramBot bot;
 
 	@Autowired
-	private TelegramCommandHandlerService commandHandlerService;
-
-	@Autowired
-	private TelegramUnknownHandlerService unknownHandlerService;
+	private TelegramHandlerServiceFactory handlerServiceFactory;
 
 	public TelegramService(TelegramConfiguration configuration) {
 		this.bot = new TelegramBot(configuration.getToken());
@@ -53,14 +49,14 @@ public class TelegramService {
 		});
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private void manageUpdate(Update update) {
-		TelegramHandlerService handlerService = unknownHandlerService;
+		TelegramHandlerResult handlerResult = handlerServiceFactory.getTelegramHandlerService(update)
+				.handleUpdate(update);
 
-		if (commandHandlerService.shouldHandle(update)) {
-			handlerService = commandHandlerService;
+		if (handlerResult.shouldReply()) {
+			bot.execute(handlerResult.getResponse());
 		}
-
-		handlerService.handleUpdate(update);
 	}
 
 }

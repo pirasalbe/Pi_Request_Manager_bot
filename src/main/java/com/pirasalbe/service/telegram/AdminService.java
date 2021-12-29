@@ -2,6 +2,8 @@ package com.pirasalbe.service.telegram;
 
 import org.springframework.stereotype.Component;
 
+import com.pirasalbe.model.UserRole;
+
 /**
  * Service that manages the admin table
  *
@@ -11,9 +13,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class AdminService {
 
-	public boolean isAdmin(Long id) {
+	public UserRole getAuthority(Long id) {
 		// TODO implement DB
-		return true;
+		// default value is USER
+		return UserRole.USER;
 	}
 
 }
