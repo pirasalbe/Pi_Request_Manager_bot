@@ -5,8 +5,6 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
@@ -20,9 +18,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 public class PostgresConfiguration {
 
 	@Bean
-	public LocalContainerEntityManagerFactoryBean entityManager() {
+	public LocalContainerEntityManagerFactoryBean entityManager(DataSource dataSource) {
 		LocalContainerEntityManagerFactoryBean entityManager = new LocalContainerEntityManagerFactoryBean();
-		entityManager.setDataSource(dataSource());
+		entityManager.setDataSource(dataSource);
 		entityManager.setPackagesToScan("com.pirasalbe.models.database");
 
 		HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
@@ -36,15 +34,9 @@ public class PostgresConfiguration {
 	}
 
 	@Bean
-	@ConfigurationProperties(prefix = "spring.datasource")
-	public DataSource dataSource() {
-		return DataSourceBuilder.create().build();
-	}
-
-	@Bean
-	public PlatformTransactionManager transactionManager() {
+	public PlatformTransactionManager transactionManager(LocalContainerEntityManagerFactoryBean entityManager) {
 		JpaTransactionManager transactionManager = new JpaTransactionManager();
-		transactionManager.setEntityManagerFactory(entityManager().getObject());
+		transactionManager.setEntityManagerFactory(entityManager.getObject());
 		return transactionManager;
 	}
 
