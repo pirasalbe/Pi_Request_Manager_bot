@@ -4,6 +4,7 @@ import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.Id;
+import javax.persistence.Table;
 
 import com.pirasalbe.models.UserRole;
 
@@ -13,7 +14,8 @@ import com.pirasalbe.models.UserRole;
  * @author pirasalbe
  *
  */
-@Entity(name = "ADMIN")
+@Entity
+@Table(name = "ADMIN")
 public class Admin {
 
 	@Id

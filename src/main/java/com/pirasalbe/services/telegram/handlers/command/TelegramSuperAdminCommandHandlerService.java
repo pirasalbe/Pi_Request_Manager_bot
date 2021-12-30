@@ -101,7 +101,7 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 	private SendMessage getResponseFromPagination(Update update, int page, int size, Pagination<Admin> pagination) {
 		// message text
 		StringBuilder builder = new StringBuilder("<b>Admins</b>").append("\n");
-		builder.append("Page ").append(page + 1).append(" of ").append(pagination.getTotalPages() + 1);
+		builder.append("Page ").append(page + 1).append(" of ").append(pagination.getTotalPages());
 
 		// create message
 		SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update), builder.toString());
@@ -121,7 +121,7 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 			previous.callbackData(COMMAND_LIST + " " + newOffset + " " + size);
 			navigationButtons.add(previous);
 		}
-		if (page < pagination.getTotalPages()) {
+		if (page < pagination.getTotalPages() - 1) {
 			InlineKeyboardButton next = new InlineKeyboardButton("Next page");
 			int newOffset = page + size;
 			next.callbackData(COMMAND_LIST + " " + newOffset + " " + size);

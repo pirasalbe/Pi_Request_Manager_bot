@@ -1,5 +1,7 @@
 package com.pirasalbe.services.telegram;
 
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,9 +32,9 @@ public class AdminService {
 	public UserRole getAuthority(Long id) {
 		UserRole role = UserRole.USER;
 
-		if (repository.existsById(id)) {
-			Admin admin = repository.getById(id);
-			role = admin.getRole();
+		Optional<Admin> optional = repository.findById(id);
+		if (optional.isPresent()) {
+			role = optional.get().getRole();
 		}
 
 		return role;
@@ -42,8 +44,9 @@ public class AdminService {
 		Admin admin = null;
 
 		// update
-		if (repository.existsById(id)) {
-			admin = repository.getById(id);
+		Optional<Admin> optional = repository.findById(id);
+		if (optional.isPresent()) {
+			admin = optional.get();
 			admin.setRole(role);
 		} else {
 			// add
