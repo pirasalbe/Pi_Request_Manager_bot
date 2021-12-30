@@ -1,4 +1,4 @@
-package com.pirasalbe.service.telegram.handler.command;
+package com.pirasalbe.services.telegram.handlers.command;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
-import com.pirasalbe.model.UserRole;
-import com.pirasalbe.model.telegram.TelegramHandlerResult;
+import com.pirasalbe.models.UserRole;
+import com.pirasalbe.models.telegram.TelegramHandlerResult;
 
 /**
  * Service to manage /alive and /start

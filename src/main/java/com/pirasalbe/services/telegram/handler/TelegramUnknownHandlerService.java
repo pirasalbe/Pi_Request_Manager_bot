@@ -1,4 +1,4 @@
-package com.pirasalbe.service.telegram.handler;
+package com.pirasalbe.services.telegram.handler;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
-import com.pirasalbe.model.telegram.TelegramHandlerResult;
+import com.pirasalbe.models.telegram.TelegramHandlerResult;
 
 /**
  * Service to manage commands from the telegram bot

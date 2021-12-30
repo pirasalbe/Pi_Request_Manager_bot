@@ -1,4 +1,4 @@
-package com.pirasalbe.service.telegram;
+package com.pirasalbe.services.telegram;
 
 import java.util.ArrayList;
 
@@ -6,9 +6,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.pirasalbe.model.Pagination;
-import com.pirasalbe.model.UserRole;
-import com.pirasalbe.model.database.Admin;
+import com.pirasalbe.models.Pagination;
+import com.pirasalbe.models.UserRole;
+import com.pirasalbe.models.database.Admin;
 
 /**
  * Service that manages the admin table

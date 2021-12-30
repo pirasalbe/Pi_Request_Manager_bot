@@ -1,4 +1,4 @@
-package com.pirasalbe.service.telegram.handler.command;
+package com.pirasalbe.services.telegram.handlers.command;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,11 +13,11 @@ import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.Keyboard;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
-import com.pirasalbe.model.Pagination;
-import com.pirasalbe.model.UserRole;
-import com.pirasalbe.model.database.Admin;
-import com.pirasalbe.model.telegram.TelegramHandlerResult;
-import com.pirasalbe.service.telegram.AdminService;
+import com.pirasalbe.models.Pagination;
+import com.pirasalbe.models.UserRole;
+import com.pirasalbe.models.database.Admin;
+import com.pirasalbe.models.telegram.TelegramHandlerResult;
+import com.pirasalbe.services.telegram.AdminService;
 import com.pirasalbe.utils.TelegramUtils;
 
 /**

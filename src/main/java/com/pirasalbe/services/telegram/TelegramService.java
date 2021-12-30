@@ -1,4 +1,4 @@
-package com.pirasalbe.service.telegram;
+package com.pirasalbe.services.telegram;
 
 import javax.annotation.PostConstruct;
 
@@ -8,9 +8,9 @@ import org.springframework.stereotype.Component;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.Update;
-import com.pirasalbe.configuration.TelegramConfiguration;
-import com.pirasalbe.model.telegram.TelegramHandlerResult;
-import com.pirasalbe.service.telegram.handler.TelegramHandlerServiceFactory;
+import com.pirasalbe.configurations.TelegramConfiguration;
+import com.pirasalbe.models.telegram.TelegramHandlerResult;
+import com.pirasalbe.services.telegram.handler.TelegramHandlerServiceFactory;
 
 /**
  * Service to manage the telegram bot

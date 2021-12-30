@@ -1,6 +1,6 @@
-package com.pirasalbe.model.database;
+package com.pirasalbe.models.database;
 
-import com.pirasalbe.model.UserRole;
+import com.pirasalbe.models.UserRole;
 
 /**
  * Admin

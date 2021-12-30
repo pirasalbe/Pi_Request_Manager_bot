@@ -1,4 +1,4 @@
-package com.pirasalbe.model;
+package com.pirasalbe.models;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.pirasalbe.model.telegram;
+package com.pirasalbe.models.telegram;
 
 import com.pengrad.telegrambot.request.AbstractSendRequest;
 import com.pengrad.telegrambot.request.SendMessage;

@@ -1,4 +1,4 @@
-package com.pirasalbe.service.telegram.handler.command;
+package com.pirasalbe.services.telegram.handlers.command;
 
 import java.util.Iterator;
 import java.util.LinkedHashSet;

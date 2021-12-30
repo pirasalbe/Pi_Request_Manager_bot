@@ -1,8 +1,8 @@
-package com.pirasalbe.service.telegram.handler;
+package com.pirasalbe.services.telegram.handler;
 
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.AbstractSendRequest;
-import com.pirasalbe.model.telegram.TelegramHandlerResult;
+import com.pirasalbe.models.telegram.TelegramHandlerResult;
 
 /**
  * Interface for the Telegram handlers

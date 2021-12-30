@@ -1,4 +1,4 @@
-package com.pirasalbe.configuration;
+package com.pirasalbe.configurations;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
