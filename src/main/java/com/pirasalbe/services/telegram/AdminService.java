@@ -38,12 +38,13 @@ public class AdminService {
 		return role;
 	}
 
-	public void insert(Long id, UserRole role) {
+	public void insertUpdate(Long id, UserRole role) {
 		Admin admin = null;
 
 		// update
 		if (repository.existsById(id)) {
 			admin = repository.getById(id);
+			admin.setRole(role);
 		} else {
 			// add
 			admin = new Admin();
@@ -62,7 +63,7 @@ public class AdminService {
 		return new Pagination<>(adminPage.getTotalPages(), adminPage.getContent());
 	}
 
-	public void delete(Long id) {
+	public void deleteIfExists(Long id) {
 		if (repository.existsById(id)) {
 			repository.deleteById(id);
 		}

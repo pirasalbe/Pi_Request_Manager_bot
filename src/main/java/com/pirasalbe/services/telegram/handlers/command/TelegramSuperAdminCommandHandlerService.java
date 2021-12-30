@@ -165,7 +165,7 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 			// add user
 			long adminId = Long.parseLong(parts[0]);
 			UserRole adminRole = UserRole.valueOf(parts[1].toUpperCase());
-			adminService.insert(adminId, adminRole);
+			adminService.insertUpdate(adminId, adminRole);
 			sendMessage = new SendMessage(chatId, "Admin " + adminId + " with role " + adminRole.name() + " added");
 		} else {
 			sendMessage = new SendMessage(chatId, "There is something wrong with your message. Try again.");
@@ -204,7 +204,7 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 
 		// add user
 		long adminId = Long.parseLong(text.trim());
-		adminService.delete(adminId);
+		adminService.deleteIfExists(adminId);
 		sendMessage = new SendMessage(chatId, "Admin " + adminId + " removed");
 
 		sendMessage.replyToMessageId(messageId);
