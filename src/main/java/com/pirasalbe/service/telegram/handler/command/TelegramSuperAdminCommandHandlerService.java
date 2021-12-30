@@ -64,7 +64,7 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 			sendMessage = addUser(update);
 		} else if (text.startsWith(COMMAND_REMOVE)) {
 			// remove user
-			// TODO
+			sendMessage = removeUser(update);
 		} else {
 			// show keyboard
 			sendMessage = showActions(update);
@@ -167,11 +167,47 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 			// add user
 			long adminId = Long.parseLong(parts[0]);
 			UserRole adminRole = UserRole.valueOf(parts[1].toUpperCase());
-			adminService.insertAdmin(adminId, adminRole);
+			adminService.insert(adminId, adminRole);
 			sendMessage = new SendMessage(chatId, "Admin " + adminId + " with role " + adminRole.name() + " added");
 		} else {
 			sendMessage = new SendMessage(chatId, "There is something wrong with your message. Try again.");
 		}
+
+		sendMessage.replyToMessageId(messageId);
+
+		return sendMessage;
+	}
+
+	private SendMessage removeUser(Update update) {
+		SendMessage sendMessage = null;
+
+		if (TelegramUtils.getText(update).equals(COMMAND_REMOVE)) {
+			// ask the id
+			StringBuilder builder = new StringBuilder(COMMAND_REMOVE).append("\n");
+			builder.append("Send the ID of the user to remove").append("\n");
+			String placeholder = "id";
+			builder.append("Format: <code>").append(placeholder).append("</code>");
+			sendMessage = new SendMessage(TelegramUtils.getChatId(update), builder.toString());
+			sendMessage.parseMode(ParseMode.HTML);
+			sendMessage.replyMarkup(new ForceReply().inputFieldPlaceholder(placeholder));
+		} else if (update.message() != null && update.message().replyToMessage() != null) {
+			// remove user
+			sendMessage = removeUser(TelegramUtils.getChatId(update), update.message().text(),
+					update.message().messageId());
+		} else {
+			sendMessage = new SendMessage(TelegramUtils.getChatId(update), "Something went wrong");
+		}
+
+		return sendMessage;
+	}
+
+	private SendMessage removeUser(Long chatId, String text, Integer messageId) {
+		SendMessage sendMessage = null;
+
+		// add user
+		long adminId = Long.parseLong(text.trim());
+		adminService.delete(adminId);
+		sendMessage = new SendMessage(chatId, "Admin " + adminId + " removed");
 
 		sendMessage.replyToMessageId(messageId);
 

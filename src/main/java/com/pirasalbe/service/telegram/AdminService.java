@@ -27,7 +27,7 @@ public class AdminService {
 		return UserRole.SUPERADMIN;
 	}
 
-	public void insertAdmin(Long id, UserRole role) {
+	public void insert(Long id, UserRole role) {
 		// TODO add or update
 		LOGGER.info("New admin: [{}] with role [{}]", id, role);
 	}
@@ -35,6 +35,11 @@ public class AdminService {
 	public Pagination<Admin> list(int offset, int limit) {
 		// TODO list item
 		return new Pagination<>(12, new ArrayList<>());
+	}
+
+	public void delete(Long id) {
+		// TODO remove
+		LOGGER.info("Deleted admin: [{}]", id);
 	}
 
 }
