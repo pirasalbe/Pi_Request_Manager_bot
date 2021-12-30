@@ -13,6 +13,12 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 
+/**
+ * Configuration to connect with the database
+ *
+ * @author pirasalbe
+ *
+ */
 @Configuration
 @EnableJpaRepositories(basePackages = "com.pirasalbe.repositories", entityManagerFactoryRef = "entityManager", transactionManagerRef = "transactionManager")
 public class PostgresConfiguration {

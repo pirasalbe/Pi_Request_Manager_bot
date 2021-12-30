@@ -1,5 +1,10 @@
 package com.pirasalbe.models.database;
 
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.Id;
+
 import com.pirasalbe.models.UserRole;
 
 /**
@@ -8,11 +13,16 @@ import com.pirasalbe.models.UserRole;
  * @author pirasalbe
  *
  */
+@Entity(name = "ADMIN")
 public class Admin {
 
+	@Id
 	private Long id;
 
+	@Enumerated(EnumType.STRING)
 	private UserRole role;
+
+	private boolean backup;
 
 	public Admin() {
 		super();
@@ -32,6 +42,14 @@ public class Admin {
 
 	public void setRole(UserRole role) {
 		this.role = role;
+	}
+
+	public boolean isBackup() {
+		return backup;
+	}
+
+	public void setBackup(boolean backup) {
+		this.backup = backup;
 	}
 
 }

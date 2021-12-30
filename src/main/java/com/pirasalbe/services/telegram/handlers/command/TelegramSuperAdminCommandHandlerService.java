@@ -34,6 +34,8 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 	private static final String COMMAND_ADD = COMMAND + " add";
 	private static final String COMMAND_REMOVE = COMMAND + " remove";
 
+	private static final String SOMETHING_WENT_WRONG = "Something went wrong";
+
 	private static final UserRole ROLE = UserRole.SUPERADMIN;
 
 	@Autowired
@@ -77,33 +79,29 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 		SendMessage sendMessage = null;
 
 		if (update.callbackQuery() != null) {
-			int offset = 0;
-			int limit = 10;
+			int page = 0;
+			int size = 10;
 
 			// get limit and offset from string
 			String[] parts = update.callbackQuery().data().substring(COMMAND_LIST.length()).trim().split(" ");
 			if (parts.length == 2) {
-				offset = Integer.parseInt(parts[0]);
-				limit = Integer.parseInt(parts[1]);
+				page = Integer.parseInt(parts[0]);
+				size = Integer.parseInt(parts[1]);
 			}
 
-			Pagination<Admin> pagination = adminService.list(offset, limit);
-			sendMessage = getResponseFromPagination(update, offset, limit, pagination);
+			Pagination<Admin> pagination = adminService.list(page, size);
+			sendMessage = getResponseFromPagination(update, page, size, pagination);
 		} else {
-			sendMessage = new SendMessage(TelegramUtils.getChatId(update), "Something went wrong");
+			sendMessage = new SendMessage(TelegramUtils.getChatId(update), SOMETHING_WENT_WRONG);
 		}
 
 		return sendMessage;
 	}
 
-	private SendMessage getResponseFromPagination(Update update, int offset, int limit, Pagination<Admin> pagination) {
+	private SendMessage getResponseFromPagination(Update update, int page, int size, Pagination<Admin> pagination) {
 		// message text
 		StringBuilder builder = new StringBuilder("<b>Admins</b>").append("\n");
-		long totalPages = pagination.getTotalItems() / limit;
-		if (pagination.getTotalItems() % limit != 0) {
-			totalPages++;
-		}
-		builder.append("Page ").append(offset / limit + 1).append(" of ").append(totalPages);
+		builder.append("Page ").append(page + 1).append(" of ").append(pagination.getTotalPages() + 1);
 
 		// create message
 		SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update), builder.toString());
@@ -117,16 +115,16 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 
 		// add navigation buttons
 		List<InlineKeyboardButton> navigationButtons = new ArrayList<>();
-		if (offset > 0) {
+		if (page > 0) {
 			InlineKeyboardButton previous = new InlineKeyboardButton("Previous page");
-			int newOffset = offset - limit >= 0 ? offset - limit : 0;
-			previous.callbackData(COMMAND_LIST + " " + newOffset + " " + limit);
+			int newOffset = page - size >= 0 ? page - size : 0;
+			previous.callbackData(COMMAND_LIST + " " + newOffset + " " + size);
 			navigationButtons.add(previous);
 		}
-		if (offset + limit < pagination.getTotalItems()) {
+		if (page < pagination.getTotalPages()) {
 			InlineKeyboardButton next = new InlineKeyboardButton("Next page");
-			int newOffset = offset + limit;
-			next.callbackData(COMMAND_LIST + " " + newOffset + " " + limit);
+			int newOffset = page + size;
+			next.callbackData(COMMAND_LIST + " " + newOffset + " " + size);
 			navigationButtons.add(next);
 		}
 		if (!navigationButtons.isEmpty()) {
@@ -153,7 +151,7 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 			sendMessage = addUser(TelegramUtils.getChatId(update), update.message().text(),
 					update.message().messageId());
 		} else {
-			sendMessage = new SendMessage(TelegramUtils.getChatId(update), "Something went wrong");
+			sendMessage = new SendMessage(TelegramUtils.getChatId(update), SOMETHING_WENT_WRONG);
 		}
 
 		return sendMessage;
@@ -195,7 +193,7 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 			sendMessage = removeUser(TelegramUtils.getChatId(update), update.message().text(),
 					update.message().messageId());
 		} else {
-			sendMessage = new SendMessage(TelegramUtils.getChatId(update), "Something went wrong");
+			sendMessage = new SendMessage(TelegramUtils.getChatId(update), SOMETHING_WENT_WRONG);
 		}
 
 		return sendMessage;
