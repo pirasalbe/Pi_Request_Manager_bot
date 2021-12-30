@@ -110,8 +110,8 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 		// prepare keyboard
 		InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
 		sendMessage.replyMarkup(keyboard);
-		pagination.getElements().forEach(
-				admin -> keyboard.addRow(new InlineKeyboardButton(admin.getId() + " - " + admin.getRole().name())));
+		pagination.getElements().forEach(admin -> keyboard.addRow(
+				new InlineKeyboardButton(admin.getId() + " - " + admin.getRole().name()).callbackData(COMMAND_REMOVE)));
 
 		// add navigation buttons
 		List<InlineKeyboardButton> navigationButtons = new ArrayList<>();
