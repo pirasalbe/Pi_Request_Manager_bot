@@ -29,7 +29,7 @@ import com.pirasalbe.utils.TelegramUtils;
 @Component
 public class TelegramSuperAdminCommandHandlerService implements TelegramCommandHandler {
 
-	private static final String COMMAND = "/admins";
+	static final String COMMAND = "/admins";
 	private static final String COMMAND_LIST = COMMAND + " list";
 	private static final String COMMAND_ADD = COMMAND + " add";
 	private static final String COMMAND_REMOVE = COMMAND + " remove";

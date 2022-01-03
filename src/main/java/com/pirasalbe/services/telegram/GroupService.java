@@ -24,14 +24,16 @@ public class GroupService {
 	@Autowired
 	private GroupRepository repository;
 
-	public void insertIfNotExists(Long id) {
-		Group group = null;
+	public Optional<Group> findById(Long id) {
+		return repository.findById(id);
+	}
 
-		// update
+	public void insertIfNotExists(Long id) {
+		// insert
 		Optional<Group> optional = repository.findById(id);
 		if (optional.isEmpty()) {
 			// add
-			group = new Group();
+			Group group = new Group();
 			group.setId(id);
 			group.setRequestLimit(1);
 			group.setAudiobooksDaysWait(15);
@@ -42,7 +44,6 @@ public class GroupService {
 			repository.save(group);
 			LOGGER.info("New group: [{}]", id);
 		}
-
 	}
 
 	public void deleteIfExists(Long id) {
@@ -50,6 +51,25 @@ public class GroupService {
 			repository.deleteById(id);
 		}
 		LOGGER.info("Deleted group: [{}]", id);
+	}
+
+	public boolean updateRequestLimit(Long id, int requestLimit) {
+		boolean updated = false;
+
+		// update
+		Optional<Group> optional = repository.findById(id);
+		boolean present = optional.isPresent();
+		if (present) {
+			// add
+			Group group = optional.get();
+			group.setRequestLimit(requestLimit);
+
+			repository.save(group);
+			updated = true;
+			LOGGER.info("Update group: [{}] request limit [{}]", id, requestLimit);
+		}
+
+		return updated;
 	}
 
 }

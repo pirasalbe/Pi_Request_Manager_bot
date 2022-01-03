@@ -91,8 +91,16 @@ public class TelegramHelpCommandHandlerService implements TelegramCommandHandler
 
 		message.append("<i>Group commands:</i>").append("\n");
 		if (chatType != Type.channel) {
-			message.append("/enable_group").append(" - ").append("Enable group management").append("\n");
-			message.append("/disable_group").append(" - ").append("Disable group management");
+			message.append(TelegramGroupsCommandHandlerService.INFO_COMMAND).append(" - ").append("Show group settings")
+					.append("\n\n");
+
+			message.append(TelegramGroupsCommandHandlerService.ENABLE_COMMAND).append(" - ")
+					.append("Enable group management").append("\n");
+			message.append(TelegramGroupsCommandHandlerService.DISABLE_COMMAND).append(" - ")
+					.append("Disable group management").append("\n\n");
+
+			message.append(TelegramGroupsCommandHandlerService.REQUEST_LIMIT_COMMAND).append(" [number of request]")
+					.append(" - ").append("Define the limit of requests per day to [number of request]");
 		} else {
 			message.append("Go in PM or a group to see the available commands.");
 		}
@@ -108,7 +116,8 @@ public class TelegramHelpCommandHandlerService implements TelegramCommandHandler
 		StringBuilder message = new StringBuilder("<b>Admin help:</b>").append("\n");
 
 		if (chatType == Type.Private) {
-			message.append("/admins").append(" - ").append("Show commands to manage admins");
+			message.append(TelegramSuperAdminCommandHandlerService.COMMAND).append(" - ")
+					.append("Show commands to manage admins");
 		} else {
 			message.append("Go in PM to see your available commands.");
 		}
