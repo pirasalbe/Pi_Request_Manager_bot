@@ -1,5 +1,7 @@
 package com.pirasalbe.utils;
 
+import com.pengrad.telegrambot.model.MessageEntity;
+import com.pengrad.telegrambot.model.MessageEntity.Type;
 import com.pengrad.telegrambot.model.Update;
 
 /**
@@ -92,6 +94,34 @@ public class TelegramUtils {
 		}
 
 		return result;
+	}
+
+	/**
+	 * Get text command without username
+	 *
+	 * @param update Update received
+	 * @return Command without username
+	 */
+	public static String getTextCommand(Update update) {
+		String text = update.message().text();
+
+		boolean found = false;
+		MessageEntity[] entities = update.message().entities();
+		for (int i = 0; i < entities.length && !found; i++) {
+			MessageEntity entity = entities[i];
+			if (entity.type() == Type.bot_command) {
+				Integer offset = entity.offset();
+				text = text.substring(offset, offset + entity.length());
+				found = true;
+			}
+		}
+
+		int index = text.indexOf('@');
+		if (index > 0) {
+			text = text.substring(0, index);
+		}
+
+		return text;
 	}
 
 }

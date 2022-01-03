@@ -15,6 +15,8 @@ import javax.persistence.Table;
 @Table(name = "GROUPS")
 public class Group {
 
+	private static final String END_OF_LINE_TO_STRING = "</i>\n";
+
 	@Id
 	private Long id;
 
@@ -90,12 +92,13 @@ public class Group {
 		StringBuilder builder = new StringBuilder();
 
 		builder.append("<b>Group info:</b>\n");
-		builder.append("Id: <i>").append(id).append("</i>\n");
-		builder.append("Request Limit: <i>").append(requestLimit).append("</i>\n");
-		builder.append("Days to wait to request a new audiobook: <i>").append(audiobooksDaysWait).append("</i>\n");
+		builder.append("Id: <i>").append(id).append(END_OF_LINE_TO_STRING);
+		builder.append("Request Limit: <i>").append(requestLimit).append(END_OF_LINE_TO_STRING);
+		builder.append("Days to wait to request a new audiobook: <i>").append(audiobooksDaysWait)
+				.append(END_OF_LINE_TO_STRING);
 		builder.append("Days to wait to request a new english audiobook: <i>").append(englishAudiobooksDaysWait)
-				.append("</i>\n");
-		builder.append("Can request ebooks: <i>").append(allowEbooks).append("</i>\n");
+				.append(END_OF_LINE_TO_STRING);
+		builder.append("Can request ebooks: <i>").append(allowEbooks).append(END_OF_LINE_TO_STRING);
 		builder.append("Can request audiobooks: <i>").append(allowAudiobooks).append("</i>");
 
 		return builder.toString();

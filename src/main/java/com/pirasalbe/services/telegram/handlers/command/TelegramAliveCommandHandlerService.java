@@ -10,6 +10,7 @@ import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.telegram.TelegramHandlerResult;
+import com.pirasalbe.utils.TelegramUtils;
 
 /**
  * Service to manage /alive and /start
@@ -26,7 +27,7 @@ public class TelegramAliveCommandHandlerService implements TelegramCommandHandle
 
 	@Override
 	public boolean shouldHandle(Update update) {
-		return update.message() != null && COMMANDS.contains(update.message().text());
+		return update.message() != null && COMMANDS.contains(TelegramUtils.getTextCommand(update));
 	}
 
 	@Override

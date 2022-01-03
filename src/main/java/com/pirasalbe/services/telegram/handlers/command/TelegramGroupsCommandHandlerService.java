@@ -43,7 +43,7 @@ public class TelegramGroupsCommandHandlerService implements TelegramCommandHandl
 
 	@Override
 	public boolean shouldHandle(Update update) {
-		String text = update.message() != null ? update.message().text() : null;
+		String text = update.message() != null ? TelegramUtils.getTextCommand(update) : null;
 
 		return text != null && (COMMANDS.contains(text) || text.startsWith(REQUEST_LIMIT_COMMAND))
 		// command vaild only on groups
@@ -60,7 +60,7 @@ public class TelegramGroupsCommandHandlerService implements TelegramCommandHandl
 		SendMessage sendMessage = null;
 
 		Long chatId = TelegramUtils.getChatId(update);
-		String text = update.message().text();
+		String text = TelegramUtils.getTextCommand(update);
 
 		if (text.equals(INFO_COMMAND)) {
 			Optional<Group> optional = groupService.findById(chatId);
@@ -74,7 +74,7 @@ public class TelegramGroupsCommandHandlerService implements TelegramCommandHandl
 			groupService.deleteIfExists(chatId);
 			sendMessage = new SendMessage(chatId, "Group disabled");
 		} else if (text.startsWith(REQUEST_LIMIT_COMMAND)) {
-			sendMessage = updateRequestLimit(chatId, text);
+			sendMessage = updateRequestLimit(chatId, update.message().text());
 		} else {
 			sendMessage = new SendMessage(chatId, SOMETHING_WENT_WRONG);
 		}
@@ -95,7 +95,7 @@ public class TelegramGroupsCommandHandlerService implements TelegramCommandHandl
 			boolean update = groupService.updateRequestLimit(chatId, requestLimit);
 
 			if (update) {
-				message = "Updated request limit to " + requestLimit;
+				message = "Updated request limit to <b>" + requestLimit + "</b>";
 			} else {
 				message = ENABLE_THE_GROUP_FIRST;
 			}

@@ -10,6 +10,7 @@ import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.telegram.TelegramHandlerResult;
 import com.pirasalbe.services.telegram.AdminService;
+import com.pirasalbe.utils.TelegramUtils;
 
 /**
  * Service to manage /help
@@ -29,7 +30,7 @@ public class TelegramHelpCommandHandlerService implements TelegramCommandHandler
 
 	@Override
 	public boolean shouldHandle(Update update) {
-		return update.message() != null && update.message().text().startsWith(COMMAND);
+		return update.message() != null && TelegramUtils.getTextCommand(update).equals(COMMAND);
 	}
 
 	@Override
