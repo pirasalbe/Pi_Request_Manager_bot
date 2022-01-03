@@ -31,12 +31,16 @@ public class TelegramCommandHandlerServiceFactory {
 	@Autowired
 	private TelegramSuperAdminCommandHandlerService superAdminCommandHandlerService;
 
+	@Autowired
+	private TelegramGroupsCommandHandlerService groupsCommandHandlerService;
+
 	@PostConstruct
 	public void initializeHandlers() {
 		commandHandlers = new LinkedHashSet<>();
 		commandHandlers.add(aliveCommandHandlerService);
 		commandHandlers.add(helpCommandHandlerService);
 		commandHandlers.add(superAdminCommandHandlerService);
+		commandHandlers.add(groupsCommandHandlerService);
 	}
 
 	public TelegramCommandHandler getTelegramCommandHandler(Update update) {

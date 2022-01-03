@@ -6,7 +6,7 @@ http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd
 http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-4.1.xsd">
 
 	<changeSet id="1 - Create Admin" author="pirasalbe">
-		<createTable tableName="ADMIN">
+		<createTable tableName="ADMINS">
 			<column name="ID" type="bigint">
 				<constraints primaryKey="true" primaryKeyName="ADMIN_PK" />
 			</column>
@@ -14,6 +14,29 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 				<constraints nullable="false" />
 			</column>
 			<column name="BACKUP" type="boolean" defaultValueBoolean="false" />
+		</createTable>
+	</changeSet>
+
+	<changeSet id="2 - Create Groups" author="pirasalbe">
+		<createTable tableName="GROUPS">
+			<column name="ID" type="bigint">
+				<constraints primaryKey="true" primaryKeyName="GROUP_PK" />
+			</column>
+			<column name="REQUEST_LIMIT" type="smallint" defaultValue="1">
+				<constraints nullable="false" />
+			</column>
+			<column name="AUDIOBOOKS_DAYS_WAIT" type="smallint" defaultValue="15">
+				<constraints nullable="false" />
+			</column>
+			<column name="ENGLISH_AUDIOBOOKS_DAYS_WAIT" type="smallint" defaultValue="8">
+				<constraints nullable="false" />
+			</column>
+			<column name="ALLOW_EBOOKS" type="boolean" defaultValueBoolean="true">
+				<constraints nullable="false" />
+			</column>
+			<column name="ALLOW_AUDIOBOOKS" type="boolean" defaultValueBoolean="true">
+				<constraints nullable="false" />
+			</column>
 		</createTable>
 	</changeSet>
 

@@ -15,7 +15,7 @@ import com.pirasalbe.models.UserRole;
  *
  */
 @Entity
-@Table(name = "ADMIN")
+@Table(name = "ADMINS")
 public class Admin {
 
 	@Id

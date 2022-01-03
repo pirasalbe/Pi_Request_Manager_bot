@@ -34,8 +34,6 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 	private static final String COMMAND_ADD = COMMAND + " add";
 	private static final String COMMAND_REMOVE = COMMAND + " remove";
 
-	private static final String SOMETHING_WENT_WRONG = "Something went wrong";
-
 	private static final UserRole ROLE = UserRole.SUPERADMIN;
 
 	@Autowired

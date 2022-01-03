@@ -13,6 +13,8 @@ import com.pirasalbe.models.telegram.TelegramHandlerResult;
  */
 public interface TelegramCommandHandler {
 
+	static final String SOMETHING_WENT_WRONG = "Something went wrong";
+
 	/**
 	 * Checks if it should manage the message
 	 *
