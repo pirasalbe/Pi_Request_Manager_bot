@@ -24,6 +24,7 @@ public class RequestService {
 	public long insert(String content, Format format, Source source, String otherTags) {
 		Request request = new Request();
 
+		// TODO get link and use it as id
 		request.setStatus(RequestStatus.NEW);
 		request.setContent(content);
 		request.setFormat(format);
