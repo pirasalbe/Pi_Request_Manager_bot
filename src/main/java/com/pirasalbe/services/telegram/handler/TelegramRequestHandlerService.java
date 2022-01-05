@@ -53,7 +53,7 @@ public class TelegramRequestHandlerService implements TelegramHandlerService {
 		// messages with request
 		return update.message() != null && update.message().text().toLowerCase().contains(REQUEST_TAG);
 		// TODO manage updates and deletes
-		// TODO manage responses
+		// TODO manage responses from contributors
 	}
 
 	@Override
