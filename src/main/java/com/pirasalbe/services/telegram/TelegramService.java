@@ -2,6 +2,8 @@ package com.pirasalbe.services.telegram;
 
 import javax.annotation.PostConstruct;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +22,8 @@ import com.pirasalbe.services.telegram.handler.TelegramHandlerServiceFactory;
  */
 @Component
 public class TelegramService {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(TelegramService.class);
 
 	private TelegramBot bot;
 
@@ -51,11 +55,15 @@ public class TelegramService {
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private void manageUpdate(Update update) {
-		TelegramHandlerResult handlerResult = handlerServiceFactory.getTelegramHandlerService(update)
-				.handleUpdate(update);
+		try {
+			TelegramHandlerResult handlerResult = handlerServiceFactory.getTelegramHandlerService(update)
+					.handleUpdate(update);
 
-		if (handlerResult.shouldReply()) {
-			bot.execute(handlerResult.getResponse());
+			if (handlerResult.shouldReply()) {
+				bot.execute(handlerResult.getResponse());
+			}
+		} catch (Exception e) {
+			LOGGER.error("Unexpected error", e);
 		}
 	}
 

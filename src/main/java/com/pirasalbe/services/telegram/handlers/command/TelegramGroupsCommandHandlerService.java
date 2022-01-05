@@ -11,6 +11,7 @@ import com.pengrad.telegrambot.model.Chat.Type;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pirasalbe.models.FormatAllowed;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.telegram.TelegramHandlerResult;
@@ -32,6 +33,9 @@ public class TelegramGroupsCommandHandlerService implements TelegramCommandHandl
 	static final List<String> COMMANDS = Arrays.asList(INFO_COMMAND, ENABLE_COMMAND, DISABLE_COMMAND);
 
 	static final String REQUEST_LIMIT_COMMAND = "/request_limit";
+	static final String AUDIOBOOK_DAYS_WAIT_COMMAND = "/audiobooks_days_wait";
+	static final String ENGLISH_AUDIOBOOK_DAYS_WAIT_COMMAND = "/english_audiobooks_days_wait";
+	static final String ALLOW_COMMAND = "/allow";
 
 	private static final String ENABLE_THE_GROUP_FIRST = "Enable the group first with <code>" + ENABLE_COMMAND
 			+ "</code>";
@@ -45,9 +49,22 @@ public class TelegramGroupsCommandHandlerService implements TelegramCommandHandl
 	public boolean shouldHandle(Update update) {
 		String text = update.message() != null ? TelegramUtils.getTextCommand(update) : null;
 
-		return text != null && (COMMANDS.contains(text) || text.startsWith(REQUEST_LIMIT_COMMAND))
+		return text != null && (COMMANDS.contains(text) || startsWith(text, REQUEST_LIMIT_COMMAND,
+				AUDIOBOOK_DAYS_WAIT_COMMAND, ENGLISH_AUDIOBOOK_DAYS_WAIT_COMMAND, ALLOW_COMMAND))
 		// command vaild only on groups
 				&& (update.message().chat().type() == Type.group || update.message().chat().type() == Type.supergroup);
+	}
+
+	private boolean startsWith(String text, String... commands) {
+		boolean startsWith = false;
+
+		for (int i = 0; i < commands.length && !startsWith; i++) {
+			String command = commands[i];
+
+			startsWith = text.startsWith(command);
+		}
+
+		return startsWith;
 	}
 
 	@Override
@@ -75,6 +92,12 @@ public class TelegramGroupsCommandHandlerService implements TelegramCommandHandl
 			sendMessage = new SendMessage(chatId, "Group disabled");
 		} else if (text.startsWith(REQUEST_LIMIT_COMMAND)) {
 			sendMessage = updateRequestLimit(chatId, update.message().text());
+		} else if (text.startsWith(AUDIOBOOK_DAYS_WAIT_COMMAND)) {
+			sendMessage = updateAudiobooksDaysWait(chatId, update.message().text());
+		} else if (text.startsWith(ENGLISH_AUDIOBOOK_DAYS_WAIT_COMMAND)) {
+			sendMessage = updateEnglishAudiobooksDaysWait(chatId, update.message().text());
+		} else if (text.startsWith(ALLOW_COMMAND)) {
+			sendMessage = updateAllow(chatId, update.message().text());
 		} else {
 			sendMessage = new SendMessage(chatId, SOMETHING_WENT_WRONG);
 		}
@@ -88,9 +111,7 @@ public class TelegramGroupsCommandHandlerService implements TelegramCommandHandl
 		String message = null;
 
 		String[] parts = text.split(" ");
-		if (parts.length != 2) {
-			message = "The right format is: <code>" + REQUEST_LIMIT_COMMAND + "</code> [number of request per day]";
-		} else {
+		if (parts.length == 2) {
 			int requestLimit = Integer.parseInt(parts[1]);
 			boolean update = groupService.updateRequestLimit(chatId, requestLimit);
 
@@ -99,6 +120,79 @@ public class TelegramGroupsCommandHandlerService implements TelegramCommandHandl
 			} else {
 				message = ENABLE_THE_GROUP_FIRST;
 			}
+		} else {
+			message = "The right format is: <code>" + REQUEST_LIMIT_COMMAND + "</code> [number of request per day]";
+		}
+
+		SendMessage sendMessage = new SendMessage(chatId, message);
+		sendMessage.parseMode(ParseMode.HTML);
+
+		return sendMessage;
+	}
+
+	private SendMessage updateAudiobooksDaysWait(Long chatId, String text) {
+		String message = null;
+
+		String[] parts = text.split(" ");
+		if (parts.length == 2) {
+			int daysWait = Integer.parseInt(parts[1]);
+			boolean update = groupService.updateAudiobooksDaysWait(chatId, daysWait);
+
+			if (update) {
+				message = "Updated audiobooks days wait to <b>" + daysWait + "</b>";
+			} else {
+				message = ENABLE_THE_GROUP_FIRST;
+			}
+		} else {
+			message = "The right format is: <code>" + AUDIOBOOK_DAYS_WAIT_COMMAND + "</code> [number of days to wait]";
+		}
+
+		SendMessage sendMessage = new SendMessage(chatId, message);
+		sendMessage.parseMode(ParseMode.HTML);
+
+		return sendMessage;
+	}
+
+	private SendMessage updateEnglishAudiobooksDaysWait(Long chatId, String text) {
+		String message = null;
+
+		String[] parts = text.split(" ");
+		if (parts.length == 2) {
+			int daysWait = Integer.parseInt(parts[1]);
+			boolean update = groupService.updateEnglishAudiobooksDaysWait(chatId, daysWait);
+
+			if (update) {
+				message = "Updated English audiobooks days wait to <b>" + daysWait + "</b>";
+			} else {
+				message = ENABLE_THE_GROUP_FIRST;
+			}
+		} else {
+			message = "The right format is: <code>" + ENGLISH_AUDIOBOOK_DAYS_WAIT_COMMAND
+					+ "</code> [number of days to wait]";
+		}
+
+		SendMessage sendMessage = new SendMessage(chatId, message);
+		sendMessage.parseMode(ParseMode.HTML);
+
+		return sendMessage;
+	}
+
+	private SendMessage updateAllow(Long chatId, String text) {
+		String message = null;
+
+		String[] parts = text.split(" ");
+		if (parts.length == 2) {
+			String allowed = parts[1].toUpperCase();
+			FormatAllowed formatAllowed = FormatAllowed.valueOf(allowed);
+			boolean update = groupService.updateAllow(chatId, formatAllowed);
+
+			if (update) {
+				message = "Updated allowed to <b>" + allowed + "</b>";
+			} else {
+				message = ENABLE_THE_GROUP_FIRST;
+			}
+		} else {
+			message = "The right format is: <code>" + ALLOW_COMMAND + "</code> [ebooks/audiobooks/both]";
 		}
 
 		SendMessage sendMessage = new SendMessage(chatId, message);

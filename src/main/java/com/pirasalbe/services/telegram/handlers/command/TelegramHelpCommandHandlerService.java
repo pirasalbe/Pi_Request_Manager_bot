@@ -101,7 +101,18 @@ public class TelegramHelpCommandHandlerService implements TelegramCommandHandler
 					.append("Disable group management").append("\n\n");
 
 			message.append(TelegramGroupsCommandHandlerService.REQUEST_LIMIT_COMMAND).append(" [number of request]")
-					.append(" - ").append("Define the limit of requests per day to [number of request]");
+					.append(" - ").append("Define the limit of requests per day to <i>[number of request]</i>")
+					.append("\n");
+			message.append(TelegramGroupsCommandHandlerService.AUDIOBOOK_DAYS_WAIT_COMMAND)
+					.append(" [number of days to wait]").append(" - ")
+					.append("Define the days to wait before requesting a new audiobook to <i>[number of days to wait]</i>")
+					.append("\n");
+			message.append(TelegramGroupsCommandHandlerService.ENGLISH_AUDIOBOOK_DAYS_WAIT_COMMAND)
+					.append(" [number of days to wait]").append(" - ")
+					.append("Define the days to wait before requesting a new English audiobook to <i>[number of days to wait]</i>")
+					.append("\n");
+			message.append(TelegramGroupsCommandHandlerService.ALLOW_COMMAND).append(" [ebooks/audiobooks/both]")
+					.append(" - ").append("Define what can be requested <i>[ebooks/audiobooks/both]</i>");
 		} else {
 			message.append("Go in PM or a group to see the available commands.");
 		}
