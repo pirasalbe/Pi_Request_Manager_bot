@@ -52,7 +52,7 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 	}
 
 	@Override
-	public TelegramHandlerResult<SendMessage> handleCommand(Update update) {
+	public TelegramHandlerResult handleCommand(Update update) {
 		SendMessage sendMessage = null;
 
 		String text = TelegramUtils.getText(update);
@@ -70,7 +70,7 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 			sendMessage = showActions(update);
 		}
 
-		return TelegramHandlerResult.reply(sendMessage);
+		return TelegramHandlerResult.withResponses(sendMessage);
 	}
 
 	private SendMessage listUsers(Update update) {

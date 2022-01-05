@@ -73,7 +73,7 @@ public class TelegramGroupsCommandHandlerService implements TelegramCommandHandl
 	}
 
 	@Override
-	public TelegramHandlerResult<SendMessage> handleCommand(Update update) {
+	public TelegramHandlerResult handleCommand(Update update) {
 		SendMessage sendMessage = null;
 
 		Long chatId = TelegramUtils.getChatId(update);
@@ -104,7 +104,7 @@ public class TelegramGroupsCommandHandlerService implements TelegramCommandHandl
 
 		sendMessage.replyToMessageId(update.message().messageId());
 
-		return TelegramHandlerResult.reply(sendMessage);
+		return TelegramHandlerResult.withResponses(sendMessage);
 	}
 
 	private SendMessage updateRequestLimit(Long chatId, String text) {

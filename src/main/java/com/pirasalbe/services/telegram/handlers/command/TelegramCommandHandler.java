@@ -1,7 +1,6 @@
 package com.pirasalbe.services.telegram.handlers.command;
 
 import com.pengrad.telegrambot.model.Update;
-import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.telegram.TelegramHandlerResult;
 
@@ -35,6 +34,6 @@ public interface TelegramCommandHandler {
 	 *
 	 * @param update Message arrived
 	 */
-	TelegramHandlerResult<SendMessage> handleCommand(Update update);
+	TelegramHandlerResult handleCommand(Update update);
 
 }

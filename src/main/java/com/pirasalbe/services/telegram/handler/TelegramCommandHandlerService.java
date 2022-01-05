@@ -19,7 +19,7 @@ import com.pirasalbe.utils.TelegramUtils;
  *
  */
 @Component
-public class TelegramCommandHandlerService implements TelegramHandlerService<SendMessage> {
+public class TelegramCommandHandlerService implements TelegramHandlerService {
 
 	@Autowired
 	private AdminService adminService;
@@ -34,8 +34,8 @@ public class TelegramCommandHandlerService implements TelegramHandlerService<Sen
 	}
 
 	@Override
-	public TelegramHandlerResult<SendMessage> handleUpdate(Update update) {
-		TelegramHandlerResult<SendMessage> result = TelegramHandlerResult.noReply();
+	public TelegramHandlerResult handleUpdate(Update update) {
+		TelegramHandlerResult result = TelegramHandlerResult.noResponse();
 
 		TelegramCommandHandler commandHandler = handlerServiceFactory.getTelegramCommandHandler(update);
 		if (commandHandler != null) {
@@ -45,8 +45,8 @@ public class TelegramCommandHandlerService implements TelegramHandlerService<Sen
 		return result;
 	}
 
-	private TelegramHandlerResult<SendMessage> manageMessage(TelegramCommandHandler commandHandler, Update update) {
-		TelegramHandlerResult<SendMessage> result = null;
+	private TelegramHandlerResult manageMessage(TelegramCommandHandler commandHandler, Update update) {
+		TelegramHandlerResult result = null;
 
 		// execute command if authorized
 		UserRole authority = adminService.getAuthority(TelegramUtils.getUserId(update));
@@ -54,7 +54,7 @@ public class TelegramCommandHandlerService implements TelegramHandlerService<Sen
 			result = commandHandler.handleCommand(update);
 		} else {
 			// reply with unauthorized error
-			result = TelegramHandlerResult.reply(getUnauthorized(update));
+			result = TelegramHandlerResult.withResponses(getUnauthorized(update));
 		}
 
 		return result;

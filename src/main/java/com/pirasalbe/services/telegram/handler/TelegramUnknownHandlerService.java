@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.model.Update;
-import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.telegram.TelegramHandlerResult;
 
 /**
@@ -15,7 +14,7 @@ import com.pirasalbe.models.telegram.TelegramHandlerResult;
  *
  */
 @Component
-public class TelegramUnknownHandlerService implements TelegramHandlerService<SendMessage> {
+public class TelegramUnknownHandlerService implements TelegramHandlerService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TelegramUnknownHandlerService.class);
 
@@ -25,10 +24,10 @@ public class TelegramUnknownHandlerService implements TelegramHandlerService<Sen
 	}
 
 	@Override
-	public TelegramHandlerResult<SendMessage> handleUpdate(Update update) {
+	public TelegramHandlerResult handleUpdate(Update update) {
 		LOGGER.debug("Unknown request: [{}]", update);
 
-		return TelegramHandlerResult.noReply();
+		return TelegramHandlerResult.noResponse();
 	}
 
 }

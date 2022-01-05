@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.Update;
+import com.pengrad.telegrambot.request.BaseRequest;
 import com.pirasalbe.configurations.TelegramConfiguration;
 import com.pirasalbe.models.telegram.TelegramHandlerResult;
 import com.pirasalbe.services.telegram.handler.TelegramHandlerServiceFactory;
@@ -53,14 +54,13 @@ public class TelegramService {
 		});
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private void manageUpdate(Update update) {
 		try {
 			TelegramHandlerResult handlerResult = handlerServiceFactory.getTelegramHandlerService(update)
 					.handleUpdate(update);
 
-			if (handlerResult.shouldReply()) {
-				bot.execute(handlerResult.getResponse());
+			for (BaseRequest<?, ?> response : handlerResult.getResponses()) {
+				bot.execute(response);
 			}
 		} catch (Exception e) {
 			LOGGER.error("Unexpected error", e);

@@ -36,11 +36,11 @@ public class TelegramAliveCommandHandlerService implements TelegramCommandHandle
 	}
 
 	@Override
-	public TelegramHandlerResult<SendMessage> handleCommand(Update update) {
+	public TelegramHandlerResult handleCommand(Update update) {
 		SendMessage sendMessage = new SendMessage(update.message().chat().id(), "Bot up!");
 		sendMessage.replyToMessageId(update.message().messageId());
 
-		return TelegramHandlerResult.reply(sendMessage);
+		return TelegramHandlerResult.withResponses(sendMessage);
 	}
 
 }

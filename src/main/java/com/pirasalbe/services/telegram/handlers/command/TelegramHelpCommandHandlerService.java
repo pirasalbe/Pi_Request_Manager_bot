@@ -39,7 +39,7 @@ public class TelegramHelpCommandHandlerService implements TelegramCommandHandler
 	}
 
 	@Override
-	public TelegramHandlerResult<SendMessage> handleCommand(Update update) {
+	public TelegramHandlerResult handleCommand(Update update) {
 		UserRole userRole = adminService.getAuthority(update.message().from().id());
 		Type chatType = update.message().chat().type();
 
@@ -66,7 +66,7 @@ public class TelegramHelpCommandHandlerService implements TelegramCommandHandler
 		sendMessage.parseMode(ParseMode.HTML);
 		sendMessage.replyToMessageId(update.message().messageId());
 
-		return TelegramHandlerResult.reply(sendMessage);
+		return TelegramHandlerResult.withResponses(sendMessage);
 	}
 
 	private String getUserHelp(Type chatType) {

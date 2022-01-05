@@ -40,4 +40,50 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 		</createTable>
 	</changeSet>
 
+	<changeSet id="3 - Requests" author="pirasalbe">
+		<createTable tableName="REQUESTS">
+			<column name="ID" type="SERIAL">
+				<constraints primaryKey="true" primaryKeyName="REQUEST_PK" />
+			</column>
+			<column name="STATUS" type="varchar(64)">
+				<constraints nullable="false" />
+			</column>
+			<column name="CONTENT" type="text">
+				<constraints nullable="false" />
+			</column>
+			<column name="FORMAT" type="varchar(64)">
+				<constraints nullable="false" />
+			</column>
+			<column name="SOURCE" type="varchar(64)">
+				<constraints nullable="false" />
+			</column>
+			<column name="OTHER_TAGS" type="varchar(255)" />
+		</createTable>
+	</changeSet>
+
+	<changeSet id="4 - User Requests" author="pirasalbe">
+		<createTable tableName="USER_REQUESTS">
+			<column name="REQUEST_ID" type="bigint">
+				<constraints primaryKey="true" primaryKeyName="USER_REQUEST_PK" foreignKeyName="REQUEST_FK" references="REQUESTS(ID)" />
+			</column>
+			<column name="USER_ID" type="bigint">
+				<constraints primaryKey="true" primaryKeyName="USER_REQUEST_PK" />
+			</column>
+			<column name="GROUP_ID" type="bigint">
+				<constraints nullable="false" foreignKeyName="REQUEST_GROUP_FK" references="GROUPS(ID)" />
+			</column>
+			<column name="ROLE" type="text">
+				<constraints nullable="false" />
+			</column>
+			<column name="DATE" type="timestamp">
+				<constraints nullable="false" />
+			</column>
+		</createTable>
+		<createIndex indexName="USER_GROUP_DATE" tableName="USER_REQUESTS">
+			<column name="USER_ID"/>
+			<column name="GROUP_ID"/>
+			<column name="DATE"/>
+		</createIndex>
+	</changeSet>
+
 </databaseChangeLog>

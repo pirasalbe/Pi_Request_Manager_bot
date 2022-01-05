@@ -1,25 +1,24 @@
 package com.pirasalbe.models.telegram;
 
-import com.pengrad.telegrambot.request.AbstractSendRequest;
-import com.pengrad.telegrambot.request.SendMessage;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import com.pengrad.telegrambot.request.BaseRequest;
 
 /**
  * Result of the handling
  *
  * @author pirasalbe
  *
- * @param <T> Response type
  */
-public class TelegramHandlerResult<T extends AbstractSendRequest<?>> {
+public class TelegramHandlerResult {
 
-	private boolean shouldReply;
+	private List<BaseRequest<?, ?>> responses;
 
-	private T response;
-
-	private TelegramHandlerResult(boolean shouldReply, T response) {
+	private TelegramHandlerResult(List<BaseRequest<?, ?>> responses) {
 		super();
-		this.shouldReply = shouldReply;
-		this.response = response;
+		this.responses = responses;
 	}
 
 	/**
@@ -27,8 +26,8 @@ public class TelegramHandlerResult<T extends AbstractSendRequest<?>> {
 	 *
 	 * @return TelegramHandlerResult without response
 	 */
-	public static TelegramHandlerResult<SendMessage> noReply() {
-		return new TelegramHandlerResult<>(false, null);
+	public static TelegramHandlerResult noResponse() {
+		return new TelegramHandlerResult(new ArrayList<>());
 	}
 
 	/**
@@ -38,16 +37,12 @@ public class TelegramHandlerResult<T extends AbstractSendRequest<?>> {
 	 * @param response Response to send
 	 * @return TelegramHandlerResult with response
 	 */
-	public static <R extends AbstractSendRequest<R>> TelegramHandlerResult<R> reply(R response) {
-		return new TelegramHandlerResult<>(true, response);
+	public static TelegramHandlerResult withResponses(BaseRequest<?, ?>... response) {
+		return new TelegramHandlerResult(Arrays.asList(response));
 	}
 
-	public boolean shouldReply() {
-		return shouldReply;
-	}
-
-	public T getResponse() {
-		return response;
+	public List<BaseRequest<?, ?>> getResponses() {
+		return responses;
 	}
 
 }

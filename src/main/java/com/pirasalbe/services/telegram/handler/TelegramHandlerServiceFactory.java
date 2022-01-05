@@ -20,7 +20,7 @@ import com.pengrad.telegrambot.model.Update;
 @Component
 public class TelegramHandlerServiceFactory {
 
-	private Set<TelegramHandlerService<?>> handlerServices;
+	private Set<TelegramHandlerService> handlerServices;
 
 	@Autowired
 	private TelegramUnknownHandlerService unknownHandlerService;
@@ -28,10 +28,14 @@ public class TelegramHandlerServiceFactory {
 	@Autowired
 	private TelegramCommandHandlerService commandHandlerService;
 
+	@Autowired
+	private TelegramRequestHandlerService requestHandlerService;
+
 	@PostConstruct
 	public void initializeHandlers() {
 		handlerServices = new LinkedHashSet<>();
 		handlerServices.add(commandHandlerService);
+		handlerServices.add(requestHandlerService);
 	}
 
 	/**
@@ -40,13 +44,13 @@ public class TelegramHandlerServiceFactory {
 	 * @param update Update to check
 	 * @return TelegramHandlerService
 	 */
-	public TelegramHandlerService<?> getTelegramHandlerService(Update update) {
-		TelegramHandlerService<?> result = unknownHandlerService;
+	public TelegramHandlerService getTelegramHandlerService(Update update) {
+		TelegramHandlerService result = unknownHandlerService;
 
 		boolean found = false;
-		Iterator<TelegramHandlerService<?>> iterator = handlerServices.iterator();
+		Iterator<TelegramHandlerService> iterator = handlerServices.iterator();
 		while (iterator.hasNext() && !found) {
-			TelegramHandlerService<?> handlerService = iterator.next();
+			TelegramHandlerService handlerService = iterator.next();
 			if (handlerService.shouldHandle(update)) {
 				found = true;
 				result = handlerService;

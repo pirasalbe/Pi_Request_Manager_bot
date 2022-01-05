@@ -1,7 +1,6 @@
 package com.pirasalbe.services.telegram.handler;
 
 import com.pengrad.telegrambot.model.Update;
-import com.pengrad.telegrambot.request.AbstractSendRequest;
 import com.pirasalbe.models.telegram.TelegramHandlerResult;
 
 /**
@@ -10,7 +9,7 @@ import com.pirasalbe.models.telegram.TelegramHandlerResult;
  * @author pirasalbe
  *
  */
-public interface TelegramHandlerService<T extends AbstractSendRequest<?>> {
+public interface TelegramHandlerService {
 
 	/**
 	 * Checks if it should manage the message
@@ -25,6 +24,6 @@ public interface TelegramHandlerService<T extends AbstractSendRequest<?>> {
 	 *
 	 * @param update Message arrived
 	 */
-	TelegramHandlerResult<T> handleUpdate(Update update);
+	TelegramHandlerResult handleUpdate(Update update);
 
 }
