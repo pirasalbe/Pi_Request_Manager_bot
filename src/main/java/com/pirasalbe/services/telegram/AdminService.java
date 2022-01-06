@@ -9,6 +9,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.querydsl.QPageRequest;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.pirasalbe.models.Pagination;
 import com.pirasalbe.models.UserRole;
@@ -22,6 +24,7 @@ import com.pirasalbe.repositories.AdminRepository;
  *
  */
 @Component
+@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 public class AdminService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AdminService.class);
@@ -40,6 +43,7 @@ public class AdminService {
 		return role;
 	}
 
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void insertUpdate(Long id, UserRole role) {
 		Admin admin = null;
 
@@ -66,6 +70,7 @@ public class AdminService {
 		return new Pagination<>(adminPage.getTotalPages(), adminPage.getContent());
 	}
 
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void deleteIfExists(Long id) {
 		if (repository.existsById(id)) {
 			repository.deleteById(id);

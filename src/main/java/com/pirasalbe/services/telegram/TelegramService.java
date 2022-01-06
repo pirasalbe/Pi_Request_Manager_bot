@@ -63,7 +63,7 @@ public class TelegramService {
 				bot.execute(response);
 			}
 		} catch (Exception e) {
-			LOGGER.error("Unexpected error", e);
+			LOGGER.error("Unexpected error for message [{}]", update, e);
 		}
 	}
 

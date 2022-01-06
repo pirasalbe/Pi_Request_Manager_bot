@@ -42,14 +42,20 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 
 	<changeSet id="3 - Requests" author="pirasalbe">
 		<createTable tableName="REQUESTS">
-			<column name="ID" type="SERIAL">
+			<column name="MESSAGE_ID" type="bigint">
 				<constraints primaryKey="true" primaryKeyName="REQUEST_PK" />
+			</column>
+			<column name="GROUP_ID" type="bigint">
+				<constraints primaryKey="true" primaryKeyName="REQUEST_PK" foreignKeyName="REQUEST_GROUP_FK" references="GROUPS(ID)" />
 			</column>
 			<column name="STATUS" type="varchar(64)">
 				<constraints nullable="false" />
 			</column>
 			<column name="CONTENT" type="text">
 				<constraints nullable="false" />
+			</column>
+			<column name="LINK" type="varchar(512)">
+				<constraints unique="true" uniqueConstraintName="REQUEST_LINK_UQ" />
 			</column>
 			<column name="FORMAT" type="varchar(64)">
 				<constraints nullable="false" />
@@ -63,8 +69,11 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 
 	<changeSet id="4 - User Requests" author="pirasalbe">
 		<createTable tableName="USER_REQUESTS">
-			<column name="REQUEST_ID" type="bigint">
-				<constraints primaryKey="true" primaryKeyName="USER_REQUEST_PK" foreignKeyName="REQUEST_FK" references="REQUESTS(ID)" />
+			<column name="REQUEST_MESSAGE_ID" type="bigint">
+				<constraints primaryKey="true" primaryKeyName="USER_REQUEST_PK" />
+			</column>
+			<column name="REQUEST_GROUP_ID" type="bigint">
+				<constraints nullable="false" primaryKeyName="USER_REQUEST_PK" />
 			</column>
 			<column name="USER_ID" type="bigint">
 				<constraints primaryKey="true" primaryKeyName="USER_REQUEST_PK" />
@@ -84,6 +93,7 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 			<column name="GROUP_ID"/>
 			<column name="DATE"/>
 		</createIndex>
+		<addForeignKeyConstraint baseColumnNames="REQUEST_MESSAGE_ID,REQUEST_GROUP_ID" baseTableName="USER_REQUESTS" constraintName="REQUEST_ID_FK" referencedColumnNames="MESSAGE_ID,GROUP_ID" referencedTableName="REQUESTS" validate="true"/>
 	</changeSet>
 
 </databaseChangeLog>

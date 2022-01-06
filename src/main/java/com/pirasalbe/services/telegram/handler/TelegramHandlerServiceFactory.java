@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.model.Update;
+import com.pirasalbe.services.telegram.handler.request.TelegramNewRequestHandlerService;
+import com.pirasalbe.services.telegram.handler.request.TelegramUpdateRequestHandlerService;
 
 /**
  * Service that gives the right handler of a message
@@ -29,13 +31,17 @@ public class TelegramHandlerServiceFactory {
 	private TelegramCommandHandlerService commandHandlerService;
 
 	@Autowired
-	private TelegramRequestHandlerService requestHandlerService;
+	private TelegramNewRequestHandlerService newRequestHandlerService;
+
+	@Autowired
+	private TelegramUpdateRequestHandlerService updateRequestHandlerService;
 
 	@PostConstruct
 	public void initializeHandlers() {
 		handlerServices = new LinkedHashSet<>();
 		handlerServices.add(commandHandlerService);
-		handlerServices.add(requestHandlerService);
+		handlerServices.add(newRequestHandlerService);
+		handlerServices.add(updateRequestHandlerService);
 	}
 
 	/**

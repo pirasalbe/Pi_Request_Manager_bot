@@ -7,34 +7,30 @@ import javax.persistence.Column;
 import javax.persistence.Embeddable;
 
 /**
- * User Request Primary Key
+ * Request Primary Key
  *
  * @author pirasalbe
  *
  */
 @Embeddable
-public class UserRequestPK implements Serializable {
+public class RequestPK implements Serializable {
 
 	private static final long serialVersionUID = 3126637537858452476L;
 
-	@Column(name = "REQUEST_MESSAGE_ID")
+	@Column(name = "MESSAGE_ID")
 	private Long messageId;
 
-	@Column(name = "REQUEST_GROUP_ID")
+	@Column(name = "GROUP_ID")
 	private Long groupId;
 
-	@Column(name = "USER_ID")
-	private Long userId;
-
-	public UserRequestPK() {
+	public RequestPK() {
 		super();
 	}
 
-	public UserRequestPK(Long messageId, Long groupId, Long userId) {
+	public RequestPK(Long messageId, Long groupId) {
 		super();
 		this.messageId = messageId;
 		this.groupId = groupId;
-		this.userId = userId;
 	}
 
 	public Long getMessageId() {
@@ -53,17 +49,9 @@ public class UserRequestPK implements Serializable {
 		this.groupId = groupId;
 	}
 
-	public Long getUserId() {
-		return userId;
-	}
-
-	public void setUserId(Long userId) {
-		this.userId = userId;
-	}
-
 	@Override
 	public int hashCode() {
-		return Objects.hash(groupId, messageId, userId);
+		return Objects.hash(groupId, messageId);
 	}
 
 	@Override
@@ -72,9 +60,8 @@ public class UserRequestPK implements Serializable {
 			return true;
 		if (obj == null || getClass() != obj.getClass())
 			return false;
-		UserRequestPK other = (UserRequestPK) obj;
-		return Objects.equals(groupId, other.groupId) && Objects.equals(messageId, other.messageId)
-				&& Objects.equals(userId, other.userId);
+		RequestPK other = (RequestPK) obj;
+		return Objects.equals(groupId, other.groupId) && Objects.equals(messageId, other.messageId);
 	}
 
 }

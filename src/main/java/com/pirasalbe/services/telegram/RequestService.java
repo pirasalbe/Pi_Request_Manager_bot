@@ -1,12 +1,17 @@
 package com.pirasalbe.services.telegram;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.pirasalbe.models.Format;
 import com.pirasalbe.models.RequestStatus;
 import com.pirasalbe.models.Source;
 import com.pirasalbe.models.database.Request;
+import com.pirasalbe.models.database.RequestPK;
 import com.pirasalbe.repositories.RequestRepository;
 
 /**
@@ -16,15 +21,27 @@ import com.pirasalbe.repositories.RequestRepository;
  *
  */
 @Component
+@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 public class RequestService {
 
 	@Autowired
 	private RequestRepository repository;
 
-	public long insert(String content, Format format, Source source, String otherTags) {
+	public Request findByLink(String link) {
+		return repository.findByLink(link);
+	}
+
+	public Optional<Request> findById(Long messageId, Long groupId) {
+		return repository.findById(new RequestPK(messageId, groupId));
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void insert(Long messageId, Long groupId, String link, String content, Format format, Source source,
+			String otherTags) {
 		Request request = new Request();
 
-		// TODO get link and use it as id
+		request.setId(new RequestPK(messageId, groupId));
+		request.setLink(link);
 		request.setStatus(RequestStatus.NEW);
 		request.setContent(content);
 		request.setFormat(format);
@@ -32,8 +49,6 @@ public class RequestService {
 		request.setOtherTags(otherTags);
 
 		repository.save(request);
-
-		return request.getId();
 	}
 
 }

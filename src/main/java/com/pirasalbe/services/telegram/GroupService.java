@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.pirasalbe.models.FormatAllowed;
 import com.pirasalbe.models.database.Group;
@@ -18,6 +20,7 @@ import com.pirasalbe.repositories.GroupRepository;
  *
  */
 @Component
+@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 public class GroupService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GroupService.class);
@@ -29,6 +32,7 @@ public class GroupService {
 		return repository.findById(id);
 	}
 
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void insertIfNotExists(Long id) {
 		// insert
 		Optional<Group> optional = repository.findById(id);
@@ -47,6 +51,7 @@ public class GroupService {
 		}
 	}
 
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void deleteIfExists(Long id) {
 		if (repository.existsById(id)) {
 			repository.deleteById(id);
@@ -54,6 +59,7 @@ public class GroupService {
 		LOGGER.info("Deleted group: [{}]", id);
 	}
 
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public boolean updateRequestLimit(Long id, int requestLimit) {
 		boolean updated = false;
 
@@ -73,6 +79,7 @@ public class GroupService {
 		return updated;
 	}
 
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public boolean updateAudiobooksDaysWait(Long id, int daysWait) {
 		boolean updated = false;
 
@@ -92,6 +99,7 @@ public class GroupService {
 		return updated;
 	}
 
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public boolean updateEnglishAudiobooksDaysWait(Long id, int daysWait) {
 		boolean updated = false;
 
@@ -111,6 +119,7 @@ public class GroupService {
 		return updated;
 	}
 
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public boolean updateAllow(Long id, FormatAllowed allowed) {
 		boolean updated = false;
 

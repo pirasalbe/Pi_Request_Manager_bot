@@ -1,9 +1,12 @@
 package com.pirasalbe.services.telegram;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.pirasalbe.models.Format;
 import com.pirasalbe.models.LastRequestInfo;
@@ -11,6 +14,7 @@ import com.pirasalbe.models.Source;
 import com.pirasalbe.models.UserRequestRole;
 import com.pirasalbe.models.Validation;
 import com.pirasalbe.models.database.Group;
+import com.pirasalbe.models.database.Request;
 import com.pirasalbe.models.database.UserRequest;
 import com.pirasalbe.models.database.UserRequestPK;
 import com.pirasalbe.repositories.UserRequestRepository;
@@ -23,6 +27,7 @@ import com.pirasalbe.utils.DateUtils;
  *
  */
 @Component
+@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 public class UserRequestService {
 
 	@Autowired
@@ -89,18 +94,68 @@ public class UserRequestService {
 		return validation;
 	}
 
-	public void insertRequest(String content, Format format, Source source, String otherTags, Long userId, Long groupId,
-			LocalDateTime timestamp) {
-		long requestId = requestService.insert(content, format, source, otherTags);
+	/**
+	 * Check if the association already exists
+	 *
+	 * @param messageId Message Id of the request
+	 * @param groupId   Group where the request was sent
+	 * @param userId    User that sent the request
+	 * @param link      Link of the requested content
+	 * @return True if exists, False otherwise
+	 */
+	public boolean exists(Long messageId, Long groupId, Long userId, String link) {
+		boolean exists = false;
 
+		// get request by PK
+		Optional<Request> optional = requestService.findById(messageId, groupId);
+		if (optional.isPresent()) {
+			// exists, the user is the creator
+			exists = true;
+		} else {
+			// get request by UQ
+			Request request = requestService.findByLink(link);
+
+			if (request != null) {
+				// the request exists, check if association exists
+				exists = repository.existsById(new UserRequestPK(messageId, groupId, userId));
+			}
+		}
+
+		return exists;
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void insert(Long messageId, String content, String link, Format format, Source source, String otherTags,
+			Long userId, Long groupId, LocalDateTime timestamp) {
+		// prepare request
 		UserRequest userRequest = new UserRequest();
-		UserRequestPK primaryKey = new UserRequestPK(requestId, userId);
-		userRequest.setId(primaryKey);
 		userRequest.setGroupId(groupId);
-		userRequest.setRole(UserRequestRole.CREATOR);
 		userRequest.setDate(timestamp);
 
-		repository.save(userRequest);
+		Request request = requestService.findByLink(link);
+		// request doesn't exists
+		if (request == null) {
+			// new request
+			requestService.insert(messageId, groupId, link, content, format, source, otherTags);
+
+			UserRequestPK primaryKey = new UserRequestPK(messageId, groupId, userId);
+			userRequest.setId(primaryKey);
+			userRequest.setRole(UserRequestRole.CREATOR);
+
+			repository.save(userRequest);
+		} else {
+			// request exists
+			UserRequestPK primaryKey = new UserRequestPK(request.getId().getMessageId(), request.getId().getGroupId(),
+					userId);
+			if (!repository.existsById(primaryKey)) {
+
+				// create association
+				userRequest.setId(primaryKey);
+				userRequest.setRole(UserRequestRole.SUBSCRIBER);
+
+				repository.save(userRequest);
+			}
+		}
 	}
 
 }

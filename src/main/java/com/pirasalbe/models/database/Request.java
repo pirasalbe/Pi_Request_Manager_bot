@@ -4,8 +4,6 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
@@ -24,13 +22,14 @@ import com.pirasalbe.models.Source;
 public class Request {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+	private RequestPK id;
 
 	@Enumerated(EnumType.STRING)
 	private RequestStatus status;
 
 	private String content;
+
+	private String link;
 
 	@Enumerated(EnumType.STRING)
 	private Format format;
@@ -45,11 +44,11 @@ public class Request {
 		super();
 	}
 
-	public Long getId() {
+	public RequestPK getId() {
 		return id;
 	}
 
-	public void setId(Long id) {
+	public void setId(RequestPK id) {
 		this.id = id;
 	}
 
@@ -67,6 +66,14 @@ public class Request {
 
 	public void setContent(String content) {
 		this.content = content;
+	}
+
+	public String getLink() {
+		return link;
+	}
+
+	public void setLink(String link) {
+		this.link = link;
 	}
 
 	public Format getFormat() {
