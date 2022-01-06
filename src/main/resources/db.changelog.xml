@@ -55,7 +55,7 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 				<constraints nullable="false" />
 			</column>
 			<column name="LINK" type="varchar(512)">
-				<constraints unique="true" uniqueConstraintName="REQUEST_LINK_UQ" />
+				<constraints nullable="false" unique="true" uniqueConstraintName="REQUEST_LINK_UQ" />
 			</column>
 			<column name="FORMAT" type="varchar(64)">
 				<constraints nullable="false" />

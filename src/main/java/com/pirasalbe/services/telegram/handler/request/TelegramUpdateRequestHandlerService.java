@@ -43,14 +43,25 @@ public class TelegramUpdateRequestHandlerService extends AbstractTelegramRequest
 
 			Group group = optional.get();
 
-			// TODO check if exists
+			// check if exists
 			if (userRequestService.exists(message.messageId().longValue(), group.getId(), userId, link)) {
-				// TODO true -> updateRequest
+				// updateRequest
+				result = updateRequest(message, chatId, group, content, link);
 			} else {
 				// create new request
 				result = newRequest(message, chatId, group, content, link);
 			}
 		}
+
+		return result;
+	}
+
+	private TelegramHandlerResult updateRequest(Message message, Long chatId, Group group, String content,
+			String link) {
+		TelegramHandlerResult result = TelegramHandlerResult.noResponse();
+
+		// TODO check if the user is the creator
+		// TODO True -> update request
 
 		return result;
 	}
