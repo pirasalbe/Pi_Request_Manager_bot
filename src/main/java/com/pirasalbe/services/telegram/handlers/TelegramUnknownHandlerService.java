@@ -1,4 +1,4 @@
-package com.pirasalbe.services.telegram.handler;
+package com.pirasalbe.services.telegram.handlers;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

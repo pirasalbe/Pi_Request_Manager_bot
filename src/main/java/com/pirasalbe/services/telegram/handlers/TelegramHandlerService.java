@@ -1,4 +1,4 @@
-package com.pirasalbe.services.telegram.handler;
+package com.pirasalbe.services.telegram.handlers;
 
 import com.pengrad.telegrambot.model.Update;
 import com.pirasalbe.models.telegram.TelegramHandlerResult;

@@ -1,4 +1,4 @@
-package com.pirasalbe.services.telegram;
+package com.pirasalbe.services;
 
 import java.time.LocalDateTime;
 import java.util.Optional;

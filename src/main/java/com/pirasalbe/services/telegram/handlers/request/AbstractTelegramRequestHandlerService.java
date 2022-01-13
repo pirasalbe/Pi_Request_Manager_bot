@@ -1,4 +1,4 @@
-package com.pirasalbe.services.telegram.handler.request;
+package com.pirasalbe.services.telegram.handlers.request;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -18,9 +18,9 @@ import com.pirasalbe.models.Source;
 import com.pirasalbe.models.Validation;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.telegram.TelegramHandlerResult;
-import com.pirasalbe.services.telegram.GroupService;
-import com.pirasalbe.services.telegram.UserRequestService;
-import com.pirasalbe.services.telegram.handler.TelegramHandlerService;
+import com.pirasalbe.services.GroupService;
+import com.pirasalbe.services.UserRequestService;
+import com.pirasalbe.services.telegram.handlers.TelegramHandlerService;
 import com.pirasalbe.utils.DateUtils;
 
 /**

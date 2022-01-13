@@ -1,4 +1,4 @@
-package com.pirasalbe.services.telegram.handler;
+package com.pirasalbe.services.telegram.handlers;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -7,7 +7,7 @@ import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.telegram.TelegramHandlerResult;
-import com.pirasalbe.services.telegram.AdminService;
+import com.pirasalbe.services.AdminService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramCommandHandler;
 import com.pirasalbe.services.telegram.handlers.command.TelegramCommandHandlerServiceFactory;
 import com.pirasalbe.utils.TelegramUtils;

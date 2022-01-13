@@ -17,7 +17,7 @@ import com.pirasalbe.models.Pagination;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Admin;
 import com.pirasalbe.models.telegram.TelegramHandlerResult;
-import com.pirasalbe.services.telegram.AdminService;
+import com.pirasalbe.services.AdminService;
 import com.pirasalbe.utils.TelegramUtils;
 
 /**

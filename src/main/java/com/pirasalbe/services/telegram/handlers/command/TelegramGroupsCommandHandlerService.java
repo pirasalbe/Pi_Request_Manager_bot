@@ -15,7 +15,7 @@ import com.pirasalbe.models.FormatAllowed;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.telegram.TelegramHandlerResult;
-import com.pirasalbe.services.telegram.GroupService;
+import com.pirasalbe.services.GroupService;
 import com.pirasalbe.utils.TelegramUtils;
 
 /**
