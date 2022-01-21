@@ -23,8 +23,6 @@ public class TelegramHelpCommandHandlerService implements TelegramHandler {
 
 	public static final String COMMAND = "/help";
 
-	private static final UserRole ROLE = UserRole.USER;
-
 	@Autowired
 	private AdminService adminService;
 

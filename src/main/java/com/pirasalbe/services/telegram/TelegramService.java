@@ -5,8 +5,8 @@ import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.pirasalbe.configurations.TelegramConfiguration;
-import com.pirasalbe.models.telegram.handlers.conditions.TelegramCommand;
+import com.pirasalbe.services.telegram.handlers.TelegramCommandConditionFactory;
+import com.pirasalbe.services.telegram.handlers.command.TelegramAliveCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramHelpCommandHandlerService;
 
 /**
@@ -19,25 +19,33 @@ import com.pirasalbe.services.telegram.handlers.command.TelegramHelpCommandHandl
 public class TelegramService {
 
 	@Autowired
-	private TelegramConfiguration configuration;
-
-	@Autowired
 	private TelegramBotService bot;
 
 	/*
 	 * HANDLERS
 	 */
+
+	@Autowired
+	private TelegramCommandConditionFactory commandConditionFactory;
+
 	@Autowired
 	private TelegramHelpCommandHandlerService helpCommandHandlerService;
+
+	@Autowired
+	private TelegramAliveCommandHandlerService aliveCommandHandlerService;
 
 	@PostConstruct
 	public void initialize() {
 
-		String username = configuration.getUsername();
+		// help
+		bot.register(commandConditionFactory.onCommand(TelegramHelpCommandHandlerService.COMMAND),
+				helpCommandHandlerService);
+
+		// alive
+		bot.register(commandConditionFactory.onCommands(TelegramAliveCommandHandlerService.COMMANDS),
+				aliveCommandHandlerService);
 
 		// TODO add handlers
-		bot.register(new TelegramCommand(username, TelegramHelpCommandHandlerService.COMMAND),
-				helpCommandHandlerService);
 
 		bot.launch();
 

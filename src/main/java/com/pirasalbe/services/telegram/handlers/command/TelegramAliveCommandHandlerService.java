@@ -6,11 +6,10 @@ import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
+import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
-import com.pirasalbe.models.UserRole;
-import com.pirasalbe.models.telegram.TelegramHandlerResult;
-import com.pirasalbe.utils.TelegramUtils;
+import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 
 /**
  * Service to manage /alive and /start
@@ -19,28 +18,16 @@ import com.pirasalbe.utils.TelegramUtils;
  *
  */
 @Component
-public class TelegramAliveCommandHandlerService implements TelegramCommandHandler {
+public class TelegramAliveCommandHandlerService implements TelegramHandler {
 
-	private static final Set<String> COMMANDS = new HashSet<>(Arrays.asList("/start", "/alive"));
-
-	private static final UserRole ROLE = UserRole.USER;
+	public static final Set<String> COMMANDS = new HashSet<>(Arrays.asList("/start", "/alive"));
 
 	@Override
-	public boolean shouldHandle(Update update) {
-		return update.message() != null && COMMANDS.contains(TelegramUtils.getTextCommand(update));
-	}
-
-	@Override
-	public UserRole getRequiredRole() {
-		return ROLE;
-	}
-
-	@Override
-	public TelegramHandlerResult handleCommand(Update update) {
+	public void handle(TelegramBot bot, Update update) {
 		SendMessage sendMessage = new SendMessage(update.message().chat().id(), "Bot up!");
 		sendMessage.replyToMessageId(update.message().messageId());
 
-		return TelegramHandlerResult.withResponses(sendMessage);
+		bot.execute(sendMessage);
 	}
 
 }

@@ -26,9 +26,6 @@ public class TelegramCommandHandlerServiceFactory {
 	private TelegramAliveCommandHandlerService aliveCommandHandlerService;
 
 	@Autowired
-	private TelegramHelpCommandHandlerService helpCommandHandlerService;
-
-	@Autowired
 	private TelegramSuperAdminCommandHandlerService superAdminCommandHandlerService;
 
 	@Autowired
