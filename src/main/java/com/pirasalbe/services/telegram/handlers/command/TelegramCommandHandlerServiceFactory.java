@@ -38,7 +38,6 @@ public class TelegramCommandHandlerServiceFactory {
 	public void initializeHandlers() {
 		commandHandlers = new LinkedHashSet<>();
 		commandHandlers.add(aliveCommandHandlerService);
-		commandHandlers.add(helpCommandHandlerService);
 		commandHandlers.add(superAdminCommandHandlerService);
 		commandHandlers.add(groupsCommandHandlerService);
 	}

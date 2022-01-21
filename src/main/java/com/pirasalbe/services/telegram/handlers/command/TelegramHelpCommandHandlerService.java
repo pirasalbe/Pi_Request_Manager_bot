@@ -3,14 +3,14 @@ package com.pirasalbe.services.telegram.handlers.command;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Chat.Type;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.UserRole;
-import com.pirasalbe.models.telegram.TelegramHandlerResult;
+import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.AdminService;
-import com.pirasalbe.utils.TelegramUtils;
 
 /**
  * Service to manage /help
@@ -19,9 +19,9 @@ import com.pirasalbe.utils.TelegramUtils;
  *
  */
 @Component
-public class TelegramHelpCommandHandlerService implements TelegramCommandHandler {
+public class TelegramHelpCommandHandlerService implements TelegramHandler {
 
-	private static final String COMMAND = "/help";
+	public static final String COMMAND = "/help";
 
 	private static final UserRole ROLE = UserRole.USER;
 
@@ -29,17 +29,7 @@ public class TelegramHelpCommandHandlerService implements TelegramCommandHandler
 	private AdminService adminService;
 
 	@Override
-	public boolean shouldHandle(Update update) {
-		return update.message() != null && TelegramUtils.getTextCommand(update).equals(COMMAND);
-	}
-
-	@Override
-	public UserRole getRequiredRole() {
-		return ROLE;
-	}
-
-	@Override
-	public TelegramHandlerResult handleCommand(Update update) {
+	public void handle(TelegramBot bot, Update update) {
 		UserRole userRole = adminService.getAuthority(update.message().from().id());
 		Type chatType = update.message().chat().type();
 
@@ -66,7 +56,7 @@ public class TelegramHelpCommandHandlerService implements TelegramCommandHandler
 		sendMessage.parseMode(ParseMode.HTML);
 		sendMessage.replyToMessageId(update.message().messageId());
 
-		return TelegramHandlerResult.withResponses(sendMessage);
+		bot.execute(sendMessage);
 	}
 
 	private String getUserHelp(Type chatType) {
