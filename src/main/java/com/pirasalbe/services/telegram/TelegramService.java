@@ -21,6 +21,7 @@ import com.pirasalbe.services.telegram.handlers.command.TelegramGroupsCommandHan
 import com.pirasalbe.services.telegram.handlers.command.TelegramHelpCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramSuperAdminCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.request.TelegramNewRequestHandlerService;
+import com.pirasalbe.services.telegram.handlers.request.TelegramUpdateRequestHandlerService;
 
 /**
  * Service to manage the telegram logic
@@ -72,6 +73,9 @@ public class TelegramService {
 
 	@Autowired
 	private TelegramNewRequestHandlerService newRequestHandlerService;
+
+	@Autowired
+	private TelegramUpdateRequestHandlerService updateRequestHandlerService;
 
 	@PostConstruct
 	public void initialize() {
@@ -189,7 +193,11 @@ public class TelegramService {
 	}
 
 	private void registerRequestsHandlers() {
+		// TODO test
 		bot.register(newRequestHandlerService.geCondition(), newRequestHandlerService);
+		bot.register(updateRequestHandlerService.geCondition(), updateRequestHandlerService);
+
+		// TODO delete
 
 	}
 

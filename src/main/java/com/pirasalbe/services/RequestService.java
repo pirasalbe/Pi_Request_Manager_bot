@@ -51,4 +51,21 @@ public class RequestService {
 		repository.save(request);
 	}
 
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void update(Long messageId, Long groupId, String link, String content, Format format, Source source,
+			String otherTags) {
+		Optional<Request> optional = findById(messageId, groupId);
+
+		if (optional.isPresent()) {
+			Request request = optional.get();
+			request.setLink(link);
+			request.setContent(content);
+			request.setFormat(format);
+			request.setSource(source);
+			request.setOtherTags(otherTags);
+
+			repository.save(request);
+		}
+	}
+
 }

@@ -6,6 +6,7 @@ import java.util.Optional;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
+import com.pirasalbe.models.Format;
 import com.pirasalbe.models.RequestAssociationInfo;
 import com.pirasalbe.models.RequestAssociationInfo.Association;
 import com.pirasalbe.models.database.Group;
@@ -31,7 +32,6 @@ public class TelegramUpdateRequestHandlerService extends AbstractTelegramRequest
 		Message message = update.editedMessage();
 
 		Long chatId = message.chat().id();
-		LocalDateTime requestTime = DateUtils.integerToLocalDateTime(message.editDate());
 
 		// manage only requests from active groups
 		Optional<Group> optional = groupService.findById(chatId);
@@ -46,26 +46,28 @@ public class TelegramUpdateRequestHandlerService extends AbstractTelegramRequest
 			// check association
 			RequestAssociationInfo requestAssociationInfo = requestManagementService
 					.getRequestAssociationInfo(message.messageId().longValue(), group.getId(), userId, link);
+
 			if (requestAssociationInfo.requestExists()
 					&& requestAssociationInfo.getAssociation() == Association.CREATOR) {
+
 				// request exists and user is creator
-				// updateRequest
-				updateRequest(bot, message, chatId, requestTime, group, content, link);
+				updateRequest(message, group, content, link);
+
 			} else if (requestAssociationInfo.getAssociation() == Association.NONE) {
+
 				// request may or may not exists, but the association doesn't
-				// create new request
+				LocalDateTime requestTime = DateUtils.integerToLocalDateTime(message.editDate());
+
 				newRequest(bot, message, chatId, requestTime, group, content, link);
 			}
 		}
-
 	}
 
-	private void updateRequest(TelegramBot bot, Message message, Long chatId, LocalDateTime requestTime, Group group,
-			String content, String link) {
+	private void updateRequest(Message message, Group group, String content, String link) {
+		Format format = getFormat(content);
 
-		// TODO check if the user is the creator
-		// TODO True -> update request
-
+		requestService.update(message.messageId().longValue(), group.getId(), link, content, format,
+				getSource(content, format), getOtherTags(content));
 	}
 
 }
