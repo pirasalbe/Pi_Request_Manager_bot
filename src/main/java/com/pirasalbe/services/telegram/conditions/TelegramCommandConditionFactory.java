@@ -17,7 +17,7 @@ import com.pirasalbe.models.telegram.handlers.TelegramCondition;
  * @author pirasalbe
  *
  */
-@Component
+@Component("telegramCommandConditionFactory")
 public class TelegramCommandConditionFactory {
 
 	protected String username;
@@ -69,16 +69,18 @@ public class TelegramCommandConditionFactory {
 		String textCommand = null;
 
 		// look for a command entity
-		for (int i = 0; i < entities.length && textCommand == null; i++) {
-			MessageEntity entity = entities[i];
-			if (entity.type() == Type.bot_command) {
-				Integer offset = entity.offset();
-				textCommand = text.substring(offset, offset + entity.length());
+		if (entities != null) {
+			for (int i = 0; i < entities.length && textCommand == null; i++) {
+				MessageEntity entity = entities[i];
+				if (entity.type() == Type.bot_command) {
+					Integer offset = entity.offset();
+					textCommand = text.substring(offset, offset + entity.length());
 
-				// remove username
-				int index = textCommand.indexOf('@' + username);
-				if (index > 0) {
-					textCommand = textCommand.substring(1, index);
+					// remove username
+					int index = textCommand.indexOf('@' + username);
+					if (index > 0) {
+						textCommand = textCommand.substring(1, index);
+					}
 				}
 			}
 		}

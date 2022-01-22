@@ -16,7 +16,6 @@ import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.Pagination;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Admin;
-import com.pirasalbe.models.telegram.TelegramHandlerResult;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.AdminService;
 import com.pirasalbe.utils.TelegramUtils;
@@ -33,9 +32,10 @@ public class TelegramSuperAdminCommandHandlerService {
 	private static final String SOMETHING_WENT_WRONG = "Something went wrong";
 
 	public static final String COMMAND = "/admins";
-	private static final String COMMAND_LIST = COMMAND + " list";
-	private static final String COMMAND_ADD = COMMAND + " add";
-	private static final String COMMAND_REMOVE = COMMAND + " remove";
+	public static final String COMMAND_LIST = COMMAND + "_list";
+	public static final String COMMAND_COPY = COMMAND + "_copy";
+	public static final String COMMAND_ADD = COMMAND + "_add";
+	public static final String COMMAND_REMOVE = COMMAND + "_remove";
 
 	public static final UserRole ROLE = UserRole.SUPERADMIN;
 
@@ -59,28 +59,17 @@ public class TelegramSuperAdminCommandHandlerService {
 		};
 	}
 
-	public TelegramHandlerResult handleCommand(Update update) {
-		SendMessage sendMessage = null;
+	private Keyboard getAdminsKeyboard() {
+		InlineKeyboardButton listButton = new InlineKeyboardButton("List").callbackData(COMMAND_LIST);
+		InlineKeyboardButton addButton = new InlineKeyboardButton("Add").callbackData(COMMAND_ADD);
+		InlineKeyboardButton removeButton = new InlineKeyboardButton("Remove").callbackData(COMMAND_REMOVE);
 
-		String text = TelegramUtils.getText(update);
-		if (text.startsWith(COMMAND_LIST)) {
-			// navigate users
-			sendMessage = listUsers(update);
-		} else if (text.startsWith(COMMAND_ADD)) {
-			// add user
-			sendMessage = addUser(update);
-		} else if (text.startsWith(COMMAND_REMOVE)) {
-			// remove user
-			sendMessage = removeUser(update);
-		}
-
-		return TelegramHandlerResult.withResponses(sendMessage);
+		return new InlineKeyboardMarkup(new InlineKeyboardButton[] { listButton },
+				new InlineKeyboardButton[] { addButton, removeButton });
 	}
 
-	private SendMessage listUsers(Update update) {
-		SendMessage sendMessage = null;
-
-		if (update.callbackQuery() != null) {
+	public TelegramHandler listUsers() {
+		return (bot, update) -> {
 			int page = 0;
 			int size = 10;
 
@@ -92,12 +81,22 @@ public class TelegramSuperAdminCommandHandlerService {
 			}
 
 			Pagination<Admin> pagination = adminService.list(page, size);
-			sendMessage = getResponseFromPagination(update, page, size, pagination);
-		} else {
-			sendMessage = new SendMessage(TelegramUtils.getChatId(update), SOMETHING_WENT_WRONG);
-		}
+			SendMessage sendMessage = getResponseFromPagination(update, page, size, pagination);
 
-		return sendMessage;
+			bot.execute(sendMessage);
+		};
+	}
+
+	public TelegramHandler copyUser() {
+		return (bot, update) -> {
+			// get id from message
+			String id = update.callbackQuery().data().substring(COMMAND_COPY.length()).trim();
+
+			SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update), "<code>" + id + "</code>");
+			sendMessage.parseMode(ParseMode.HTML);
+
+			bot.execute(sendMessage);
+		};
 	}
 
 	private SendMessage getResponseFromPagination(Update update, int page, int size, Pagination<Admin> pagination) {
@@ -112,8 +111,9 @@ public class TelegramSuperAdminCommandHandlerService {
 		// prepare keyboard
 		InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
 		sendMessage.replyMarkup(keyboard);
-		pagination.getElements().forEach(admin -> keyboard.addRow(
-				new InlineKeyboardButton(admin.getId() + " - " + admin.getRole().name()).callbackData(COMMAND_REMOVE)));
+		pagination.getElements().forEach(
+				admin -> keyboard.addRow(new InlineKeyboardButton(admin.getId() + " - " + admin.getRole().name())
+						.callbackData(COMMAND_COPY + " " + admin.getId())));
 
 		// add navigation buttons
 		List<InlineKeyboardButton> navigationButtons = new ArrayList<>();
@@ -136,27 +136,29 @@ public class TelegramSuperAdminCommandHandlerService {
 		return sendMessage;
 	}
 
-	private SendMessage addUser(Update update) {
-		SendMessage sendMessage = null;
-
-		if (TelegramUtils.getText(update).equals(COMMAND_ADD)) {
+	public TelegramHandler addUserHelp() {
+		return (bot, update) -> {
 			// ask the id
 			StringBuilder builder = new StringBuilder(COMMAND_ADD).append("\n");
 			builder.append("Send the ID of the user and the role").append("\n");
 			String placeholder = "id " + UserRole.getRoles();
 			builder.append("Format: <code>").append(placeholder).append("</code>");
-			sendMessage = new SendMessage(TelegramUtils.getChatId(update), builder.toString());
+			SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update), builder.toString());
 			sendMessage.parseMode(ParseMode.HTML);
 			sendMessage.replyMarkup(new ForceReply().inputFieldPlaceholder(placeholder));
-		} else if (update.message() != null && update.message().replyToMessage() != null) {
-			// add user
-			sendMessage = addUser(TelegramUtils.getChatId(update), update.message().text(),
-					update.message().messageId());
-		} else {
-			sendMessage = new SendMessage(TelegramUtils.getChatId(update), SOMETHING_WENT_WRONG);
-		}
 
-		return sendMessage;
+			bot.execute(sendMessage);
+		};
+	}
+
+	public TelegramHandler addUser() {
+		return (bot, update) -> {
+			// add user
+			SendMessage sendMessage = addUser(TelegramUtils.getChatId(update), update.message().text(),
+					update.message().messageId());
+
+			bot.execute(sendMessage);
+		};
 	}
 
 	private SendMessage addUser(Long chatId, String text, Integer messageId) {
@@ -178,27 +180,29 @@ public class TelegramSuperAdminCommandHandlerService {
 		return sendMessage;
 	}
 
-	private SendMessage removeUser(Update update) {
-		SendMessage sendMessage = null;
-
-		if (TelegramUtils.getText(update).equals(COMMAND_REMOVE)) {
+	public TelegramHandler removeUserHelp() {
+		return (bot, update) -> {
 			// ask the id
 			StringBuilder builder = new StringBuilder(COMMAND_REMOVE).append("\n");
 			builder.append("Send the ID of the user to remove").append("\n");
 			String placeholder = "id";
 			builder.append("Format: <code>").append(placeholder).append("</code>");
-			sendMessage = new SendMessage(TelegramUtils.getChatId(update), builder.toString());
+			SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update), builder.toString());
 			sendMessage.parseMode(ParseMode.HTML);
 			sendMessage.replyMarkup(new ForceReply().inputFieldPlaceholder(placeholder));
-		} else if (update.message() != null && update.message().replyToMessage() != null) {
-			// remove user
-			sendMessage = removeUser(TelegramUtils.getChatId(update), update.message().text(),
-					update.message().messageId());
-		} else {
-			sendMessage = new SendMessage(TelegramUtils.getChatId(update), SOMETHING_WENT_WRONG);
-		}
 
-		return sendMessage;
+			bot.execute(sendMessage);
+		};
+	}
+
+	public TelegramHandler removeUser() {
+		return (bot, update) -> {
+			// remove user
+			SendMessage sendMessage = removeUser(TelegramUtils.getChatId(update), update.message().text(),
+					update.message().messageId());
+
+			bot.execute(sendMessage);
+		};
 	}
 
 	private SendMessage removeUser(Long chatId, String text, Integer messageId) {
@@ -212,15 +216,6 @@ public class TelegramSuperAdminCommandHandlerService {
 		sendMessage.replyToMessageId(messageId);
 
 		return sendMessage;
-	}
-
-	private Keyboard getAdminsKeyboard() {
-		InlineKeyboardButton listButton = new InlineKeyboardButton("List").callbackData(COMMAND_LIST);
-		InlineKeyboardButton addButton = new InlineKeyboardButton("Add").callbackData(COMMAND_ADD);
-		InlineKeyboardButton removeButton = new InlineKeyboardButton("Remove").callbackData(COMMAND_REMOVE);
-
-		return new InlineKeyboardMarkup(new InlineKeyboardButton[] { listButton },
-				new InlineKeyboardButton[] { addButton, removeButton });
 	}
 
 }
