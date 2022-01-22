@@ -1,19 +1,21 @@
 package com.pirasalbe.models.telegram.handlers;
 
+import java.util.Collection;
+
 public class TelegramUpdateHandler {
 
-	private TelegramCondition condition;
+	private Collection<TelegramCondition> conditions;
 
 	private TelegramHandler handler;
 
-	public TelegramUpdateHandler(TelegramCondition condition, TelegramHandler handler) {
+	public TelegramUpdateHandler(Collection<TelegramCondition> conditions, TelegramHandler handler) {
 		super();
-		this.condition = condition;
+		this.conditions = conditions;
 		this.handler = handler;
 	}
 
-	public TelegramCondition getCondition() {
-		return condition;
+	public Collection<TelegramCondition> getConditions() {
+		return conditions;
 	}
 
 	public TelegramHandler getHandler() {

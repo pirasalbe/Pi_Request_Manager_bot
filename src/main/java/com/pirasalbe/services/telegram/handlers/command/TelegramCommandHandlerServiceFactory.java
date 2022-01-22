@@ -23,9 +23,6 @@ public class TelegramCommandHandlerServiceFactory {
 	private Set<TelegramCommandHandler> commandHandlers;
 
 	@Autowired
-	private TelegramAliveCommandHandlerService aliveCommandHandlerService;
-
-	@Autowired
 	private TelegramSuperAdminCommandHandlerService superAdminCommandHandlerService;
 
 	@Autowired
@@ -34,8 +31,6 @@ public class TelegramCommandHandlerServiceFactory {
 	@PostConstruct
 	public void initializeHandlers() {
 		commandHandlers = new LinkedHashSet<>();
-		commandHandlers.add(aliveCommandHandlerService);
-		commandHandlers.add(superAdminCommandHandlerService);
 		commandHandlers.add(groupsCommandHandlerService);
 	}
 

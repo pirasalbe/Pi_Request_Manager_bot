@@ -1,5 +1,8 @@
 package com.pirasalbe.services.telegram;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,6 +69,16 @@ public class TelegramBotService {
 	 * @param handler   Handling logic
 	 */
 	public void register(TelegramCondition condition, TelegramHandler handler) {
+		register(Arrays.asList(condition), handler);
+	}
+
+	/**
+	 * Handle an update
+	 *
+	 * @param conditions Conditions to determine if it should handle the update
+	 * @param handler    Handling logic
+	 */
+	public void register(Collection<TelegramCondition> condition, TelegramHandler handler) {
 		registry.register(new TelegramUpdateHandler(condition, handler));
 	}
 

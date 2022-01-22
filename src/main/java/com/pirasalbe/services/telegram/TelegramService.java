@@ -1,13 +1,18 @@
 package com.pirasalbe.services.telegram;
 
+import java.util.Arrays;
+
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.pirasalbe.services.telegram.handlers.TelegramCommandConditionFactory;
+import com.pirasalbe.models.telegram.handlers.TelegramCondition;
+import com.pirasalbe.services.telegram.conditions.TelegramCommandConditionFactory;
+import com.pirasalbe.services.telegram.conditions.TelegramRoleConditionFactory;
 import com.pirasalbe.services.telegram.handlers.command.TelegramAliveCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramHelpCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.command.TelegramSuperAdminCommandHandlerService;
 
 /**
  * Service to manage the telegram logic
@@ -22,17 +27,27 @@ public class TelegramService {
 	private TelegramBotService bot;
 
 	/*
-	 * HANDLERS
+	 * CONDITIONS
 	 */
 
 	@Autowired
 	private TelegramCommandConditionFactory commandConditionFactory;
 
 	@Autowired
+	private TelegramRoleConditionFactory roleConditionFactory;
+
+	/*
+	 * HANDLERS
+	 */
+
+	@Autowired
 	private TelegramHelpCommandHandlerService helpCommandHandlerService;
 
 	@Autowired
 	private TelegramAliveCommandHandlerService aliveCommandHandlerService;
+
+	@Autowired
+	private TelegramSuperAdminCommandHandlerService superAdminCommandHandlerService;
 
 	@PostConstruct
 	public void initialize() {
@@ -45,9 +60,24 @@ public class TelegramService {
 		bot.register(commandConditionFactory.onCommands(TelegramAliveCommandHandlerService.COMMANDS),
 				aliveCommandHandlerService);
 
+		// super admin
+		registerSuperAdminHandlers();
+
 		// TODO add handlers
 
 		bot.launch();
+
+	}
+
+	private void registerSuperAdminHandlers() {
+		TelegramCondition superAdminRoleCondition = roleConditionFactory
+				.onRole(TelegramSuperAdminCommandHandlerService.ROLE);
+
+		// main command
+		bot.register(
+				Arrays.asList(superAdminRoleCondition,
+						commandConditionFactory.onCommand(TelegramSuperAdminCommandHandlerService.COMMAND)),
+				superAdminCommandHandlerService.showActions());
 
 	}
 

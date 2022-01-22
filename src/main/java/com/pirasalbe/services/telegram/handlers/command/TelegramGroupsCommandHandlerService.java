@@ -27,6 +27,8 @@ import com.pirasalbe.utils.TelegramUtils;
 @Component
 public class TelegramGroupsCommandHandlerService implements TelegramCommandHandler {
 
+	private static final String SOMETHING_WENT_WRONG = "Something went wrong";
+
 	static final String INFO_COMMAND = "/group_info";
 	static final String ENABLE_COMMAND = "/enable_group";
 	static final String DISABLE_COMMAND = "/disable_group";

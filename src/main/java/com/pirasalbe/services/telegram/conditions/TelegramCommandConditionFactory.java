@@ -1,4 +1,4 @@
-package com.pirasalbe.services.telegram.handlers;
+package com.pirasalbe.services.telegram.conditions;
 
 import java.util.Arrays;
 import java.util.Collection;

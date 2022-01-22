@@ -17,6 +17,7 @@ import com.pirasalbe.models.Pagination;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Admin;
 import com.pirasalbe.models.telegram.TelegramHandlerResult;
+import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.AdminService;
 import com.pirasalbe.utils.TelegramUtils;
 
@@ -27,31 +28,37 @@ import com.pirasalbe.utils.TelegramUtils;
  *
  */
 @Component
-public class TelegramSuperAdminCommandHandlerService implements TelegramCommandHandler {
+public class TelegramSuperAdminCommandHandlerService {
 
-	static final String COMMAND = "/admins";
+	private static final String SOMETHING_WENT_WRONG = "Something went wrong";
+
+	public static final String COMMAND = "/admins";
 	private static final String COMMAND_LIST = COMMAND + " list";
 	private static final String COMMAND_ADD = COMMAND + " add";
 	private static final String COMMAND_REMOVE = COMMAND + " remove";
 
-	private static final UserRole ROLE = UserRole.SUPERADMIN;
+	public static final UserRole ROLE = UserRole.SUPERADMIN;
 
 	@Autowired
 	private AdminService adminService;
 
-	@Override
-	public boolean shouldHandle(Update update) {
-		return TelegramUtils.getText(update).startsWith(COMMAND)
-				// allow only in PM
-				&& TelegramUtils.getChatId(update).equals(TelegramUtils.getUserId(update));
+	/**
+	 * Show a keyboard with available commands
+	 *
+	 * @param message Message received
+	 * @return Response
+	 */
+	public TelegramHandler showActions() {
+		return (bot, update) -> {
+			SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update), "What do you want to do?");
+			sendMessage.replyToMessageId(TelegramUtils.getMessageId(update));
+
+			sendMessage.replyMarkup(getAdminsKeyboard());
+
+			bot.execute(sendMessage);
+		};
 	}
 
-	@Override
-	public UserRole getRequiredRole() {
-		return ROLE;
-	}
-
-	@Override
 	public TelegramHandlerResult handleCommand(Update update) {
 		SendMessage sendMessage = null;
 
@@ -65,9 +72,6 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 		} else if (text.startsWith(COMMAND_REMOVE)) {
 			// remove user
 			sendMessage = removeUser(update);
-		} else {
-			// show keyboard
-			sendMessage = showActions(update);
 		}
 
 		return TelegramHandlerResult.withResponses(sendMessage);
@@ -206,21 +210,6 @@ public class TelegramSuperAdminCommandHandlerService implements TelegramCommandH
 		sendMessage = new SendMessage(chatId, "Admin " + adminId + " removed");
 
 		sendMessage.replyToMessageId(messageId);
-
-		return sendMessage;
-	}
-
-	/**
-	 * Show a keyboard with available commands
-	 *
-	 * @param message Message received
-	 * @return Response
-	 */
-	private SendMessage showActions(Update update) {
-		SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update), "What do you want to do?");
-		sendMessage.replyToMessageId(TelegramUtils.getMessageId(update));
-
-		sendMessage.replyMarkup(getAdminsKeyboard());
 
 		return sendMessage;
 	}
