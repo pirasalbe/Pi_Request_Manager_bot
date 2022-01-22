@@ -1,7 +1,5 @@
 package com.pirasalbe.utils;
 
-import com.pengrad.telegrambot.model.MessageEntity;
-import com.pengrad.telegrambot.model.MessageEntity.Type;
 import com.pengrad.telegrambot.model.Update;
 
 /**
@@ -14,29 +12,6 @@ public class TelegramUtils {
 
 	private TelegramUtils() {
 		super();
-	}
-
-	/**
-	 * Get text of a command
-	 *
-	 * @param update Message received
-	 * @return Text from message
-	 */
-	public static String getText(Update update) {
-		String result = null;
-
-		if (update.message() != null && update.message().replyToMessage() != null) {
-			// get the text from the reply to message
-			result = update.message().replyToMessage().text();
-		} else if (update.message() != null) {
-			// get the text from the message
-			result = update.message().text();
-		} else if (update.callbackQuery() != null) {
-			// get the text from the button data
-			result = update.callbackQuery().data();
-		}
-
-		return result;
 	}
 
 	/**
@@ -94,34 +69,6 @@ public class TelegramUtils {
 		}
 
 		return result;
-	}
-
-	/**
-	 * Get text command without username
-	 *
-	 * @param update Update received
-	 * @return Command without username
-	 */
-	public static String getTextCommand(Update update) {
-		String text = update.message().text();
-
-		boolean found = false;
-		MessageEntity[] entities = update.message().entities();
-		for (int i = 0; i < entities.length && !found; i++) {
-			MessageEntity entity = entities[i];
-			if (entity.type() == Type.bot_command) {
-				Integer offset = entity.offset();
-				text = text.substring(offset, offset + entity.length());
-				found = true;
-			}
-		}
-
-		int index = text.indexOf('@');
-		if (index > 0) {
-			text = text.substring(0, index);
-		}
-
-		return text;
 	}
 
 }

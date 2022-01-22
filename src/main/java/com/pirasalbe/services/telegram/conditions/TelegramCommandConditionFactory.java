@@ -79,7 +79,7 @@ public class TelegramCommandConditionFactory {
 					// remove username
 					int index = textCommand.indexOf('@' + username);
 					if (index > 0) {
-						textCommand = textCommand.substring(1, index);
+						textCommand = textCommand.substring(0, index);
 					}
 				}
 			}

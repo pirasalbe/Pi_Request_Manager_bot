@@ -80,26 +80,26 @@ public class TelegramHelpCommandHandlerService implements TelegramHandler {
 
 		message.append("<i>Group commands:</i>").append("\n");
 		if (chatType != Type.channel) {
-			message.append(TelegramGroupsCommandHandlerService.INFO_COMMAND).append(" - ").append("Show group settings")
+			message.append(TelegramGroupsCommandHandlerService.COMMAND_INFO).append(" - ").append("Show group settings")
 					.append("\n\n");
 
-			message.append(TelegramGroupsCommandHandlerService.ENABLE_COMMAND).append(" - ")
+			message.append(TelegramGroupsCommandHandlerService.COMMAND_ENABLE).append(" - ")
 					.append("Enable group management").append("\n");
-			message.append(TelegramGroupsCommandHandlerService.DISABLE_COMMAND).append(" - ")
+			message.append(TelegramGroupsCommandHandlerService.COMMAND_DISABLE).append(" - ")
 					.append("Disable group management").append("\n\n");
 
-			message.append(TelegramGroupsCommandHandlerService.REQUEST_LIMIT_COMMAND).append(" [number of request]")
+			message.append(TelegramGroupsCommandHandlerService.COMMAND_REQUEST_LIMIT).append(" [number of request]")
 					.append(" - ").append("Define the limit of requests per day to <i>[number of request]</i>")
 					.append("\n");
-			message.append(TelegramGroupsCommandHandlerService.AUDIOBOOK_DAYS_WAIT_COMMAND)
+			message.append(TelegramGroupsCommandHandlerService.COMMAND_AUDIOBOOK_DAYS_WAIT)
 					.append(" [number of days to wait]").append(" - ")
 					.append("Define the days to wait before requesting a new audiobook to <i>[number of days to wait]</i>")
 					.append("\n");
-			message.append(TelegramGroupsCommandHandlerService.ENGLISH_AUDIOBOOK_DAYS_WAIT_COMMAND)
+			message.append(TelegramGroupsCommandHandlerService.COMMAND_ENGLISH_AUDIOBOOK_DAYS_WAIT)
 					.append(" [number of days to wait]").append(" - ")
 					.append("Define the days to wait before requesting a new English audiobook to <i>[number of days to wait]</i>")
 					.append("\n");
-			message.append(TelegramGroupsCommandHandlerService.ALLOW_COMMAND).append(" [ebooks/audiobooks/both]")
+			message.append(TelegramGroupsCommandHandlerService.COMMAND_ALLOW).append(" [ebooks/audiobooks/both]")
 					.append(" - ").append("Define what can be requested <i>[ebooks/audiobooks/both]</i>");
 		} else {
 			message.append("Go in PM or a group to see the available commands.");

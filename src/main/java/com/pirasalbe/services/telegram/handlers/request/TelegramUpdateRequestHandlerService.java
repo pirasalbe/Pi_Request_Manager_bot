@@ -2,8 +2,6 @@ package com.pirasalbe.services.telegram.handlers.request;
 
 import java.util.Optional;
 
-import org.springframework.stereotype.Component;
-
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pirasalbe.models.database.Group;
@@ -15,7 +13,7 @@ import com.pirasalbe.models.telegram.TelegramHandlerResult;
  * @author pirasalbe
  *
  */
-@Component
+//@Component
 public class TelegramUpdateRequestHandlerService extends AbstractTelegramRequestHandlerService {
 
 	@Override

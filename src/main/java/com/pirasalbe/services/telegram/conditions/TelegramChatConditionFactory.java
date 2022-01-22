@@ -1,5 +1,8 @@
 package com.pirasalbe.services.telegram.conditions;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.model.Chat.Type;
@@ -23,13 +26,24 @@ public class TelegramChatConditionFactory {
 	 * @return TelegramCondition
 	 */
 	public TelegramCondition onChatType(Type type) {
+		return onChatTypes(Arrays.asList(type));
+	}
+
+	/**
+	 * Generates a condition on the specified chat type
+	 *
+	 * @param types Types of the chat
+	 *
+	 * @return TelegramCondition
+	 */
+	public TelegramCondition onChatTypes(Collection<Type> types) {
 		return update -> {
 			boolean asserted = false;
 
 			// commands only handles messages
 			Message message = update.message();
 			if (message != null) {
-				asserted = message.chat().type() == type;
+				asserted = types.contains(message.chat().type());
 			}
 
 			return asserted;

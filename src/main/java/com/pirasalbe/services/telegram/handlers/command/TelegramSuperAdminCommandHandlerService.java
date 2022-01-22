@@ -29,8 +29,6 @@ import com.pirasalbe.utils.TelegramUtils;
 @Component
 public class TelegramSuperAdminCommandHandlerService {
 
-	private static final String SOMETHING_WENT_WRONG = "Something went wrong";
-
 	public static final String COMMAND = "/admins";
 	public static final String COMMAND_LIST = COMMAND + "_list";
 	public static final String COMMAND_COPY = COMMAND + "_copy";
