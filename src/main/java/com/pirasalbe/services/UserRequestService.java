@@ -10,11 +10,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.pirasalbe.models.Format;
 import com.pirasalbe.models.LastRequestInfo;
-import com.pirasalbe.models.Source;
 import com.pirasalbe.models.UserRequestRole;
 import com.pirasalbe.models.Validation;
 import com.pirasalbe.models.database.Group;
-import com.pirasalbe.models.database.Request;
 import com.pirasalbe.models.database.UserRequest;
 import com.pirasalbe.models.database.UserRequestPK;
 import com.pirasalbe.repositories.UserRequestRepository;
@@ -33,17 +31,23 @@ public class UserRequestService {
 	@Autowired
 	private UserRequestRepository repository;
 
-	@Autowired
-	private RequestService requestService;
-
-	public Validation canRequest(Group group, Long userId, Format format) {
+	/**
+	 * Check if user can send a new request
+	 *
+	 * @param group       Group of the request
+	 * @param userId      User that wants to send a request
+	 * @param format      Format of what has been requested
+	 * @param requestTime Time of the request
+	 * @return Validation
+	 */
+	public Validation canRequest(Group group, Long userId, Format format, LocalDateTime requestTime) {
 		Validation validation = isFormatAllowed(group.isAllowEbooks(), group.isAllowAudiobooks(), format);
 
 		// check format allowed
 		if (validation.isValid()) {
 
 			// check request limit
-			long requests = repository.countUserRequestsInGroupOfToday(userId, DateUtils.getToday());
+			long requests = repository.countUserRequestsInGroupOfToday(userId, requestTime.minusDays(1));
 			if (requests < group.getRequestLimit()) {
 
 				// check audiobook limit
@@ -94,67 +98,35 @@ public class UserRequestService {
 		return validation;
 	}
 
-	/**
-	 * Check if the association already exists
-	 *
-	 * @param messageId Message Id of the request
-	 * @param groupId   Group where the request was sent
-	 * @param userId    User that sent the request
-	 * @param link      Link of the requested content
-	 * @return True if exists, False otherwise
-	 */
-	public boolean exists(Long messageId, Long groupId, Long userId, String link) {
-		boolean exists = false;
+	public boolean existsById(Long messageId, Long groupId, Long userId) {
+		return repository.existsById(new UserRequestPK(messageId, groupId, userId));
+	}
 
-		// get request by PK
-		Optional<Request> optional = requestService.findById(messageId, groupId);
-		if (optional.isPresent()) {
-			// exists, the user is the creator
-			exists = true;
-		} else {
-			// get request by UQ
-			Request request = requestService.findByLink(link);
-
-			if (request != null) {
-				// the request exists, check if association exists
-				exists = repository.existsById(new UserRequestPK(messageId, groupId, userId));
-			}
-		}
-
-		return exists;
+	public Optional<UserRequest> findById(Long messageId, Long groupId, Long userId) {
+		return repository.findById(new UserRequestPK(messageId, groupId, userId));
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void insert(Long messageId, String content, String link, Format format, Source source, String otherTags,
-			Long userId, Long groupId, LocalDateTime timestamp) {
-		// prepare request
+	public void insert(Long messageId, Long groupId, Long userId, UserRequestRole role, LocalDateTime requestDate) {
 		UserRequest userRequest = new UserRequest();
+		UserRequestPK primaryKey = new UserRequestPK(messageId, groupId, userId);
+		userRequest.setId(primaryKey);
 		userRequest.setGroupId(groupId);
-		userRequest.setDate(timestamp);
+		userRequest.setRole(role);
+		userRequest.setDate(requestDate);
 
-		Request request = requestService.findByLink(link);
-		// request doesn't exists
-		if (request == null) {
-			// new request
-			requestService.insert(messageId, groupId, link, content, format, source, otherTags);
+		repository.save(userRequest);
+	}
 
-			UserRequestPK primaryKey = new UserRequestPK(messageId, groupId, userId);
-			userRequest.setId(primaryKey);
-			userRequest.setRole(UserRequestRole.CREATOR);
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void updateDate(Long messageId, Long groupId, Long userId, LocalDateTime date) {
+		Optional<UserRequest> optional = findById(messageId, groupId, userId);
+
+		if (optional.isPresent()) {
+			UserRequest userRequest = optional.get();
+			userRequest.setDate(date);
 
 			repository.save(userRequest);
-		} else {
-			// request exists
-			UserRequestPK primaryKey = new UserRequestPK(request.getId().getMessageId(), request.getId().getGroupId(),
-					userId);
-			if (!repository.existsById(primaryKey)) {
-
-				// create association
-				userRequest.setId(primaryKey);
-				userRequest.setRole(UserRequestRole.SUBSCRIBER);
-
-				repository.save(userRequest);
-			}
 		}
 	}
 

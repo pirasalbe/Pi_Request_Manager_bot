@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.MessageEntity;
 import com.pengrad.telegrambot.model.MessageEntity.Type;
@@ -17,11 +18,10 @@ import com.pirasalbe.models.Format;
 import com.pirasalbe.models.Source;
 import com.pirasalbe.models.Validation;
 import com.pirasalbe.models.database.Group;
-import com.pirasalbe.models.telegram.TelegramHandlerResult;
+import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.GroupService;
+import com.pirasalbe.services.RequestManagementService;
 import com.pirasalbe.services.UserRequestService;
-import com.pirasalbe.services.telegram.handlers.TelegramHandlerService;
-import com.pirasalbe.utils.DateUtils;
 
 /**
  * Service to manage requests from users
@@ -29,7 +29,7 @@ import com.pirasalbe.utils.DateUtils;
  * @author pirasalbe
  *
  */
-public abstract class AbstractTelegramRequestHandlerService implements TelegramHandlerService {
+public abstract class AbstractTelegramRequestHandlerService implements TelegramHandler {
 
 	protected static final String REQUEST_TAG = "#request";
 	protected static final String EBOOK_TAG = "#ebook";
@@ -43,6 +43,9 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 			ARCHIVE_TAG, STORYTEL_TAG, SCRIBD_TAG);
 
 	@Autowired
+	protected RequestManagementService requestManagementService;
+
+	@Autowired
 	protected UserRequestService userRequestService;
 
 	@Autowired
@@ -53,41 +56,38 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		return text.toLowerCase().contains(REQUEST_TAG);
 	}
 
-	protected TelegramHandlerResult newRequest(Message message, Long chatId, Group group) {
+	protected void newRequest(TelegramBot bot, Message message, Long chatId, LocalDateTime requestTime, Group group) {
 		String content = message.text();
 		String link = getLink(content, message.entities());
 
-		return newRequest(message, chatId, group, content, link);
+		newRequest(bot, message, chatId, requestTime, group, content, link);
 	}
 
-	protected TelegramHandlerResult newRequest(Message message, Long chatId, Group group, String content, String link) {
-		TelegramHandlerResult result = TelegramHandlerResult.noResponse();
-
+	protected void newRequest(TelegramBot bot, Message message, Long chatId, LocalDateTime requestTime, Group group,
+			String content, String link) {
 		Long userId = message.from().id();
-		Integer timestampUnix = message.date();
-		LocalDateTime timestamp = DateUtils.longToLocalDateTime(timestampUnix);
 
 		Format format = getFormat(content);
 
 		// check if user can request
-		Validation validation = userRequestService.canRequest(group, userId, format);
+		Validation validation = userRequestService.canRequest(group, userId, format, requestTime);
 		if (validation.isValid()) {
 			// create request
 			Source source = getSource(content, format);
 			String otherTags = getOtherTags(content);
 
-			userRequestService.insert(message.messageId().longValue(), content, link, format, source, otherTags, userId,
-					group.getId(), timestamp);
+			requestManagementService.manageRequest(message.messageId().longValue(), content, link, format, source,
+					otherTags, userId, group.getId(), requestTime);
 		} else {
+			// notify user of the error
 			DeleteMessage deleteMessage = new DeleteMessage(chatId, message.messageId());
 			SendMessage sendMessage = new SendMessage(chatId,
 					"<a href=\"tg://user?id=" + userId + "\">" + userId + "</a>. " + validation.getReason());
 			sendMessage.parseMode(ParseMode.HTML);
 
-			result = TelegramHandlerResult.withResponses(deleteMessage, sendMessage);
+			bot.execute(deleteMessage);
+			bot.execute(sendMessage);
 		}
-
-		return result;
 	}
 
 	protected String getLink(String content, MessageEntity[] entities) {

@@ -20,6 +20,7 @@ import com.pirasalbe.services.telegram.handlers.command.TelegramAliveCommandHand
 import com.pirasalbe.services.telegram.handlers.command.TelegramGroupsCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramHelpCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramSuperAdminCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.request.TelegramNewRequestHandlerService;
 
 /**
  * Service to manage the telegram logic
@@ -69,6 +70,9 @@ public class TelegramService {
 	@Autowired
 	private TelegramGroupsCommandHandlerService groupsCommandHandlerService;
 
+	@Autowired
+	private TelegramNewRequestHandlerService newRequestHandlerService;
+
 	@PostConstruct
 	public void initialize() {
 
@@ -86,7 +90,8 @@ public class TelegramService {
 		// groups
 		registerGroupsHandlers();
 
-		// TODO add handlers
+		// requests
+		registerRequestsHandlers();
 
 		bot.launch();
 
@@ -181,6 +186,11 @@ public class TelegramService {
 				Arrays.asList(groupChatCondition, groupRoleCondition,
 						commandConditionFactory.onCommand(TelegramGroupsCommandHandlerService.COMMAND_ALLOW)),
 				groupsCommandHandlerService.updateAllow());
+	}
+
+	private void registerRequestsHandlers() {
+		bot.register(newRequestHandlerService.geCondition(), newRequestHandlerService);
+
 	}
 
 }

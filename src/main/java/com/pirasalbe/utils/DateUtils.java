@@ -22,7 +22,7 @@ public class DateUtils {
 		super();
 	}
 
-	public static LocalDateTime longToLocalDateTime(Integer timestampUnix) {
+	public static LocalDateTime integerToLocalDateTime(Integer timestampUnix) {
 		return LocalDateTime.ofInstant(Instant.ofEpochSecond(timestampUnix), ZONE_ID);
 	}
 

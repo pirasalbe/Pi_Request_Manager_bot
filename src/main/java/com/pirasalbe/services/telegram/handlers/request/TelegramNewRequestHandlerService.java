@@ -1,11 +1,16 @@
 package com.pirasalbe.services.telegram.handlers.request;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
+import org.springframework.stereotype.Component;
+
+import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pirasalbe.models.database.Group;
-import com.pirasalbe.models.telegram.TelegramHandlerResult;
+import com.pirasalbe.models.telegram.handlers.TelegramCondition;
+import com.pirasalbe.utils.DateUtils;
 
 /**
  * Service to manage requests from users
@@ -13,29 +18,30 @@ import com.pirasalbe.models.telegram.TelegramHandlerResult;
  * @author pirasalbe
  *
  */
-//@Component
+@Component
 public class TelegramNewRequestHandlerService extends AbstractTelegramRequestHandlerService {
 
-	@Override
-	public boolean shouldHandle(Update update) {
+	public TelegramCondition geCondition() {
 		// messages with request
-		return update.message() != null && hasRequestTag(update.message().text());
+		return update -> update.message() != null && hasRequestTag(update.message().text());
 	}
 
 	@Override
-	public void handleUpdate(Update update) {
+	public void handle(TelegramBot bot, Update update) {
 		Message message = update.message();
-		TelegramHandlerResult result = TelegramHandlerResult.noResponse();
-
 		Long chatId = message.chat().id();
+
+		int date = message.date();
+		if (message.forwardDate() != null) {
+			date = message.forwardDate();
+		}
+		LocalDateTime requestTime = DateUtils.integerToLocalDateTime(date);
 
 		// manage only requests from active groups
 		Optional<Group> optional = groupService.findById(chatId);
 		if (optional.isPresent()) {
-			result = newRequest(message, chatId, optional.get());
+			newRequest(bot, message, chatId, requestTime, optional.get());
 		}
-
-		return result;
 	}
 
 }
