@@ -14,10 +14,11 @@ import com.pengrad.telegrambot.model.MessageEntity.Type;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
-import com.pirasalbe.models.Format;
-import com.pirasalbe.models.Source;
+import com.pirasalbe.models.RequestResult;
 import com.pirasalbe.models.Validation;
 import com.pirasalbe.models.database.Group;
+import com.pirasalbe.models.request.Format;
+import com.pirasalbe.models.request.Source;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
@@ -80,13 +81,30 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 			Source source = getSource(content, format);
 			String otherTags = getOtherTags(content);
 
-			requestManagementService.manageRequest(message.messageId().longValue(), content, link, format, source,
-					otherTags, userId, group.getId(), requestTime);
+			manageRequest(bot, chatId, message.messageId(), requestTime, group.getId(), content, link, userId, format,
+					source, otherTags);
 		} else {
 			// notify user of the error
 			DeleteMessage deleteMessage = new DeleteMessage(chatId, message.messageId());
 			SendMessage sendMessage = new SendMessage(chatId,
 					"<a href=\"tg://user?id=" + userId + "\">" + userId + "</a>. " + validation.getReason());
+			sendMessage.parseMode(ParseMode.HTML);
+
+			bot.execute(deleteMessage);
+			bot.execute(sendMessage);
+		}
+	}
+
+	private void manageRequest(TelegramBot bot, Long chatId, Integer messageId, LocalDateTime requestTime, Long groupId,
+			String content, String link, Long userId, Format format, Source source, String otherTags) {
+		RequestResult requestResult = requestManagementService.manageRequest(messageId.longValue(), content, link,
+				format, source, otherTags, userId, groupId, requestTime);
+
+		if (requestResult == RequestResult.REQUEST_REPEATED_TOO_EARLY) {
+			// notify user of the error
+			DeleteMessage deleteMessage = new DeleteMessage(chatId, messageId);
+			SendMessage sendMessage = new SendMessage(chatId, "<a href=\"tg://user?id=" + userId + "\">" + userId
+					+ "</a>. You have to wait 48 hours before repeating a request.");
 			sendMessage.parseMode(ParseMode.HTML);
 
 			bot.execute(deleteMessage);

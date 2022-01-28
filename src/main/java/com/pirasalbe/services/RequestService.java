@@ -7,11 +7,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.pirasalbe.models.Format;
-import com.pirasalbe.models.RequestStatus;
-import com.pirasalbe.models.Source;
 import com.pirasalbe.models.database.Request;
 import com.pirasalbe.models.database.RequestPK;
+import com.pirasalbe.models.request.Format;
+import com.pirasalbe.models.request.RequestStatus;
+import com.pirasalbe.models.request.Source;
 import com.pirasalbe.repositories.RequestRepository;
 
 /**

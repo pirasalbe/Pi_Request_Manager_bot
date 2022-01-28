@@ -46,6 +46,9 @@ public class TelegramUtils {
 		if (update.message() != null) {
 			// get from message
 			result = update.message().from().id();
+		} else if (update.editedMessage() != null) {
+			// get from message
+			result = update.editedMessage().from().id();
 		} else if (update.callbackQuery() != null) {
 			// get the text from keyboard response
 			result = update.callbackQuery().from().id();

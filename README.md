@@ -48,5 +48,9 @@ curl localhost:8080/actuator/health
 #### Required Variables
 
 - `bot.token`: Create a bot using [@BotFather](https://telegram.dog/BotFather), and get the Telegram API token.
+- `bot.username`: Bot username (without @).
+- `spring.datasource.url`: url to connect to the PostgreSQL instance
+- `spring.datasource.username`: username to authenticate to the PostgreSQL instance
+- `spring.datasource.password`: password to authenticate to the PostgreSQL instance
 
 #### Optional Variables

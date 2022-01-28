@@ -3,13 +3,15 @@ package com.pirasalbe.services.telegram.handlers.request;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import org.springframework.stereotype.Component;
+
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
-import com.pirasalbe.models.Format;
 import com.pirasalbe.models.RequestAssociationInfo;
 import com.pirasalbe.models.RequestAssociationInfo.Association;
 import com.pirasalbe.models.database.Group;
+import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 import com.pirasalbe.utils.DateUtils;
 

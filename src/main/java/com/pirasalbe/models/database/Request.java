@@ -7,9 +7,9 @@ import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
-import com.pirasalbe.models.Format;
-import com.pirasalbe.models.RequestStatus;
-import com.pirasalbe.models.Source;
+import com.pirasalbe.models.request.Format;
+import com.pirasalbe.models.request.RequestStatus;
+import com.pirasalbe.models.request.Source;
 
 /**
  * Request

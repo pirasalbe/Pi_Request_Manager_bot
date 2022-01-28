@@ -193,12 +193,8 @@ public class TelegramService {
 	}
 
 	private void registerRequestsHandlers() {
-		// TODO test
 		bot.register(newRequestHandlerService.geCondition(), newRequestHandlerService);
 		bot.register(updateRequestHandlerService.geCondition(), updateRequestHandlerService);
-
-		// TODO delete
-
 	}
 
 }

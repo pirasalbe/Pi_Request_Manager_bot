@@ -8,13 +8,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.pirasalbe.models.Format;
 import com.pirasalbe.models.LastRequestInfo;
 import com.pirasalbe.models.UserRequestRole;
 import com.pirasalbe.models.Validation;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.database.UserRequest;
 import com.pirasalbe.models.database.UserRequestPK;
+import com.pirasalbe.models.request.Format;
 import com.pirasalbe.repositories.UserRequestRepository;
 import com.pirasalbe.utils.DateUtils;
 
