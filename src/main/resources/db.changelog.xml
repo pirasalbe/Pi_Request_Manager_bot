@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:pro="http://www.liquibase.org/xml/ns/pro" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd
+http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-4.1.xsd">
+
+	<changeSet id="1 - Create Admin" author="pirasalbe">
+		<createTable tableName="ADMINS">
+			<column name="ID" type="bigint">
+				<constraints primaryKey="true" primaryKeyName="ADMIN_PK" />
+			</column>
+			<column name="ROLE" type="varchar(64)">
+				<constraints nullable="false" />
+			</column>
+			<column name="BACKUP" type="boolean" defaultValueBoolean="false" />
+		</createTable>
+	</changeSet>
+
+	<changeSet id="2 - Create Groups" author="pirasalbe">
+		<createTable tableName="GROUPS">
+			<column name="ID" type="bigint">
+				<constraints primaryKey="true" primaryKeyName="GROUP_PK" />
+			</column>
+			<column name="REQUEST_LIMIT" type="smallint" defaultValue="1">
+				<constraints nullable="false" />
+			</column>
+			<column name="AUDIOBOOKS_DAYS_WAIT" type="smallint" defaultValue="15">
+				<constraints nullable="false" />
+			</column>
+			<column name="ENGLISH_AUDIOBOOKS_DAYS_WAIT" type="smallint" defaultValue="8">
+				<constraints nullable="false" />
+			</column>
+			<column name="ALLOW_EBOOKS" type="boolean" defaultValueBoolean="true">
+				<constraints nullable="false" />
+			</column>
+			<column name="ALLOW_AUDIOBOOKS" type="boolean" defaultValueBoolean="true">
+				<constraints nullable="false" />
+			</column>
+		</createTable>
+	</changeSet>
+
+	<changeSet id="3 - Requests" author="pirasalbe">
+		<createTable tableName="REQUESTS">
+			<column name="MESSAGE_ID" type="bigint">
+				<constraints primaryKey="true" primaryKeyName="REQUEST_PK" />
+			</column>
+			<column name="GROUP_ID" type="bigint">
+				<constraints primaryKey="true" primaryKeyName="REQUEST_PK" foreignKeyName="REQUEST_GROUP_FK" references="GROUPS(ID)" />
+			</column>
+			<column name="STATUS" type="varchar(64)">
+				<constraints nullable="false" />
+			</column>
+			<column name="CONTENT" type="text">
+				<constraints nullable="false" />
+			</column>
+			<column name="LINK" type="varchar(512)">
+				<constraints nullable="false" unique="true" uniqueConstraintName="REQUEST_LINK_UQ" />
+			</column>
+			<column name="FORMAT" type="varchar(64)">
+				<constraints nullable="false" />
+			</column>
+			<column name="SOURCE" type="varchar(64)">
+				<constraints nullable="false" />
+			</column>
+			<column name="OTHER_TAGS" type="varchar(255)" />
+		</createTable>
+	</changeSet>
+
+	<changeSet id="4 - User Requests" author="pirasalbe">
+		<createTable tableName="USER_REQUESTS">
+			<column name="REQUEST_MESSAGE_ID" type="bigint">
+				<constraints primaryKey="true" primaryKeyName="USER_REQUEST_PK" />
+			</column>
+			<column name="REQUEST_GROUP_ID" type="bigint">
+				<constraints nullable="false" primaryKeyName="USER_REQUEST_PK" />
+			</column>
+			<column name="USER_ID" type="bigint">
+				<constraints primaryKey="true" primaryKeyName="USER_REQUEST_PK" />
+			</column>
+			<column name="GROUP_ID" type="bigint">
+				<constraints nullable="false" foreignKeyName="REQUEST_GROUP_FK" references="GROUPS(ID)" />
+			</column>
+			<column name="ROLE" type="text">
+				<constraints nullable="false" />
+			</column>
+			<column name="DATE" type="timestamp">
+				<constraints nullable="false" />
+			</column>
+		</createTable>
+		<createIndex indexName="USER_GROUP_DATE" tableName="USER_REQUESTS">
+			<column name="USER_ID"/>
+			<column name="GROUP_ID"/>
+			<column name="DATE"/>
+		</createIndex>
+		<addForeignKeyConstraint baseColumnNames="REQUEST_MESSAGE_ID,REQUEST_GROUP_ID" baseTableName="USER_REQUESTS" constraintName="REQUEST_ID_FK" referencedColumnNames="MESSAGE_ID,GROUP_ID" referencedTableName="REQUESTS" validate="true"/>
+	</changeSet>
+
+</databaseChangeLog>
