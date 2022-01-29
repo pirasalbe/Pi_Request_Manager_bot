@@ -11,6 +11,7 @@ import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.MessageEntity;
 import com.pengrad.telegrambot.model.MessageEntity.Type;
+import com.pengrad.telegrambot.model.User;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
@@ -24,6 +25,7 @@ import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
 import com.pirasalbe.services.RequestService;
 import com.pirasalbe.services.UserRequestService;
+import com.pirasalbe.utils.TelegramUtils;
 
 /**
  * Service to manage requests from users
@@ -78,16 +80,11 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		Validation validation = userRequestService.canRequest(group, userId, format, requestTime);
 		if (validation.isValid()) {
 			// create request
-			Source source = getSource(content, format);
-			String otherTags = getOtherTags(content);
-
-			manageRequest(bot, chatId, message.messageId(), requestTime, group.getId(), content, link, userId, format,
-					source, otherTags);
+			manageRequest(bot, message, chatId, message.messageId(), requestTime, group.getId(), content, link, format);
 		} else {
 			// notify user of the error
 			DeleteMessage deleteMessage = new DeleteMessage(chatId, message.messageId());
-			SendMessage sendMessage = new SendMessage(chatId,
-					"<a href=\"tg://user?id=" + userId + "\">" + userId + "</a>. " + validation.getReason());
+			SendMessage sendMessage = new SendMessage(chatId, tagUser(message) + validation.getReason());
 			sendMessage.parseMode(ParseMode.HTML);
 
 			bot.execute(deleteMessage);
@@ -95,16 +92,27 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		}
 	}
 
-	private void manageRequest(TelegramBot bot, Long chatId, Integer messageId, LocalDateTime requestTime, Long groupId,
-			String content, String link, Long userId, Format format, Source source, String otherTags) {
+	private String tagUser(Message message) {
+		User user = message.from();
+
+		return "<a href=\"tg://user?id=" + user.id() + "\">" + TelegramUtils.getUserName(user) + "</a>. ";
+	}
+
+	private void manageRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,
+			LocalDateTime requestTime, Long groupId, String content, String link, Format format) {
+		Long userId = message.from().id();
+
+		Source source = getSource(content, format);
+		String otherTags = getOtherTags(content);
+
 		RequestResult requestResult = requestManagementService.manageRequest(messageId.longValue(), content, link,
 				format, source, otherTags, userId, groupId, requestTime);
 
 		if (requestResult == RequestResult.REQUEST_REPEATED_TOO_EARLY) {
 			// notify user of the error
 			DeleteMessage deleteMessage = new DeleteMessage(chatId, messageId);
-			SendMessage sendMessage = new SendMessage(chatId, "<a href=\"tg://user?id=" + userId + "\">" + userId
-					+ "</a>. You have to wait 48 hours before repeating a request.");
+			SendMessage sendMessage = new SendMessage(chatId,
+					tagUser(message) + "You have to wait 48 hours before repeating a request.");
 			sendMessage.parseMode(ParseMode.HTML);
 
 			bot.execute(deleteMessage);
