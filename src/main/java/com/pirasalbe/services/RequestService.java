@@ -68,4 +68,9 @@ public class RequestService {
 		}
 	}
 
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void deleteByGroupId(Long groupId) {
+		repository.deleteByGroupId(groupId);
+	}
+
 }

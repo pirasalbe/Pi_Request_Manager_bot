@@ -46,21 +46,17 @@ public class UserRequestService {
 		// check format allowed
 		if (validation.isValid()) {
 
-			// check request limit
-			long requests = repository.countUserRequestsInGroupOfToday(userId, requestTime.minusDays(1));
-			if (requests < group.getRequestLimit()) {
+			// check request limit for ebooks
+			if (format.equals(Format.EBOOK)) {
+				validation = isValidEbookRequest(userId, group.getRequestLimit(), requestTime);
+
+			} else if (format.equals(Format.AUDIOBOOK)) {
 
 				// check audiobook limit
-				if (format.equals(Format.AUDIOBOOK)) {
-					LastRequestInfo lastRequestInfo = repository.getLastAudiobookRequestOfUserInGroup(userId);
+				LastRequestInfo lastRequestInfo = repository.getLastAudiobookRequestOfUserInGroup(userId);
 
-					validation = isValidAudiobookRequest(group.getAudiobooksDaysWait(),
-							group.getEnglishAudiobooksDaysWait(), lastRequestInfo);
-				}
-
-			} else {
-				validation = Validation.invalid("You’re only allowed to request up to " + group.getRequestLimit()
-						+ " book" + (group.getRequestLimit() > 1 ? "s" : "") + " per day. Come back again tomorrow.");
+				validation = isValidAudiobookRequest(group.getAudiobooksDaysWait(),
+						group.getEnglishAudiobooksDaysWait(), lastRequestInfo);
 			}
 		}
 
@@ -98,6 +94,19 @@ public class UserRequestService {
 		return validation;
 	}
 
+	private Validation isValidEbookRequest(Long userId, Integer requestLimit, LocalDateTime requestTime) {
+		Validation validation = Validation.valid();
+
+		long requests = repository.countUserEbookRequestsInGroupOfToday(userId, requestTime.minusDays(1));
+		// it's invalid if already reached the limit
+		if (requests >= requestLimit) {
+			validation = Validation.invalid("You’re only allowed to request up to " + requestLimit + " book"
+					+ (requestLimit > 1 ? "s" : "") + " per day. Come back again tomorrow.");
+		}
+
+		return validation;
+	}
+
 	public boolean existsById(Long messageId, Long groupId, Long userId) {
 		return repository.existsById(new UserRequestPK(messageId, groupId, userId));
 	}
@@ -128,6 +137,11 @@ public class UserRequestService {
 
 			repository.save(userRequest);
 		}
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void deleteByGroupId(Long groupId) {
+		repository.deleteByGroupId(groupId);
 	}
 
 }

@@ -58,7 +58,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 
 	protected boolean hasRequestTag(String text) {
 		// messages with request tag
-		return text.toLowerCase().contains(REQUEST_TAG);
+		return text != null && text.toLowerCase().contains(REQUEST_TAG);
 	}
 
 	protected void newRequest(TelegramBot bot, Message message, Long chatId, LocalDateTime requestTime, Group group) {

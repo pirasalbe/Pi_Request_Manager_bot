@@ -28,6 +28,9 @@ public class GroupService {
 	@Autowired
 	private GroupRepository repository;
 
+	@Autowired
+	private RequestManagementService requestManagementService;
+
 	public Optional<Group> findById(Long id) {
 		return repository.findById(id);
 	}
@@ -54,6 +57,7 @@ public class GroupService {
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void deleteIfExists(Long id) {
 		if (repository.existsById(id)) {
+			requestManagementService.deleteGroupRequests(id);
 			repository.deleteById(id);
 		}
 		LOGGER.info("Deleted group: [{}]", id);

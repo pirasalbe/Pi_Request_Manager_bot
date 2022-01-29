@@ -138,4 +138,10 @@ public class RequestManagementService {
 		return result;
 	}
 
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void deleteGroupRequests(Long groupId) {
+		userRequestService.deleteByGroupId(groupId);
+		requestService.deleteByGroupId(groupId);
+	}
+
 }
