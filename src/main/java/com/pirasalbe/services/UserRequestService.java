@@ -3,6 +3,8 @@ package com.pirasalbe.services;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -27,6 +29,8 @@ import com.pirasalbe.utils.DateUtils;
 @Component
 @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 public class UserRequestService {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(UserRequestService.class);
 
 	@Autowired
 	private UserRequestRepository repository;
@@ -55,7 +59,7 @@ public class UserRequestService {
 				// check audiobook limit
 				LastRequestInfo lastRequestInfo = repository.getLastAudiobookRequestOfUserInGroup(userId);
 
-				validation = isValidAudiobookRequest(group.getAudiobooksDaysWait(),
+				validation = isValidAudiobookRequest(userId, group.getAudiobooksDaysWait(),
 						group.getEnglishAudiobooksDaysWait(), lastRequestInfo);
 			}
 		}
@@ -75,8 +79,8 @@ public class UserRequestService {
 		return validation;
 	}
 
-	private Validation isValidAudiobookRequest(Integer audiobooksDaysWait, Integer englishAudiobooksDaysWait,
-			LastRequestInfo lastRequestInfo) {
+	private Validation isValidAudiobookRequest(Long userId, Integer audiobooksDaysWait,
+			Integer englishAudiobooksDaysWait, LastRequestInfo lastRequestInfo) {
 		Validation validation = Validation.valid();
 
 		if (lastRequestInfo != null) {
@@ -86,6 +90,10 @@ public class UserRequestService {
 			// last audiobook
 			LocalDateTime nextValidRequest = lastRequestInfo.getDate().plusDays(days);
 			if (LocalDateTime.now().isBefore(nextValidRequest)) {
+				LOGGER.warn("User {}, last audiobook request {} (tags {}) and next valid request {}", userId,
+						lastRequestInfo.getDate(),
+						lastRequestInfo.getOtherTags() != null ? lastRequestInfo.getOtherTags() : "", nextValidRequest);
+
 				validation = Validation.invalid("You’ve already requested an audiobook. Come back again on "
 						+ DateUtils.formatDate(nextValidRequest) + ".");
 			}
@@ -97,9 +105,12 @@ public class UserRequestService {
 	private Validation isValidEbookRequest(Long userId, Integer requestLimit, LocalDateTime requestTime) {
 		Validation validation = Validation.valid();
 
-		long requests = repository.countUserEbookRequestsInGroupOfToday(userId, requestTime.minusDays(1));
+		LocalDateTime last24Hours = requestTime.minusDays(1);
+		long requests = repository.countUserEbookRequestsOfToday(userId, last24Hours);
 		// it's invalid if already reached the limit
 		if (requests >= requestLimit) {
+			LOGGER.warn("User {}, ebook requests {} since {}", userId, requests, last24Hours);
+
 			validation = Validation.invalid("You’re only allowed to request up to " + requestLimit + " book"
 					+ (requestLimit > 1 ? "s" : "") + " per day. Come back again tomorrow.");
 		}

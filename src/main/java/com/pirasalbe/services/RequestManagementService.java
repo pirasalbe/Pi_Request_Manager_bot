@@ -3,6 +3,8 @@ package com.pirasalbe.services;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -25,6 +27,8 @@ import com.pirasalbe.models.request.Source;
 @Component
 @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 public class RequestManagementService {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(RequestManagementService.class);
 
 	private static final long HOURS_BEFORE_REPEATING_REQUEST = 48l;
 
@@ -132,6 +136,9 @@ public class RequestManagementService {
 		if (minDateForNewRequest.isBefore(requestDate)) {
 			result = RequestResult.REPEATED_REQUEST;
 		} else {
+			LOGGER.warn("User {} repeated the request on {}, which is before {}", userId, requestDate,
+					minDateForNewRequest);
+
 			result = RequestResult.REQUEST_REPEATED_TOO_EARLY;
 		}
 
