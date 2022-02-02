@@ -108,11 +108,13 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		RequestResult requestResult = requestManagementService.manageRequest(messageId.longValue(), content, link,
 				format, source, otherTags, userId, groupId, requestTime);
 
-		if (requestResult == RequestResult.REQUEST_REPEATED_TOO_EARLY) {
+		if (requestResult.getResult() == RequestResult.Result.REQUEST_REPEATED_TOO_EARLY) {
 			// notify user of the error
 			DeleteMessage deleteMessage = new DeleteMessage(chatId, messageId);
-			SendMessage sendMessage = new SendMessage(chatId,
-					tagUser(message) + "You have to wait 48 hours before repeating a request.");
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append(tagUser(message));
+			stringBuilder.append(requestResult.getReason());
+			SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 			sendMessage.parseMode(ParseMode.HTML);
 
 			bot.execute(deleteMessage);

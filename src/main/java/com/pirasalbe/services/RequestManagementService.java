@@ -12,11 +12,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.pirasalbe.models.RequestAssociationInfo;
 import com.pirasalbe.models.RequestResult;
+import com.pirasalbe.models.RequestResult.Result;
 import com.pirasalbe.models.UserRequestRole;
 import com.pirasalbe.models.database.Request;
 import com.pirasalbe.models.database.UserRequest;
 import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.request.Source;
+import com.pirasalbe.utils.DateUtils;
 
 /**
  * Service that manages the user request table
@@ -84,7 +86,7 @@ public class RequestManagementService {
 		// request doesn't exists
 		if (request == null) {
 			insertNewRequest(messageId, content, link, format, source, otherTags, userId, groupId, requestDate);
-			result = RequestResult.NEW;
+			result = new RequestResult(Result.NEW);
 		} else {
 			result = manageAssociation(userId, requestDate, request);
 		}
@@ -116,7 +118,7 @@ public class RequestManagementService {
 		} else {
 			// create association
 			userRequestService.insert(messageId, groupId, userId, UserRequestRole.SUBSCRIBER, requestDate);
-			result = RequestResult.SUBSCRIBED;
+			result = new RequestResult(Result.SUBSCRIBED);
 		}
 
 		return result;
@@ -134,12 +136,16 @@ public class RequestManagementService {
 
 		RequestResult result = null;
 		if (minDateForNewRequest.isBefore(requestDate)) {
-			result = RequestResult.REPEATED_REQUEST;
+			result = new RequestResult(Result.REPEATED_REQUEST);
 		} else {
 			LOGGER.warn("User {} repeated the request on {}, which is before {}", userId, requestDate,
 					minDateForNewRequest);
 
-			result = RequestResult.REQUEST_REPEATED_TOO_EARLY;
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append("You already requested this title on ");
+			stringBuilder.append(DateUtils.formatDateTime(previousRequestDate)).append(".\n");
+			stringBuilder.append("Wait 48 hours from now before repeating a request.");
+			result = new RequestResult(Result.REQUEST_REPEATED_TOO_EARLY, stringBuilder.toString());
 		}
 
 		return result;

@@ -37,4 +37,8 @@ public class DateUtils {
 		return localDateTime.format(DateTimeFormatter.ofPattern("dd LLL uuuu"));
 	}
 
+	public static String formatDateTime(LocalDateTime localDateTime) {
+		return localDateTime.format(DateTimeFormatter.ofPattern("dd/LLL/uuuu HH:mm"));
+	}
+
 }

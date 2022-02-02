@@ -94,8 +94,12 @@ public class UserRequestService {
 						lastRequestInfo.getDate(),
 						lastRequestInfo.getOtherTags() != null ? lastRequestInfo.getOtherTags() : "", nextValidRequest);
 
-				validation = Validation.invalid("You’ve already requested an audiobook. Come back again on "
-						+ DateUtils.formatDate(nextValidRequest) + ".");
+				StringBuilder stringBuilder = new StringBuilder();
+				stringBuilder.append("You’ve already requested an audiobook on ");
+				stringBuilder.append(DateUtils.formatDateTime(lastRequestInfo.getDate())).append(".\n");
+				stringBuilder.append("Come back again on <b>");
+				stringBuilder.append(DateUtils.formatDateTime(nextValidRequest)).append("</b>.");
+				validation = Validation.invalid(stringBuilder.toString());
 			}
 		}
 
@@ -105,14 +109,21 @@ public class UserRequestService {
 	private Validation isValidEbookRequest(Long userId, Integer requestLimit, LocalDateTime requestTime) {
 		Validation validation = Validation.valid();
 
-		LocalDateTime last24Hours = requestTime.minusDays(1);
+		LocalDateTime last24Hours = requestTime.minusHours(24);
 		long requests = repository.countUserEbookRequestsOfToday(userId, last24Hours);
 		// it's invalid if already reached the limit
 		if (requests >= requestLimit) {
-			LOGGER.warn("User {}, ebook requests {} since {}", userId, requests, last24Hours);
+			LOGGER.warn("User {}, new request {}, {} ebook requested since {}", userId, requestTime, requests,
+					last24Hours);
 
-			validation = Validation.invalid("You’re only allowed to request up to " + requestLimit + " book"
-					+ (requestLimit > 1 ? "s" : "") + " per day. Come back again tomorrow.");
+			String plural = requestLimit > 1 ? "s" : "";
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append("You’re only allowed to request up to ");
+			stringBuilder.append(requestLimit).append(" book").append(plural);
+			stringBuilder.append(" every 24 hours.\n");
+			stringBuilder.append("Your already requested ").append(requests).append(" book").append(plural);
+			stringBuilder.append(" since ").append(DateUtils.formatDateTime(requestTime)).append(".");
+			validation = Validation.invalid(stringBuilder.toString());
 		}
 
 		return validation;
