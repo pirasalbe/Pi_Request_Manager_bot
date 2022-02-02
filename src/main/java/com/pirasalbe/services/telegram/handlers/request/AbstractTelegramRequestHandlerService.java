@@ -142,7 +142,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		// split every word
 		String[] parts = content.replace("\n", " ").split(" ");
 		for (int i = 0; i < parts.length && otherTags == null; i++) {
-			String part = parts[i];
+			String part = parts[i].toLowerCase();
 
 			// if the word is a tag and is unknown
 			if (Pattern.matches("^#.*", part) && !KNOWN_TAGS.contains(part)) {
