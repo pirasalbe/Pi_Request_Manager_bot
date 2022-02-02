@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.pengrad.telegrambot.model.Message;
 import com.pirasalbe.models.RequestAssociationInfo;
 import com.pirasalbe.models.RequestResult;
 import com.pirasalbe.models.RequestResult.Result;
@@ -19,6 +20,7 @@ import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.database.Request;
 import com.pirasalbe.models.database.UserRequest;
 import com.pirasalbe.models.request.Format;
+import com.pirasalbe.models.request.RequestStatus;
 import com.pirasalbe.models.request.Source;
 import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.RequestUtils;
@@ -178,6 +180,22 @@ public class RequestManagementService {
 	public void deleteGroupRequests(Long groupId) {
 		userRequestService.deleteByGroupId(groupId);
 		requestService.deleteByGroupId(groupId);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public boolean markDone(Message message) {
+		String link = RequestUtils.getLink(message.text(), message.entities());
+
+		boolean success = false;
+
+		Request request = requestService.findByLink(link);
+		if (request != null) {
+			// mark request as done
+			requestService.updateStatus(request, RequestStatus.RESOLVED);
+			success = true;
+		}
+
+		return success;
 	}
 
 }

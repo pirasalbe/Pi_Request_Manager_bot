@@ -14,6 +14,7 @@ import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 import com.pirasalbe.utils.DateUtils;
+import com.pirasalbe.utils.RequestUtils;
 
 /**
  * Service to manage requests from users
@@ -41,7 +42,7 @@ public class TelegramUpdateRequestHandlerService extends AbstractTelegramRequest
 
 			Long userId = message.from().id();
 			String content = message.text();
-			String link = getLink(content, message.entities());
+			String link = RequestUtils.getLink(content, message.entities());
 
 			if (link != null) {
 				Group group = optional.get();

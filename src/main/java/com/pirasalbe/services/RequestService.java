@@ -73,4 +73,11 @@ public class RequestService {
 		repository.deleteByGroupId(groupId);
 	}
 
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void updateStatus(Request request, RequestStatus status) {
+		request.setStatus(status);
+
+		repository.save(request);
+	}
+
 }

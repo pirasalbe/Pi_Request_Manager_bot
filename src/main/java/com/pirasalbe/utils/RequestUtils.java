@@ -3,6 +3,8 @@ package com.pirasalbe.utils;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.pengrad.telegrambot.model.MessageEntity;
+import com.pengrad.telegrambot.model.MessageEntity.Type;
 import com.pirasalbe.models.request.Source;
 
 /**
@@ -47,6 +49,20 @@ public class RequestUtils {
 		}
 
 		return noRepeat;
+	}
+
+	public static String getLink(String content, MessageEntity[] entities) {
+		String link = null;
+
+		for (MessageEntity entity : entities) {
+			if (entity.type().equals(Type.text_link)) {
+				link = entity.url();
+			} else if (entity.type().equals(Type.url)) {
+				link = content.substring(entity.offset(), entity.offset() + entity.length());
+			}
+		}
+
+		return link;
 	}
 
 }

@@ -17,6 +17,7 @@ import com.pirasalbe.services.telegram.conditions.TelegramCommandConditionFactor
 import com.pirasalbe.services.telegram.conditions.TelegramReplyToCommandConditionFactory;
 import com.pirasalbe.services.telegram.conditions.TelegramRoleConditionFactory;
 import com.pirasalbe.services.telegram.handlers.command.TelegramAliveCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.command.TelegramContributorsCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramGroupsCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramHelpCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramSuperAdminCommandHandlerService;
@@ -77,6 +78,9 @@ public class TelegramService {
 	@Autowired
 	private TelegramUpdateRequestHandlerService updateRequestHandlerService;
 
+	@Autowired
+	private TelegramContributorsCommandHandlerService contributorsCommandHandlerService;
+
 	@PostConstruct
 	public void initialize() {
 
@@ -96,6 +100,9 @@ public class TelegramService {
 
 		// requests
 		registerRequestsHandlers();
+
+		// contributors
+		registerContributorsHandlers();
 
 		bot.launch();
 
@@ -195,6 +202,19 @@ public class TelegramService {
 	private void registerRequestsHandlers() {
 		bot.register(newRequestHandlerService.geCondition(), newRequestHandlerService);
 		bot.register(updateRequestHandlerService.geCondition(), updateRequestHandlerService);
+	}
+
+	private void registerContributorsHandlers() {
+		TelegramCondition groupChatCondition = chatConditionFactory
+				.onChatTypes(Arrays.asList(Type.group, Type.supergroup));
+		TelegramCondition groupRoleCondition = roleConditionFactory
+				.onRole(TelegramContributorsCommandHandlerService.ROLE);
+
+		bot.register(
+				Arrays.asList(groupChatCondition, groupRoleCondition,
+						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_DONE),
+						contributorsCommandHandlerService.markDoneCondition()),
+				contributorsCommandHandlerService.markDone());
 	}
 
 }

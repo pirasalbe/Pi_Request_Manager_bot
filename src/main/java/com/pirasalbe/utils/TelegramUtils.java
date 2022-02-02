@@ -1,5 +1,6 @@
 package com.pirasalbe.utils;
 
+import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.User;
 
@@ -13,6 +14,18 @@ public class TelegramUtils {
 
 	private TelegramUtils() {
 		super();
+	}
+
+	/**
+	 * Get an HTML string that tags the user
+	 *
+	 * @param message Message of the user
+	 * @return String
+	 */
+	public static String tagUser(Message message) {
+		User user = message.from();
+
+		return "<a href=\"tg://user?id=" + user.id() + "\">" + TelegramUtils.getUserName(user) + "</a>. ";
 	}
 
 	/**

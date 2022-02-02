@@ -9,9 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Message;
-import com.pengrad.telegrambot.model.MessageEntity;
-import com.pengrad.telegrambot.model.MessageEntity.Type;
-import com.pengrad.telegrambot.model.User;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
@@ -25,6 +22,7 @@ import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
 import com.pirasalbe.services.RequestService;
 import com.pirasalbe.services.UserRequestService;
+import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramUtils;
 
 /**
@@ -65,7 +63,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 
 	protected void newRequest(TelegramBot bot, Message message, Long chatId, LocalDateTime requestTime, Group group) {
 		String content = message.text();
-		String link = getLink(content, message.entities());
+		String link = RequestUtils.getLink(content, message.entities());
 
 		if (link != null) {
 			newRequest(bot, message, chatId, requestTime, group, content, link);
@@ -77,7 +75,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 	protected void manageIncompleteRequest(TelegramBot bot, Message message, Long chatId) {
 		// notify user of the error
 		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.append(tagUser(message));
+		stringBuilder.append(TelegramUtils.tagUser(message));
 		stringBuilder.append("Your request is incomplete. Make sure it has all the required elements:\n\n");
 		stringBuilder.append("<i>#request (+ other tags if needed)</i>\n");
 		stringBuilder.append("<i>Title</i>\n");
@@ -104,18 +102,12 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		} else {
 			// notify user of the error
 			DeleteMessage deleteMessage = new DeleteMessage(chatId, message.messageId());
-			SendMessage sendMessage = new SendMessage(chatId, tagUser(message) + validation.getReason());
+			SendMessage sendMessage = new SendMessage(chatId, TelegramUtils.tagUser(message) + validation.getReason());
 			sendMessage.parseMode(ParseMode.HTML);
 
 			bot.execute(deleteMessage);
 			bot.execute(sendMessage);
 		}
-	}
-
-	private String tagUser(Message message) {
-		User user = message.from();
-
-		return "<a href=\"tg://user?id=" + user.id() + "\">" + TelegramUtils.getUserName(user) + "</a>. ";
 	}
 
 	private void manageRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,
@@ -140,7 +132,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 			// notify user of the error
 			DeleteMessage deleteMessage = new DeleteMessage(chatId, messageId);
 			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.append(tagUser(message));
+			stringBuilder.append(TelegramUtils.tagUser(message));
 			stringBuilder.append(requestResult.getReason());
 			SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 			sendMessage.parseMode(ParseMode.HTML);
@@ -151,20 +143,6 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		default:
 			break;
 		}
-	}
-
-	protected String getLink(String content, MessageEntity[] entities) {
-		String link = null;
-
-		for (MessageEntity entity : entities) {
-			if (entity.type().equals(Type.text_link)) {
-				link = entity.url();
-			} else if (entity.type().equals(Type.url)) {
-				link = content.substring(entity.offset(), entity.offset() + entity.length());
-			}
-		}
-
-		return link;
 	}
 
 	protected String getOtherTags(String content) {
