@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.TimeZone;
 
 /**
@@ -37,8 +38,8 @@ public class DateUtils {
 		return localDateTime.format(DateTimeFormatter.ofPattern("dd LLL uuuu"));
 	}
 
-	public static String formatDateTime(LocalDateTime localDateTime) {
-		return localDateTime.format(DateTimeFormatter.ofPattern("dd/LLL/uuuu HH:mm"));
+	public static long getHours(LocalDateTime from, LocalDateTime to) {
+		return ChronoUnit.HOURS.between(from, to);
 	}
 
 }

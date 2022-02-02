@@ -1,6 +1,7 @@
 package com.pirasalbe.services;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -96,9 +97,9 @@ public class UserRequestService {
 
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append("You’ve already requested an audiobook on ");
-				stringBuilder.append(DateUtils.formatDateTime(lastRequestInfo.getDate())).append(".\n");
+				stringBuilder.append(DateUtils.formatDate(lastRequestInfo.getDate())).append(".\n");
 				stringBuilder.append("Come back again on <b>");
-				stringBuilder.append(DateUtils.formatDateTime(nextValidRequest)).append("</b>.");
+				stringBuilder.append(DateUtils.formatDate(nextValidRequest)).append("</b>.");
 				validation = Validation.invalid(stringBuilder.toString());
 			}
 		}
@@ -110,7 +111,8 @@ public class UserRequestService {
 		Validation validation = Validation.valid();
 
 		LocalDateTime last24Hours = requestTime.minusHours(24);
-		long requests = repository.countUserEbookRequestsOfToday(userId, last24Hours);
+		List<UserRequest> userRequests = repository.getUserEbookRequestsOfToday(userId, last24Hours);
+		long requests = userRequests.size();
 		// it's invalid if already reached the limit
 		if (requests >= requestLimit) {
 			LOGGER.warn("User {}, new request {}, {} ebook requested since {}", userId, requestTime, requests,
@@ -118,11 +120,13 @@ public class UserRequestService {
 
 			String plural = requestLimit > 1 ? "s" : "";
 			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.append("You’re only allowed to request up to ");
+			stringBuilder.append("You’re only allowed to request ").append(requestLimit > 1 ? "up to " : "");
 			stringBuilder.append(requestLimit).append(" book").append(plural);
 			stringBuilder.append(" every 24 hours.\n");
-			stringBuilder.append("Your already requested ").append(requests).append(" book").append(plural);
-			stringBuilder.append(" since ").append(DateUtils.formatDateTime(last24Hours)).append(".");
+			LocalDateTime date = userRequests.get(0).getDate();
+			long hours = DateUtils.getHours(requestTime, date.plusHours(24));
+			stringBuilder.append("Come back again in ").append(hours).append(" hour").append(hours > 1 ? "s" : "")
+					.append(".");
 			validation = Validation.invalid(stringBuilder.toString());
 		}
 
