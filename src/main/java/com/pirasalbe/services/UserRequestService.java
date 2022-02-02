@@ -87,7 +87,11 @@ public class UserRequestService {
 		Validation validation = Validation.valid();
 
 		LastRequestInfo requestInfo = null;
-		if (lastRequestResolvedInfo != null) {
+		if (lastRequestResolvedInfo != null && lastRequestInfo != null) {
+			// take the latter
+			requestInfo = lastRequestResolvedInfo.getDate().isAfter(lastRequestInfo.getDate()) ? lastRequestResolvedInfo
+					: lastRequestInfo;
+		} else if (lastRequestResolvedInfo != null) {
 			requestInfo = lastRequestResolvedInfo;
 		} else if (lastRequestInfo != null) {
 			requestInfo = lastRequestInfo;
