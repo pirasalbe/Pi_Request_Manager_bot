@@ -71,7 +71,17 @@ public class TelegramHelpCommandHandlerService implements TelegramHandler {
 	private String getContributorHelp(Type chatType) {
 		StringBuilder message = new StringBuilder("<b>Contributor help:</b>").append("\n");
 
-		message.append("TODO").append("\n\n");
+		message.append("<i>Group commands:</i>").append("\n");
+		if (chatType != Type.channel) {
+			message.append("<code>Reply to a request with a file</code>").append(" - ")
+					.append("Mark the request as done").append("\n");
+			message.append(TelegramContributorsCommandHandlerService.COMMAND_DONE).append(" [text]").append(" - ")
+					.append("Mark the request as done and reply to the user with <i>[text]</i>");
+		} else {
+			message.append("Go in PM or a group to see the available commands.");
+		}
+
+		message.append("\n\n");
 
 		message.append(getUserHelp(chatType));
 
