@@ -102,4 +102,10 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 		</addColumn>
 	</changeSet>
 
+	<changeSet id="6 - Add column NO_REPEAT to Requests" author="pirasalbe">
+		<addColumn tableName="REQUESTS">
+			<column name="RESOLVED_DATE" type="timestamp" />
+		</addColumn>
+	</changeSet>
+
 </databaseChangeLog>

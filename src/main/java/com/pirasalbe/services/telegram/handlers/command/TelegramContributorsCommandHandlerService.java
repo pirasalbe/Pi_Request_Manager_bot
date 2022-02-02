@@ -36,10 +36,6 @@ public class TelegramContributorsCommandHandlerService {
 	@Autowired
 	private RequestManagementService requestManagementService;
 
-	public TelegramCondition markDoneCondition() {
-		return update -> update.message() != null && update.message().replyToMessage() != null;
-	}
-
 	private String getLink(Message message) {
 		String chatId = message.chat().id().toString();
 		String messageId = message.messageId().toString();
@@ -48,6 +44,10 @@ public class TelegramContributorsCommandHandlerService {
 		}
 
 		return "https://t.me/c/" + chatId + "/" + messageId;
+	}
+
+	public TelegramCondition markDoneCondition() {
+		return update -> update.message() != null && update.message().replyToMessage() != null;
 	}
 
 	public TelegramHandler markDone() {
@@ -75,6 +75,41 @@ public class TelegramContributorsCommandHandlerService {
 					stringBuilder.append(" not found");
 				}
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+				sendMessage.parseMode(ParseMode.HTML);
+
+				bot.execute(sendMessage);
+			}
+		};
+	}
+
+	public TelegramCondition markDoneWithFileCondition() {
+		return update -> update.message() != null && update.message().replyToMessage() != null
+				&& (update.message().document() != null || update.message().audio() != null);
+	}
+
+	public TelegramHandler markDoneWithFile() {
+		return (bot, update) -> {
+			Long chatId = TelegramUtils.getChatId(update);
+
+			Optional<Group> optional = groupService.findById(chatId);
+
+			if (optional.isPresent()) {
+				Message message = update.message().replyToMessage();
+
+				boolean success = requestManagementService.markDone(message);
+
+				String link = getLink(message);
+				StringBuilder stringBuilder = new StringBuilder();
+				stringBuilder.append("<a href='");
+				stringBuilder.append(link);
+				stringBuilder.append("'>Request</a>");
+				if (success) {
+					stringBuilder.append(" marked as done");
+				} else {
+					stringBuilder.append(" not found");
+				}
+				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+				sendMessage.replyToMessageId(update.message().messageId());
 				sendMessage.parseMode(ParseMode.HTML);
 
 				bot.execute(sendMessage);

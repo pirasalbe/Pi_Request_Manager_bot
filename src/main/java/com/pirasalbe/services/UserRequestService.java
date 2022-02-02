@@ -59,9 +59,10 @@ public class UserRequestService {
 
 				// check audiobook limit
 				LastRequestInfo lastRequestInfo = repository.getLastAudiobookRequestOfUserInGroup(userId);
+				LastRequestInfo lastRequestResolvedInfo = repository.getLastAudiobookResolvedOfUserInGroup(userId);
 
 				validation = isValidAudiobookRequest(userId, group.getAudiobooksDaysWait(),
-						group.getEnglishAudiobooksDaysWait(), lastRequestInfo);
+						group.getEnglishAudiobooksDaysWait(), lastRequestInfo, lastRequestResolvedInfo);
 			}
 		}
 
@@ -81,23 +82,34 @@ public class UserRequestService {
 	}
 
 	private Validation isValidAudiobookRequest(Long userId, Integer audiobooksDaysWait,
-			Integer englishAudiobooksDaysWait, LastRequestInfo lastRequestInfo) {
+			Integer englishAudiobooksDaysWait, LastRequestInfo lastRequestInfo,
+			LastRequestInfo lastRequestResolvedInfo) {
 		Validation validation = Validation.valid();
 
-		if (lastRequestInfo != null) {
+		LastRequestInfo requestInfo = null;
+		if (lastRequestResolvedInfo != null) {
+			requestInfo = lastRequestResolvedInfo;
+		} else if (lastRequestInfo != null) {
+			requestInfo = lastRequestInfo;
+		}
+
+		if (requestInfo != null) {
 			// if null -> language was English
-			int days = lastRequestInfo.getOtherTags() == null ? englishAudiobooksDaysWait : audiobooksDaysWait;
+			int days = requestInfo.getOtherTags() == null ? englishAudiobooksDaysWait : audiobooksDaysWait;
 
 			// last audiobook
-			LocalDateTime nextValidRequest = lastRequestInfo.getDate().plusDays(days);
+			LocalDateTime nextValidRequest = requestInfo.getDate().plusDays(days);
 			if (LocalDateTime.now().isBefore(nextValidRequest)) {
-				LOGGER.warn("User {}, last audiobook request {} (tags {}) and next valid request {}", userId,
-						lastRequestInfo.getDate(),
-						lastRequestInfo.getOtherTags() != null ? lastRequestInfo.getOtherTags() : "", nextValidRequest);
+				LOGGER.warn("User {}, last audiobook request/resolved {} (tags {}), next valid request {}", userId,
+						requestInfo.getDate(), requestInfo.getOtherTags() != null ? requestInfo.getOtherTags() : "",
+						nextValidRequest);
 
 				StringBuilder stringBuilder = new StringBuilder();
-				stringBuilder.append("You’ve already requested an audiobook on ");
-				stringBuilder.append(DateUtils.formatDate(lastRequestInfo.getDate())).append(".\n");
+				stringBuilder.append("You’ve already ");
+				stringBuilder.append(lastRequestInfo != null ? "requested" : "received");
+				stringBuilder.append(" an audiobook on ");
+				stringBuilder.append(DateUtils.formatDate(requestInfo.getDate()));
+				stringBuilder.append(".\n");
 				stringBuilder.append("Come back again on <b>");
 				stringBuilder.append(DateUtils.formatDate(nextValidRequest)).append("</b>.");
 				validation = Validation.invalid(stringBuilder.toString());

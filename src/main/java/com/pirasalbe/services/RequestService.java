@@ -13,6 +13,7 @@ import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.request.RequestStatus;
 import com.pirasalbe.models.request.Source;
 import com.pirasalbe.repositories.RequestRepository;
+import com.pirasalbe.utils.DateUtils;
 
 /**
  * Service that manages the request table
@@ -76,6 +77,11 @@ public class RequestService {
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void updateStatus(Request request, RequestStatus status) {
 		request.setStatus(status);
+		if (status == RequestStatus.RESOLVED) {
+			request.setResolvedDate(DateUtils.getNow());
+		} else {
+			request.setResolvedDate(null);
+		}
 
 		repository.save(request);
 	}

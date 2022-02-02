@@ -32,8 +32,15 @@ public interface UserRequestRepository extends JpaRepository<UserRequest, UserRe
 
 	@Query("SELECT new com.pirasalbe.models.LastRequestInfo(u.date, r.otherTags) "
 			+ "FROM UserRequest u JOIN Request r ON u.id.messageId = r.id.messageId AND u.id.groupId = r.id.groupId "
-			+ "WHERE u.id.userId = :userId AND r.format = 'AUDIOBOOK' " + "ORDER BY u.date DESC")
+			+ "WHERE u.id.userId = :userId AND r.format = 'AUDIOBOOK' AND r.status <> 'RESOLVED' "
+			+ "ORDER BY u.date DESC")
 	LastRequestInfo getLastAudiobookRequestOfUserInGroup(@Param("userId") long user);
+
+	@Query("SELECT new com.pirasalbe.models.LastRequestInfo(r.resolvedDate, r.otherTags) "
+			+ "FROM UserRequest u JOIN Request r ON u.id.messageId = r.id.messageId AND u.id.groupId = r.id.groupId "
+			+ "WHERE u.id.userId = :userId AND r.format = 'AUDIOBOOK' AND r.status = 'RESOLVED' "
+			+ "ORDER BY r.resolvedDate DESC")
+	LastRequestInfo getLastAudiobookResolvedOfUserInGroup(@Param("userId") long user);
 
 	@Modifying
 	@Query("DELETE FROM UserRequest u WHERE u.groupId = :groupId")

@@ -27,6 +27,10 @@ public class DateUtils {
 		return LocalDateTime.ofInstant(Instant.ofEpochSecond(timestampUnix), ZONE_ID);
 	}
 
+	public static LocalDateTime getNow() {
+		return LocalDateTime.now(ZONE_ID);
+	}
+
 	public static LocalDateTime getToday() {
 		LocalTime midnight = LocalTime.MIDNIGHT;
 		LocalDate today = LocalDate.now(ZONE_ID);
