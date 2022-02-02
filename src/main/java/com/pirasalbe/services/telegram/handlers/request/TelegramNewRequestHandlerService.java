@@ -31,11 +31,7 @@ public class TelegramNewRequestHandlerService extends AbstractTelegramRequestHan
 		Message message = update.message();
 		Long chatId = message.chat().id();
 
-		int date = message.date();
-		if (message.forwardDate() != null) {
-			date = message.forwardDate();
-		}
-		LocalDateTime requestTime = DateUtils.integerToLocalDateTime(date);
+		LocalDateTime requestTime = DateUtils.integerToLocalDateTime(message.date());
 
 		// manage only requests from active groups
 		Optional<Group> optional = groupService.findById(chatId);
