@@ -106,7 +106,7 @@ public class TelegramHelpCommandHandlerService implements TelegramHandler {
 					.append(" - ").append("Define what can be requested <i>[ebooks/audiobooks/both]</i>").append("\n");
 			message.append(TelegramGroupsCommandHandlerService.COMMAND_NO_REPEAT).append(" ")
 					.append(Arrays.asList(Source.values())).append(" - ")
-					.append("Define the tags whose requests can't be repeated");
+					.append("Define the tags whose requests can't be repeated. Send a list of sources, for example <i>KU, AUDIBLE, SCRIBD, ARCHIVE</i>");
 		} else {
 			message.append("Go in PM or a group to see the available commands.");
 		}

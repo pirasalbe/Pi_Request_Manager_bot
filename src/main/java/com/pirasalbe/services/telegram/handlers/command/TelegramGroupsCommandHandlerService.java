@@ -222,7 +222,7 @@ public class TelegramGroupsCommandHandlerService {
 				boolean updateSuccess = groupService.updateNoRepeat(chatId, noRepeatSources);
 
 				if (updateSuccess) {
-					message = "Updated no repeat to <b>" + noRepeatSources + "</b>";
+					message = "Not allowed to repeat <b>" + noRepeatSources + "</b>";
 				} else {
 					message = ENABLE_THE_GROUP_FIRST;
 				}
