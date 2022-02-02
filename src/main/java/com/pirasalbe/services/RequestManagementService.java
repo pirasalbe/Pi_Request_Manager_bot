@@ -1,6 +1,7 @@
 package com.pirasalbe.services;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -14,11 +15,13 @@ import com.pirasalbe.models.RequestAssociationInfo;
 import com.pirasalbe.models.RequestResult;
 import com.pirasalbe.models.RequestResult.Result;
 import com.pirasalbe.models.UserRequestRole;
+import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.database.Request;
 import com.pirasalbe.models.database.UserRequest;
 import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.request.Source;
 import com.pirasalbe.utils.DateUtils;
+import com.pirasalbe.utils.RequestUtils;
 
 /**
  * Service that manages the user request table
@@ -79,16 +82,16 @@ public class RequestManagementService {
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public RequestResult manageRequest(Long messageId, String content, String link, Format format, Source source,
-			String otherTags, Long userId, Long groupId, LocalDateTime requestDate) {
+			String otherTags, Long userId, Group group, LocalDateTime requestDate) {
 		RequestResult result = null;
 
 		Request request = requestService.findByLink(link);
 		// request doesn't exists
 		if (request == null) {
-			insertNewRequest(messageId, content, link, format, source, otherTags, userId, groupId, requestDate);
+			insertNewRequest(messageId, content, link, format, source, otherTags, userId, group.getId(), requestDate);
 			result = new RequestResult(Result.NEW);
 		} else {
-			result = manageAssociation(userId, requestDate, request);
+			result = manageAssociation(userId, group, requestDate, request);
 		}
 
 		return result;
@@ -103,7 +106,7 @@ public class RequestManagementService {
 		userRequestService.insert(messageId, groupId, userId, UserRequestRole.CREATOR, requestDate);
 	}
 
-	private RequestResult manageAssociation(Long userId, LocalDateTime requestDate, Request request) {
+	private RequestResult manageAssociation(Long userId, Group group, LocalDateTime requestDate, Request request) {
 		RequestResult result = null;
 
 		// request exists
@@ -114,7 +117,7 @@ public class RequestManagementService {
 		Optional<UserRequest> optional = userRequestService.findById(messageId, groupId, userId);
 		if (optional.isPresent()) {
 			// update association
-			result = updateAssociation(userId, requestDate, messageId, groupId, optional.get());
+			result = updateAssociation(userId, requestDate, messageId, group, request, optional.get());
 		} else {
 			// create association
 			userRequestService.insert(messageId, groupId, userId, UserRequestRole.SUBSCRIBER, requestDate);
@@ -124,20 +127,30 @@ public class RequestManagementService {
 		return result;
 	}
 
-	private RequestResult updateAssociation(Long userId, LocalDateTime requestDate, Long messageId, Long groupId,
-			UserRequest userRequest) {
+	private RequestResult updateAssociation(Long userId, LocalDateTime requestDate, Long messageId, Group group,
+			Request request, UserRequest userRequest) {
 		LocalDateTime previousRequestDate = userRequest.getDate();
 
 		// update date
-		userRequestService.updateDate(messageId, groupId, userId, requestDate);
+		userRequestService.updateDate(messageId, group.getId(), userId, requestDate);
 
 		// new request date should be after a cooldown period
 		LocalDateTime minDateForNewRequest = previousRequestDate.plusHours(HOURS_BEFORE_REPEATING_REQUEST);
 
 		RequestResult result = null;
-		if (minDateForNewRequest.isBefore(requestDate)) {
+		boolean specialTags = hasSpecialTags(group, request.getSource());
+		if (!specialTags && minDateForNewRequest.isBefore(requestDate)) {
+			// no special tags and the request was after 48 hours
 			result = new RequestResult(Result.REPEATED_REQUEST);
+		} else if (specialTags) {
+			// special tags request
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append("You already requested this title on ");
+			stringBuilder.append(DateUtils.formatDateTime(previousRequestDate)).append(".\n");
+			stringBuilder.append("No need to bump requests with special hashtags.");
+			result = new RequestResult(Result.CANNOT_REPEAT_REQUEST, stringBuilder.toString());
 		} else {
+			// no special tags, but before 48 hours
 			LOGGER.warn("User {} repeated the request on {}, which is before {}", userId, requestDate,
 					minDateForNewRequest);
 
@@ -151,6 +164,12 @@ public class RequestManagementService {
 		}
 
 		return result;
+	}
+
+	private boolean hasSpecialTags(Group group, Source source) {
+		List<Source> sources = RequestUtils.getNoRepeatSources(group.getNoRepeat());
+
+		return sources.contains(source);
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)

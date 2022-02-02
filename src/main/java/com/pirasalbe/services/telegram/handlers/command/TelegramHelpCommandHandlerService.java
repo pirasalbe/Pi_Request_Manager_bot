@@ -1,5 +1,7 @@
 package com.pirasalbe.services.telegram.handlers.command;
 
+import java.util.Arrays;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -9,6 +11,7 @@ import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.UserRole;
+import com.pirasalbe.models.request.Source;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.AdminService;
 
@@ -100,7 +103,10 @@ public class TelegramHelpCommandHandlerService implements TelegramHandler {
 					.append("Define the days to wait before requesting a new English audiobook to <i>[number of days to wait]</i>")
 					.append("\n");
 			message.append(TelegramGroupsCommandHandlerService.COMMAND_ALLOW).append(" [ebooks/audiobooks/both]")
-					.append(" - ").append("Define what can be requested <i>[ebooks/audiobooks/both]</i>");
+					.append(" - ").append("Define what can be requested <i>[ebooks/audiobooks/both]</i>").append("\n");
+			message.append(TelegramGroupsCommandHandlerService.COMMAND_NO_REPEAT).append(" ")
+					.append(Arrays.asList(Source.values())).append(" - ")
+					.append("Define the tags whose requests can't be repeated");
 		} else {
 			message.append("Go in PM or a group to see the available commands.");
 		}

@@ -188,8 +188,8 @@ public class TelegramService {
 
 		bot.register(
 				Arrays.asList(groupChatCondition, groupRoleCondition,
-						commandConditionFactory.onCommand(TelegramGroupsCommandHandlerService.COMMAND_ALLOW)),
-				groupsCommandHandlerService.updateAllow());
+						commandConditionFactory.onCommand(TelegramGroupsCommandHandlerService.COMMAND_NO_REPEAT)),
+				groupsCommandHandlerService.updateNoRepeat());
 	}
 
 	private void registerRequestsHandlers() {

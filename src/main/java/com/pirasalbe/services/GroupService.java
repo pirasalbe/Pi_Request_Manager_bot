@@ -1,5 +1,6 @@
 package com.pirasalbe.services;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -11,7 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.pirasalbe.models.FormatAllowed;
 import com.pirasalbe.models.database.Group;
+import com.pirasalbe.models.request.Source;
 import com.pirasalbe.repositories.GroupRepository;
+import com.pirasalbe.utils.RequestUtils;
 
 /**
  * Service that manages the admin table
@@ -152,6 +155,27 @@ public class GroupService {
 			repository.save(group);
 			updated = true;
 			LOGGER.info("Update group: [{}] allow [{}]", id, allowed);
+		}
+
+		return updated;
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public boolean updateNoRepeat(Long id, List<Source> noRepeatSources) {
+		boolean updated = false;
+
+		// update
+		Optional<Group> optional = repository.findById(id);
+		boolean present = optional.isPresent();
+		if (present) {
+			// add
+			Group group = optional.get();
+			String noRepeat = RequestUtils.getNoRepeatSources(noRepeatSources);
+			group.setNoRepeat(noRepeat);
+
+			repository.save(group);
+			updated = true;
+			LOGGER.info("Update group: [{}] No repeat [{}]", id, noRepeat);
 		}
 
 		return updated;

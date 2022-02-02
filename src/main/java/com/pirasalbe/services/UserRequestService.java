@@ -122,7 +122,7 @@ public class UserRequestService {
 			stringBuilder.append(requestLimit).append(" book").append(plural);
 			stringBuilder.append(" every 24 hours.\n");
 			stringBuilder.append("Your already requested ").append(requests).append(" book").append(plural);
-			stringBuilder.append(" since ").append(DateUtils.formatDateTime(requestTime)).append(".");
+			stringBuilder.append(" since ").append(DateUtils.formatDateTime(last24Hours)).append(".");
 			validation = Validation.invalid(stringBuilder.toString());
 		}
 

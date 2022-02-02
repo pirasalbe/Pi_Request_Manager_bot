@@ -1,5 +1,8 @@
 package com.pirasalbe.services.telegram.handlers.command;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,8 +13,10 @@ import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.FormatAllowed;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Group;
+import com.pirasalbe.models.request.Source;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.GroupService;
+import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramUtils;
 
 /**
@@ -30,6 +35,7 @@ public class TelegramGroupsCommandHandlerService {
 	public static final String COMMAND_AUDIOBOOK_DAYS_WAIT = "/audiobooks_days_wait";
 	public static final String COMMAND_ENGLISH_AUDIOBOOK_DAYS_WAIT = "/english_audiobooks_days_wait";
 	public static final String COMMAND_ALLOW = "/allow";
+	public static final String COMMAND_NO_REPEAT = "/no_repeat";
 
 	private static final String ENABLE_THE_GROUP_FIRST = "Enable the group first with <code>" + COMMAND_ENABLE
 			+ "</code>";
@@ -198,6 +204,49 @@ public class TelegramGroupsCommandHandlerService {
 
 			bot.execute(sendMessage);
 		};
+	}
+
+	public TelegramHandler updateNoRepeat() {
+		return (bot, update) -> {
+			Long chatId = TelegramUtils.getChatId(update);
+			String text = update.message().text();
+
+			String message = null;
+
+			String[] parts = text.split(" ");
+			if (parts.length == 2) {
+				String sources = parts[1];
+
+				List<Source> noRepeatSources = getSources(sources);
+
+				boolean updateSuccess = groupService.updateNoRepeat(chatId, noRepeatSources);
+
+				if (updateSuccess) {
+					message = "Updated allowed to <b>" + noRepeatSources + "</b>";
+				} else {
+					message = ENABLE_THE_GROUP_FIRST;
+				}
+			} else {
+				message = rightFormatMessage(COMMAND_NO_REPEAT, Arrays.asList(Source.values()).toString());
+			}
+
+			SendMessage sendMessage = new SendMessage(chatId, message);
+			sendMessage.parseMode(ParseMode.HTML);
+
+			bot.execute(sendMessage);
+		};
+	}
+
+	private List<Source> getSources(String sources) {
+		List<Source> noRepeatSources = null;
+
+		try {
+			noRepeatSources = RequestUtils.getNoRepeatSources(sources);
+		} catch (Exception e) {
+			noRepeatSources = new ArrayList<>();
+		}
+
+		return noRepeatSources;
 	}
 
 }

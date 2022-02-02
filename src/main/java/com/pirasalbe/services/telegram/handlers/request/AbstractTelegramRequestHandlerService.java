@@ -100,7 +100,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		Validation validation = userRequestService.canRequest(group, userId, format, requestTime);
 		if (validation.isValid()) {
 			// create request
-			manageRequest(bot, message, chatId, message.messageId(), requestTime, group.getId(), content, link, format);
+			manageRequest(bot, message, chatId, message.messageId(), requestTime, group, content, link, format);
 		} else {
 			// notify user of the error
 			DeleteMessage deleteMessage = new DeleteMessage(chatId, message.messageId());
@@ -119,16 +119,24 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 	}
 
 	private void manageRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,
-			LocalDateTime requestTime, Long groupId, String content, String link, Format format) {
+			LocalDateTime requestTime, Group group, String content, String link, Format format) {
 		Long userId = message.from().id();
 
 		Source source = getSource(content, format);
 		String otherTags = getOtherTags(content);
 
 		RequestResult requestResult = requestManagementService.manageRequest(messageId.longValue(), content, link,
-				format, source, otherTags, userId, groupId, requestTime);
+				format, source, otherTags, userId, group, requestTime);
 
-		if (requestResult.getResult() == RequestResult.Result.REQUEST_REPEATED_TOO_EARLY) {
+		manageRequestResult(bot, message, chatId, messageId, requestResult);
+	}
+
+	private void manageRequestResult(TelegramBot bot, Message message, Long chatId, Integer messageId,
+			RequestResult requestResult) {
+
+		switch (requestResult.getResult()) {
+		case CANNOT_REPEAT_REQUEST:
+		case REQUEST_REPEATED_TOO_EARLY:
 			// notify user of the error
 			DeleteMessage deleteMessage = new DeleteMessage(chatId, messageId);
 			StringBuilder stringBuilder = new StringBuilder();
@@ -139,6 +147,9 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 
 			bot.execute(deleteMessage);
 			bot.execute(sendMessage);
+			break;
+		default:
+			break;
 		}
 	}
 

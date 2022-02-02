@@ -35,6 +35,9 @@ public class Group {
 	@Column(name = "ALLOW_AUDIOBOOKS")
 	private boolean allowAudiobooks;
 
+	@Column(name = "NO_REPEAT")
+	private String noRepeat;
+
 	public Group() {
 		super();
 	}
@@ -87,6 +90,14 @@ public class Group {
 		this.allowAudiobooks = allowAudiobooks;
 	}
 
+	public String getNoRepeat() {
+		return noRepeat;
+	}
+
+	public void setNoRepeat(String noRepeat) {
+		this.noRepeat = noRepeat;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
@@ -99,7 +110,8 @@ public class Group {
 		builder.append("Days to wait to request a new english audiobook: <i>").append(englishAudiobooksDaysWait)
 				.append(END_OF_LINE_TO_STRING);
 		builder.append("Can request ebooks: <i>").append(allowEbooks).append(END_OF_LINE_TO_STRING);
-		builder.append("Can request audiobooks: <i>").append(allowAudiobooks).append("</i>");
+		builder.append("Can request audiobooks: <i>").append(allowAudiobooks).append(END_OF_LINE_TO_STRING);
+		builder.append("Forbid repeated requests for: <i>").append(noRepeat).append("</i>");
 
 		return builder.toString();
 	}
