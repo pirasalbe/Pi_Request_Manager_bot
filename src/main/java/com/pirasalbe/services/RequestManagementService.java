@@ -144,7 +144,9 @@ public class RequestManagementService {
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append("You already requested this title on ");
 			stringBuilder.append(DateUtils.formatDateTime(previousRequestDate)).append(".\n");
-			stringBuilder.append("Wait 48 hours from now before repeating a request.");
+			stringBuilder.append("Wait 48 hours from now before repeating a request.\n");
+			stringBuilder.append(
+					"If you have requested it many times and still haven't received the book, then it's most likely that the book is not available as of now. It's better if you request again after a month or so.");
 			result = new RequestResult(Result.REQUEST_REPEATED_TOO_EARLY, stringBuilder.toString());
 		}
 

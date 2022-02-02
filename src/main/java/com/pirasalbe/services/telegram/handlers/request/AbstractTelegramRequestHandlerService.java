@@ -67,7 +67,27 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		String content = message.text();
 		String link = getLink(content, message.entities());
 
-		newRequest(bot, message, chatId, requestTime, group, content, link);
+		if (link != null) {
+			newRequest(bot, message, chatId, requestTime, group, content, link);
+		} else {
+			manageIncompleteRequest(bot, message, chatId);
+		}
+	}
+
+	protected void manageIncompleteRequest(TelegramBot bot, Message message, Long chatId) {
+		// notify user of the error
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.append(tagUser(message));
+		stringBuilder.append("Your request is incomplete. Make sure it has all the required elements:\n\n");
+		stringBuilder.append("<i>#request (+ other tags if needed)</i>\n");
+		stringBuilder.append("<i>Title</i>\n");
+		stringBuilder.append("<i>Author</i>\n");
+		stringBuilder.append("<i>Publisher (or Self-published when publisher isn't specified)</i>\n");
+		stringBuilder.append("<i>Link</i>\n\n");
+		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+		sendMessage.parseMode(ParseMode.HTML);
+
+		bot.execute(sendMessage);
 	}
 
 	protected void newRequest(TelegramBot bot, Message message, Long chatId, LocalDateTime requestTime, Group group,
