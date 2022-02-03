@@ -188,11 +188,13 @@ public class RequestManagementService {
 
 		boolean success = false;
 
-		Request request = requestService.findByLink(link);
-		if (request != null) {
-			// mark request as done
-			requestService.updateStatus(request, RequestStatus.RESOLVED);
-			success = true;
+		if (link != null) {
+			Request request = requestService.findByLink(link);
+			if (request != null) {
+				// mark request as done
+				requestService.updateStatus(request, RequestStatus.RESOLVED);
+				success = true;
+			}
 		}
 
 		return success;

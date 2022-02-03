@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.request.ParseMode;
+import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Group;
@@ -76,8 +77,10 @@ public class TelegramContributorsCommandHandlerService {
 				}
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
+				DeleteMessage deleteMessage = new DeleteMessage(chatId, update.message().messageId());
 
 				bot.execute(sendMessage);
+				bot.execute(deleteMessage);
 			}
 		};
 	}
