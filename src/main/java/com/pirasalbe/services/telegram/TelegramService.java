@@ -223,6 +223,12 @@ public class TelegramService {
 						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_DONE),
 						contributorsCommandHandlerService.markDoneCondition()),
 				contributorsCommandHandlerService.markDone());
+		bot.register(
+				Arrays.asList(groupChatCondition, groupRoleCondition,
+						commandConditionFactory
+								.onCommand(TelegramContributorsCommandHandlerService.COMMAND_SILENT_DONE),
+						contributorsCommandHandlerService.markDoneCondition()),
+				contributorsCommandHandlerService.markDoneSilently());
 
 		bot.register(
 				Arrays.asList(groupChatCondition, groupRoleCondition,

@@ -79,7 +79,10 @@ public class TelegramHelpCommandHandlerService implements TelegramHandler {
 					.append("Mark the request as done").append("\n");
 			message.append("<code>Reply to a request with</code> ")
 					.append(TelegramContributorsCommandHandlerService.COMMAND_DONE).append(" [text]").append(" - ")
-					.append("Mark the request as done and reply to the user with <i>[text]</i>");
+					.append("Mark the request as done and reply to the user with <i>[text]</i>").append("\n");
+			message.append("<code>Reply to a request with</code> ")
+					.append(TelegramContributorsCommandHandlerService.COMMAND_SILENT_DONE).append(" - ")
+					.append("Mark the request as done. It doesn't notify the user.");
 		} else {
 			message.append("Go in PM or a group to see the available commands.");
 		}

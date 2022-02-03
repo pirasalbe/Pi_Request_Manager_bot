@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.MessageEntity;
 import com.pengrad.telegrambot.model.MessageEntity.Type;
+import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
@@ -32,6 +33,7 @@ import com.pirasalbe.utils.TelegramUtils;
 public class TelegramContributorsCommandHandlerService {
 
 	public static final String COMMAND_DONE = "/done";
+	public static final String COMMAND_SILENT_DONE = "/sdone";
 	public static final String COMMAND_PENDING = "/pending";
 
 	public static final UserRole ROLE = UserRole.CONTRIBUTOR;
@@ -56,10 +58,22 @@ public class TelegramContributorsCommandHandlerService {
 	}
 
 	public TelegramCondition markDoneCondition() {
-		return update -> update.message() != null && update.message().replyToMessage() != null;
+		return this::markDoneCondition;
+	}
+
+	private boolean markDoneCondition(Update update) {
+		return update.message() != null && update.message().replyToMessage() != null;
 	}
 
 	public TelegramHandler markDone() {
+		return markDone(true);
+	}
+
+	public TelegramHandler markDoneSilently() {
+		return markDone(false);
+	}
+
+	private TelegramHandler markDone(boolean reply) {
 		return (bot, update) -> {
 			Long chatId = TelegramUtils.getChatId(update);
 
@@ -71,10 +85,14 @@ public class TelegramContributorsCommandHandlerService {
 
 				boolean success = requestManagementService.markDone(message);
 
+				// send a message to notify operation
 				String link = getLink(message);
 				StringBuilder stringBuilder = new StringBuilder();
-				stringBuilder.append(TelegramUtils.tagUser(message));
-				stringBuilder.append(" ").append(text).append("\n");
+				if (reply) {
+					// tag the user only if reply
+					stringBuilder.append(TelegramUtils.tagUser(message));
+					stringBuilder.append(" ").append(text).append("\n");
+				}
 				stringBuilder.append("<a href='");
 				stringBuilder.append(link);
 				stringBuilder.append("'>Request</a>");
@@ -86,9 +104,16 @@ public class TelegramContributorsCommandHandlerService {
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 				sendMessage.replyToMessageId(message.messageId());
 				sendMessage.parseMode(ParseMode.HTML);
-				DeleteMessage deleteMessage = new DeleteMessage(chatId, update.message().messageId());
+				SendResponse response = bot.execute(sendMessage);
 
-				bot.execute(sendMessage);
+				// schedule delete for no reply
+				if (!reply) {
+					schedulerService.schedule((b, r) -> b.execute(new DeleteMessage(chatId, r.message().messageId())),
+							response, 5, TimeUnit.SECONDS);
+				}
+
+				// delete command
+				DeleteMessage deleteMessage = new DeleteMessage(chatId, update.message().messageId());
 				bot.execute(deleteMessage);
 			}
 		};
@@ -112,7 +137,7 @@ public class TelegramContributorsCommandHandlerService {
 	}
 
 	public TelegramCondition markDoneWithFileCondition() {
-		return update -> update.message() != null && update.message().replyToMessage() != null
+		return update -> markDoneCondition(update)
 				&& (update.message().document() != null || update.message().audio() != null);
 	}
 
