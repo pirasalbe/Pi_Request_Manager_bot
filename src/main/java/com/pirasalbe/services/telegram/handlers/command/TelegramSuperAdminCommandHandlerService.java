@@ -117,14 +117,14 @@ public class TelegramSuperAdminCommandHandlerService {
 		List<InlineKeyboardButton> navigationButtons = new ArrayList<>();
 		if (page > 0) {
 			InlineKeyboardButton previous = new InlineKeyboardButton("Previous page");
-			int newOffset = page - size >= 0 ? page - size : 0;
-			previous.callbackData(COMMAND_LIST + " " + newOffset + " " + size);
+			int newPage = page - 1;
+			previous.callbackData(COMMAND_LIST + " " + newPage + " " + size);
 			navigationButtons.add(previous);
 		}
 		if (page < pagination.getTotalPages() - 1) {
 			InlineKeyboardButton next = new InlineKeyboardButton("Next page");
-			int newOffset = page + size;
-			next.callbackData(COMMAND_LIST + " " + newOffset + " " + size);
+			int newPage = page + 1;
+			next.callbackData(COMMAND_LIST + " " + newPage + " " + size);
 			navigationButtons.add(next);
 		}
 		if (!navigationButtons.isEmpty()) {
@@ -165,11 +165,15 @@ public class TelegramSuperAdminCommandHandlerService {
 		if (parts.length == 3) {
 			// add user
 			long adminId = Long.parseLong(parts[0]);
-			String name = parts[1];
-			UserRole adminRole = UserRole.valueOf(parts[2].toUpperCase());
-			adminService.insertUpdate(adminId, name, adminRole);
-			sendMessage = new SendMessage(chatId,
-					"Admin " + name + " (" + adminId + ") with role " + adminRole.name() + " added");
+			if (chatId != adminId) {
+				String name = parts[1];
+				UserRole adminRole = UserRole.valueOf(parts[2].toUpperCase());
+				adminService.insertUpdate(adminId, name, adminRole);
+				sendMessage = new SendMessage(chatId,
+						"Admin " + name + " (" + adminId + ") with role " + adminRole.name() + " added");
+			} else {
+				sendMessage = new SendMessage(chatId, "You can't add/edit your user");
+			}
 		} else {
 			sendMessage = new SendMessage(chatId, "There is something wrong with your message. Try again.");
 		}
