@@ -75,7 +75,8 @@ public class TelegramHelpCommandHandlerService implements TelegramHandler {
 		if (chatType != Type.channel) {
 			message.append("<code>Reply to a request with a file</code>").append(" - ")
 					.append("Mark the request as done").append("\n");
-			message.append(TelegramContributorsCommandHandlerService.COMMAND_DONE).append(" [text]").append(" - ")
+			message.append("<code>Reply to a request with</code> ")
+					.append(TelegramContributorsCommandHandlerService.COMMAND_DONE).append(" [text]").append(" - ")
 					.append("Mark the request as done and reply to the user with <i>[text]</i>");
 		} else {
 			message.append("Go in PM or a group to see the available commands.");

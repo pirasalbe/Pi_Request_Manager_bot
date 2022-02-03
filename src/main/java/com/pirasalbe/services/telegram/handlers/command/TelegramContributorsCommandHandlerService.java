@@ -76,6 +76,7 @@ public class TelegramContributorsCommandHandlerService {
 					stringBuilder.append(" not found");
 				}
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+				sendMessage.replyToMessageId(message.messageId());
 				sendMessage.parseMode(ParseMode.HTML);
 				DeleteMessage deleteMessage = new DeleteMessage(chatId, update.message().messageId());
 
