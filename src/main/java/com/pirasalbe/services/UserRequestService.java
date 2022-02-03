@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pirasalbe.models.LastRequestInfo;
+import com.pirasalbe.models.LastRequestInfo.Type;
 import com.pirasalbe.models.UserRequestRole;
 import com.pirasalbe.models.Validation;
 import com.pirasalbe.models.database.Group;
@@ -86,16 +87,7 @@ public class UserRequestService {
 			LastRequestInfo lastRequestResolvedInfo) {
 		Validation validation = Validation.valid();
 
-		LastRequestInfo requestInfo = null;
-		if (lastRequestResolvedInfo != null && lastRequestInfo != null) {
-			// take the latter
-			requestInfo = lastRequestResolvedInfo.getDate().isAfter(lastRequestInfo.getDate()) ? lastRequestResolvedInfo
-					: lastRequestInfo;
-		} else if (lastRequestResolvedInfo != null) {
-			requestInfo = lastRequestResolvedInfo;
-		} else if (lastRequestInfo != null) {
-			requestInfo = lastRequestInfo;
-		}
+		LastRequestInfo requestInfo = getLastRequestInfo(lastRequestInfo, lastRequestResolvedInfo);
 
 		if (requestInfo != null) {
 			// if null -> language was English
@@ -110,7 +102,7 @@ public class UserRequestService {
 
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append("You’ve already ");
-				stringBuilder.append(lastRequestInfo != null ? "requested" : "received");
+				stringBuilder.append(requestInfo.getType().name().toLowerCase());
 				stringBuilder.append(" an audiobook on ");
 				stringBuilder.append(DateUtils.formatDate(requestInfo.getDate()));
 				stringBuilder.append(".\n");
@@ -121,6 +113,30 @@ public class UserRequestService {
 		}
 
 		return validation;
+	}
+
+	private LastRequestInfo getLastRequestInfo(LastRequestInfo lastRequestInfo,
+			LastRequestInfo lastRequestResolvedInfo) {
+		LastRequestInfo requestInfo = null;
+
+		if (lastRequestResolvedInfo != null && lastRequestInfo != null) {
+			// take the latter
+			if (lastRequestResolvedInfo.getDate().isAfter(lastRequestInfo.getDate())) {
+				requestInfo = lastRequestResolvedInfo;
+				requestInfo.setType(Type.RECEIVED);
+			} else {
+				requestInfo = lastRequestInfo;
+				requestInfo.setType(Type.REQUESTED);
+			}
+		} else if (lastRequestResolvedInfo != null) {
+			requestInfo = lastRequestResolvedInfo;
+			requestInfo.setType(Type.RECEIVED);
+		} else if (lastRequestInfo != null) {
+			requestInfo = lastRequestInfo;
+			requestInfo.setType(Type.REQUESTED);
+		}
+
+		return requestInfo;
 	}
 
 	private Validation isValidEbookRequest(Long userId, Integer requestLimit, LocalDateTime requestTime) {
