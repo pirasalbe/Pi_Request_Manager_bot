@@ -61,7 +61,7 @@ public class AdminService {
 		admin.setRole(role);
 
 		repository.save(admin);
-		LOGGER.info("New admin: [{}] with role [{}]", id, role);
+		LOGGER.info("New admin: [{}] ({}) with role [{}]", name, id, role);
 	}
 
 	public Pagination<Admin> list(int page, int size) {
