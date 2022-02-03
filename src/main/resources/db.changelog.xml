@@ -108,4 +108,10 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 		</addColumn>
 	</changeSet>
 
+	<changeSet id="7 - Add column NAME to Admins" author="pirasalbe">
+		<addColumn tableName="ADMINS">
+			<column afterColumn="ID" name="NAME" type="varchar(128)" />
+		</addColumn>
+	</changeSet>
+
 </databaseChangeLog>

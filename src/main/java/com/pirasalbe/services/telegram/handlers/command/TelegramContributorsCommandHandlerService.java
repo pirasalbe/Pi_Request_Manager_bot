@@ -1,6 +1,7 @@
 package com.pirasalbe.services.telegram.handlers.command;
 
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -9,12 +10,14 @@ import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
+import com.pirasalbe.services.SchedulerService;
 import com.pirasalbe.utils.TelegramUtils;
 
 /**
@@ -36,6 +39,9 @@ public class TelegramContributorsCommandHandlerService {
 
 	@Autowired
 	private RequestManagementService requestManagementService;
+
+	@Autowired
+	private SchedulerService schedulerService;
 
 	private String getLink(Message message) {
 		String chatId = message.chat().id().toString();
@@ -116,7 +122,12 @@ public class TelegramContributorsCommandHandlerService {
 				sendMessage.replyToMessageId(update.message().messageId());
 				sendMessage.parseMode(ParseMode.HTML);
 
-				bot.execute(sendMessage);
+				SendResponse response = bot.execute(sendMessage);
+
+				// schedule delete
+				// TODO fix
+				schedulerService.schedule(() -> bot.execute(new DeleteMessage(chatId, response.message().messageId())),
+						1, TimeUnit.SECONDS);
 			}
 		};
 	}

@@ -109,8 +109,8 @@ public class TelegramSuperAdminCommandHandlerService {
 		// prepare keyboard
 		InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
 		sendMessage.replyMarkup(keyboard);
-		pagination.getElements().forEach(
-				admin -> keyboard.addRow(new InlineKeyboardButton(admin.getId() + " - " + admin.getRole().name())
+		pagination.getElements().forEach(admin -> keyboard.addRow(
+				new InlineKeyboardButton(admin.getName() + " - (" + admin.getId() + ") - " + admin.getRole().name())
 						.callbackData(COMMAND_COPY + " " + admin.getId())));
 
 		// add navigation buttons
@@ -139,11 +139,10 @@ public class TelegramSuperAdminCommandHandlerService {
 			// ask the id
 			StringBuilder builder = new StringBuilder(COMMAND_ADD).append("\n");
 			builder.append("Send the ID of the user and the role").append("\n");
-			String placeholder = "id " + UserRole.getRoles();
-			builder.append("Format: <code>").append(placeholder).append("</code>");
+			builder.append("Format: id name <code>").append(UserRole.getRoles()).append("</code>");
 			SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update), builder.toString());
 			sendMessage.parseMode(ParseMode.HTML);
-			sendMessage.replyMarkup(new ForceReply().inputFieldPlaceholder(placeholder));
+			sendMessage.replyMarkup(new ForceReply().inputFieldPlaceholder("id name " + UserRole.getRoles()));
 
 			bot.execute(sendMessage);
 		};
@@ -163,12 +162,14 @@ public class TelegramSuperAdminCommandHandlerService {
 		SendMessage sendMessage = null;
 
 		String[] parts = text.trim().split(" ");
-		if (parts.length == 2) {
+		if (parts.length == 3) {
 			// add user
 			long adminId = Long.parseLong(parts[0]);
-			UserRole adminRole = UserRole.valueOf(parts[1].toUpperCase());
-			adminService.insertUpdate(adminId, adminRole);
-			sendMessage = new SendMessage(chatId, "Admin " + adminId + " with role " + adminRole.name() + " added");
+			String name = parts[1];
+			UserRole adminRole = UserRole.valueOf(parts[2].toUpperCase());
+			adminService.insertUpdate(adminId, name, adminRole);
+			sendMessage = new SendMessage(chatId,
+					"Admin " + name + " (" + adminId + ") with role " + adminRole.name() + " added");
 		} else {
 			sendMessage = new SendMessage(chatId, "There is something wrong with your message. Try again.");
 		}
@@ -208,8 +209,12 @@ public class TelegramSuperAdminCommandHandlerService {
 
 		// add user
 		long adminId = Long.parseLong(text.trim());
-		adminService.deleteIfExists(adminId);
-		sendMessage = new SendMessage(chatId, "Admin " + adminId + " removed");
+		if (chatId != adminId) {
+			adminService.deleteIfExists(adminId);
+			sendMessage = new SendMessage(chatId, "Admin " + adminId + " removed");
+		} else {
+			sendMessage = new SendMessage(chatId, "You can't remove your user");
+		}
 
 		sendMessage.replyToMessageId(messageId);
 

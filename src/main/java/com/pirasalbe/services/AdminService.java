@@ -44,20 +44,21 @@ public class AdminService {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void insertUpdate(Long id, UserRole role) {
+	public void insertUpdate(Long id, String name, UserRole role) {
 		Admin admin = null;
 
 		// update
 		Optional<Admin> optional = repository.findById(id);
 		if (optional.isPresent()) {
 			admin = optional.get();
-			admin.setRole(role);
 		} else {
 			// add
 			admin = new Admin();
 			admin.setId(id);
-			admin.setRole(role);
 		}
+
+		admin.setName(name);
+		admin.setRole(role);
 
 		repository.save(admin);
 		LOGGER.info("New admin: [{}] with role [{}]", id, role);
