@@ -28,8 +28,8 @@ public class RequestService {
 	@Autowired
 	private RequestRepository repository;
 
-	public Request findByLink(String link) {
-		return repository.findByLink(link);
+	public Request findByUniqueKey(Long groupId, String link) {
+		return repository.findByUniqueKey(groupId, link);
 	}
 
 	public Optional<Request> findById(Long messageId, Long groupId) {

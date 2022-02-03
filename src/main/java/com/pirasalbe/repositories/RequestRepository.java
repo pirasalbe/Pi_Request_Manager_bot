@@ -16,8 +16,8 @@ import com.pirasalbe.models.database.RequestPK;
  */
 public interface RequestRepository extends JpaRepository<Request, RequestPK> {
 
-	@Query("SELECT r FROM Request r WHERE link = :link")
-	Request findByLink(@Param("link") String link);
+	@Query("SELECT r FROM Request r WHERE r.id.groupId = :groupId and r.link = :link")
+	Request findByUniqueKey(@Param("groupId") Long groupId, @Param("link") String link);
 
 	@Modifying
 	@Query("DELETE FROM Request r WHERE r.id.groupId = :groupId")

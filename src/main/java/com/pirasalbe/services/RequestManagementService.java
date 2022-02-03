@@ -65,7 +65,7 @@ public class RequestManagementService {
 			result = RequestAssociationInfo.creator();
 		} else {
 			// get request by UQ
-			Request request = requestService.findByLink(link);
+			Request request = requestService.findByUniqueKey(groupId, link);
 
 			if (request == null) {
 				// the request doesn't exists
@@ -87,7 +87,7 @@ public class RequestManagementService {
 			String otherTags, Long userId, Group group, LocalDateTime requestDate) {
 		RequestResult result = null;
 
-		Request request = requestService.findByLink(link);
+		Request request = requestService.findByUniqueKey(group.getId(), link);
 		// request doesn't exists
 		if (request == null) {
 			insertNewRequest(messageId, content, link, format, source, otherTags, userId, group.getId(), requestDate);
@@ -187,7 +187,7 @@ public class RequestManagementService {
 		boolean success = false;
 
 		if (link != null) {
-			Request request = requestService.findByLink(link);
+			Request request = requestService.findByUniqueKey(message.chat().id(), link);
 			if (request != null) {
 				// mark request as done
 				requestService.updateStatus(request, RequestStatus.RESOLVED);

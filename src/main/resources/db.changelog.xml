@@ -114,4 +114,12 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 		</addColumn>
 	</changeSet>
 
+	<changeSet id="8 - Drop REQUEST_LINK_UQ constraint" author="pirasalbe">
+		<dropUniqueConstraint constraintName="REQUEST_LINK_UQ" tableName="REQUESTS" uniqueColumns="LINK" />
+	</changeSet>
+
+	<changeSet id="9 - Add REQUEST_GROUP_LINK_UQ constraint" author="pirasalbe">
+		<addUniqueConstraint constraintName="REQUEST_GROUP_LINK_UQ" tableName="REQUESTS" columnNames="LINK, GROUP_ID" validate="true" />
+	</changeSet>
+
 </databaseChangeLog>
