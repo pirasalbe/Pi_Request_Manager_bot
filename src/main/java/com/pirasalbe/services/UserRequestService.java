@@ -21,6 +21,8 @@ import com.pirasalbe.models.database.UserRequestPK;
 import com.pirasalbe.models.request.Format;
 import com.pirasalbe.repositories.UserRequestRepository;
 import com.pirasalbe.utils.DateUtils;
+import com.pirasalbe.utils.RequestUtils;
+import com.pirasalbe.utils.StringUtils;
 
 /**
  * Service that manages the user request table
@@ -151,14 +153,11 @@ public class UserRequestService {
 			LOGGER.warn("User {}, new request {}, {} ebook requested since {}", userId, requestTime, requests,
 					lastRequestDate);
 
-			String plural = requestLimit > 1 ? "s" : "";
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append("You’re only allowed to request ").append(requestLimit > 1 ? "up to " : "");
-			stringBuilder.append(requestLimit).append(" book").append(plural);
+			stringBuilder.append(requestLimit).append(" book").append(StringUtils.getPlural(requestLimit));
 			stringBuilder.append(" every 24 hours.\n");
-			long hours = DateUtils.getHours(requestTime, lastRequestDate.plusHours(24));
-			stringBuilder.append("Come back again in ").append(hours).append(" hour").append(hours > 1 ? "s" : "")
-					.append(".");
+			stringBuilder.append(RequestUtils.getComeBackAgain(requestTime, lastRequestDate.plusHours(24)));
 			validation = Validation.invalid(stringBuilder.toString());
 		}
 

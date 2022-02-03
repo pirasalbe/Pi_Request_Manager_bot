@@ -1,5 +1,6 @@
 package com.pirasalbe.utils;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,6 +64,31 @@ public class RequestUtils {
 		}
 
 		return link;
+	}
+
+	public static String getComeBackAgain(LocalDateTime requestTime, LocalDateTime nextValidRequest) {
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.append("Come back again in ");
+
+		// get hours
+		long hours = DateUtils.getHours(requestTime, nextValidRequest);
+		if (hours > 0) {
+			stringBuilder.append(hours).append(" hour").append(StringUtils.getPlural(hours));
+		}
+
+		// get minutes
+		long minutes = DateUtils.getMinutes(requestTime, nextValidRequest, hours);
+		if (minutes > 0 && hours > 0) {
+			stringBuilder.append(" and ");
+		}
+
+		if (minutes > 0) {
+			stringBuilder.append(minutes).append(" minute").append(StringUtils.getPlural(minutes));
+		}
+
+		stringBuilder.append(".");
+
+		return stringBuilder.toString();
 	}
 
 }

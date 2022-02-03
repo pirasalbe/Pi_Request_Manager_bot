@@ -46,4 +46,14 @@ public class DateUtils {
 		return ChronoUnit.HOURS.between(from, to);
 	}
 
+	public static long getMinutes(LocalDateTime from, LocalDateTime to) {
+		return getMinutes(from, to, getHours(from, to));
+	}
+
+	public static long getMinutes(LocalDateTime from, LocalDateTime to, long hours) {
+		long minutes = ChronoUnit.MINUTES.between(from, to);
+
+		return minutes - hours * 60;
+	}
+
 }
