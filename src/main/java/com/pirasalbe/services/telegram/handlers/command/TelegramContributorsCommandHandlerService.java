@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.model.Message;
+import com.pengrad.telegrambot.model.MessageEntity;
+import com.pengrad.telegrambot.model.MessageEntity.Type;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
@@ -65,7 +67,7 @@ public class TelegramContributorsCommandHandlerService {
 
 			if (optional.isPresent()) {
 				Message message = update.message().replyToMessage();
-				String text = update.message().text().substring(COMMAND_DONE.length()).trim();
+				String text = removeDoneCommand(update.message().text(), update.message().entities()).trim();
 
 				boolean success = requestManagementService.markDone(message);
 
@@ -90,6 +92,23 @@ public class TelegramContributorsCommandHandlerService {
 				bot.execute(deleteMessage);
 			}
 		};
+	}
+
+	private String removeDoneCommand(String text, MessageEntity[] entities) {
+		StringBuilder builder = new StringBuilder();
+
+		if (entities != null) {
+			for (int i = 0; i < entities.length && builder.length() == 0; i++) {
+				MessageEntity entity = entities[i];
+				if (entity.type() == Type.bot_command) {
+					Integer offset = entity.offset();
+					builder.append(text.substring(0, offset));
+					builder.append(text.substring(offset + entity.length()));
+				}
+			}
+		}
+
+		return builder.toString();
 	}
 
 	public TelegramCondition markDoneWithFileCondition() {
