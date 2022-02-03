@@ -147,16 +147,16 @@ public class UserRequestService {
 		long requests = userRequests.size();
 		// it's invalid if already reached the limit
 		if (requests >= requestLimit) {
+			LocalDateTime lastRequestDate = userRequests.get(0).getDate();
 			LOGGER.warn("User {}, new request {}, {} ebook requested since {}", userId, requestTime, requests,
-					last24Hours);
+					lastRequestDate);
 
 			String plural = requestLimit > 1 ? "s" : "";
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append("You’re only allowed to request ").append(requestLimit > 1 ? "up to " : "");
 			stringBuilder.append(requestLimit).append(" book").append(plural);
 			stringBuilder.append(" every 24 hours.\n");
-			LocalDateTime date = userRequests.get(0).getDate();
-			long hours = DateUtils.getHours(requestTime, date.plusHours(24));
+			long hours = DateUtils.getHours(requestTime, lastRequestDate.plusHours(24));
 			stringBuilder.append("Come back again in ").append(hours).append(" hour").append(hours > 1 ? "s" : "")
 					.append(".");
 			validation = Validation.invalid(stringBuilder.toString());
