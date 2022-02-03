@@ -126,7 +126,7 @@ public class TelegramContributorsCommandHandlerService {
 
 				// schedule delete
 				schedulerService.schedule((b, r) -> b.execute(new DeleteMessage(chatId, r.message().messageId())),
-						response, 2, TimeUnit.MINUTES);
+						response, 5, TimeUnit.SECONDS);
 			}
 		};
 	}

@@ -213,7 +213,7 @@ public class TelegramGroupsCommandHandlerService {
 
 			String message = null;
 
-			String[] parts = text.split(" ");
+			String[] parts = text.replace(", ", ",").split(" ");
 			if (parts.length == 2) {
 				String sources = parts[1];
 

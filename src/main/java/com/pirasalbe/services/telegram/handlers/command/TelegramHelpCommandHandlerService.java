@@ -63,7 +63,9 @@ public class TelegramHelpCommandHandlerService implements TelegramHandler {
 	private String getUserHelp(Type chatType) {
 		StringBuilder message = new StringBuilder("<b>User help:</b>").append("\n");
 
-		message.append("TODO");
+		message.append(TelegramMeCommandHandlerService.COMMAND).append(" - ").append("Show user's info").append("\n");
+		message.append("<code>Reply to a another user's message with</code> ")
+				.append(TelegramMeCommandHandlerService.COMMAND).append(" - ").append("Show other user's info");
 
 		return message.toString();
 	}
