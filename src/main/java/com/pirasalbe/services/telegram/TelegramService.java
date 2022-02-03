@@ -20,6 +20,7 @@ import com.pirasalbe.services.telegram.handlers.command.TelegramAliveCommandHand
 import com.pirasalbe.services.telegram.handlers.command.TelegramContributorsCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramGroupsCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramHelpCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.command.TelegramMeCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramSuperAdminCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.request.TelegramNewRequestHandlerService;
 import com.pirasalbe.services.telegram.handlers.request.TelegramUpdateRequestHandlerService;
@@ -67,6 +68,9 @@ public class TelegramService {
 	private TelegramAliveCommandHandlerService aliveCommandHandlerService;
 
 	@Autowired
+	private TelegramMeCommandHandlerService meCommandHandlerService;
+
+	@Autowired
 	private TelegramSuperAdminCommandHandlerService superAdminCommandHandlerService;
 
 	@Autowired
@@ -91,6 +95,10 @@ public class TelegramService {
 		// alive
 		bot.register(commandConditionFactory.onCommands(TelegramAliveCommandHandlerService.COMMANDS),
 				aliveCommandHandlerService);
+
+		// me
+		bot.register(commandConditionFactory.onCommand(TelegramMeCommandHandlerService.COMMAND),
+				meCommandHandlerService);
 
 		// super admin
 		registerSuperAdminHandlers();
