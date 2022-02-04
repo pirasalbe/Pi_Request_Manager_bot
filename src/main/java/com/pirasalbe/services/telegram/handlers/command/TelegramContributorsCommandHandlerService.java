@@ -32,9 +32,9 @@ import com.pirasalbe.utils.TelegramUtils;
 @Component
 public class TelegramContributorsCommandHandlerService {
 
+	public static final String COMMAND_PENDING = "/pending";
 	public static final String COMMAND_DONE = "/done";
 	public static final String COMMAND_SILENT_DONE = "/sdone";
-	public static final String COMMAND_PENDING = "/pending";
 
 	public static final UserRole ROLE = UserRole.CONTRIBUTOR;
 
@@ -57,12 +57,57 @@ public class TelegramContributorsCommandHandlerService {
 		return "https://t.me/c/" + chatId + "/" + messageId;
 	}
 
-	public TelegramCondition markDoneCondition() {
-		return this::markDoneCondition;
+	public TelegramCondition replyToMessageCondition() {
+		return this::replyToMessage;
 	}
 
-	private boolean markDoneCondition(Update update) {
+	private boolean replyToMessage(Update update) {
 		return update.message() != null && update.message().replyToMessage() != null;
+	}
+
+	public TelegramHandler markPending() {
+		return (bot, update) -> {
+			Long chatId = TelegramUtils.getChatId(update);
+
+			Optional<Group> optional = groupService.findById(chatId);
+
+			if (optional.isPresent()) {
+				Message message = update.message().replyToMessage();
+
+				boolean success = requestManagementService.markPending(message);
+
+				// send a message to notify operation
+				String link = getLink(message);
+				StringBuilder stringBuilder = new StringBuilder();
+				stringBuilder.append(requestStatusMessage(link, success, "marked as pending"));
+				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+				sendMessage.parseMode(ParseMode.HTML);
+				SendResponse response = bot.execute(sendMessage);
+
+				// schedule delete
+				schedulerService.schedule((b, r) -> b.execute(new DeleteMessage(chatId, r.message().messageId())),
+						response, 5, TimeUnit.SECONDS);
+
+				// delete command
+				DeleteMessage deleteMessage = new DeleteMessage(chatId, update.message().messageId());
+				bot.execute(deleteMessage);
+			}
+		};
+	}
+
+	private String requestStatusMessage(String link, boolean success, String successMessage) {
+		StringBuilder stringBuilder = new StringBuilder();
+
+		stringBuilder.append("<a href='");
+		stringBuilder.append(link);
+		stringBuilder.append("'>Request</a>");
+		if (success) {
+			stringBuilder.append(" ").append(successMessage);
+		} else {
+			stringBuilder.append(" not found");
+		}
+
+		return stringBuilder.toString();
 	}
 
 	public TelegramHandler markDone() {
@@ -81,7 +126,6 @@ public class TelegramContributorsCommandHandlerService {
 
 			if (optional.isPresent()) {
 				Message message = update.message().replyToMessage();
-				String text = removeDoneCommand(update.message().text(), update.message().entities()).trim();
 
 				boolean success = requestManagementService.markDone(message);
 
@@ -89,18 +133,12 @@ public class TelegramContributorsCommandHandlerService {
 				String link = getLink(message);
 				StringBuilder stringBuilder = new StringBuilder();
 				if (reply) {
-					// tag the user only if reply
+					// reply to the user only if reply
+					String text = removeDoneCommand(update.message().text(), update.message().entities()).trim();
 					stringBuilder.append(TelegramUtils.tagUser(message));
 					stringBuilder.append(" ").append(text).append("\n");
 				}
-				stringBuilder.append("<a href='");
-				stringBuilder.append(link);
-				stringBuilder.append("'>Request</a>");
-				if (success) {
-					stringBuilder.append(" marked as done");
-				} else {
-					stringBuilder.append(" not found");
-				}
+				stringBuilder.append(requestStatusMessage(link, success, "marked as done"));
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 				if (reply) {
 					sendMessage.replyToMessageId(message.messageId());
@@ -138,8 +176,8 @@ public class TelegramContributorsCommandHandlerService {
 		return builder.toString();
 	}
 
-	public TelegramCondition markDoneWithFileCondition() {
-		return update -> markDoneCondition(update)
+	public TelegramCondition replyToMessageWithFileCondition() {
+		return update -> replyToMessage(update)
 				&& (update.message().document() != null || update.message().audio() != null);
 	}
 
@@ -156,14 +194,7 @@ public class TelegramContributorsCommandHandlerService {
 
 				String link = getLink(message);
 				StringBuilder stringBuilder = new StringBuilder();
-				stringBuilder.append("<a href='");
-				stringBuilder.append(link);
-				stringBuilder.append("'>Request</a>");
-				if (success) {
-					stringBuilder.append(" marked as done");
-				} else {
-					stringBuilder.append(" not found");
-				}
+				stringBuilder.append(requestStatusMessage(link, success, "marked as done"));
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
 

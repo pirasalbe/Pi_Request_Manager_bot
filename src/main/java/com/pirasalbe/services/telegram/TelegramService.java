@@ -225,19 +225,24 @@ public class TelegramService {
 
 		bot.register(
 				Arrays.asList(groupChatCondition, groupRoleCondition,
+						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_PENDING),
+						contributorsCommandHandlerService.replyToMessageCondition()),
+				contributorsCommandHandlerService.markPending());
+		bot.register(
+				Arrays.asList(groupChatCondition, groupRoleCondition,
 						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_DONE),
-						contributorsCommandHandlerService.markDoneCondition()),
+						contributorsCommandHandlerService.replyToMessageCondition()),
 				contributorsCommandHandlerService.markDone());
 		bot.register(
 				Arrays.asList(groupChatCondition, groupRoleCondition,
 						commandConditionFactory
 								.onCommand(TelegramContributorsCommandHandlerService.COMMAND_SILENT_DONE),
-						contributorsCommandHandlerService.markDoneCondition()),
+						contributorsCommandHandlerService.replyToMessageCondition()),
 				contributorsCommandHandlerService.markDoneSilently());
 
 		bot.register(
 				Arrays.asList(groupChatCondition, groupRoleCondition,
-						contributorsCommandHandlerService.markDoneWithFileCondition()),
+						contributorsCommandHandlerService.replyToMessageWithFileCondition()),
 				contributorsCommandHandlerService.markDoneWithFile());
 	}
 

@@ -179,7 +179,17 @@ public class RequestManagementService {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public boolean markPending(Message message) {
+		return updateStatus(message, RequestStatus.NEW);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public boolean markDone(Message message) {
+		return updateStatus(message, RequestStatus.RESOLVED);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	private boolean updateStatus(Message message, RequestStatus status) {
 		String link = RequestUtils.getLink(message.text(), message.entities());
 
 		boolean success = false;
@@ -188,7 +198,7 @@ public class RequestManagementService {
 			Request request = requestService.findByUniqueKey(message.chat().id(), link);
 			if (request != null) {
 				// mark request as done
-				requestService.updateStatus(request, RequestStatus.RESOLVED);
+				requestService.updateStatus(request, status);
 				success = true;
 			}
 		}
