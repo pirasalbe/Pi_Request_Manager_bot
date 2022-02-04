@@ -133,9 +133,6 @@ public class RequestManagementService {
 			Request request, UserRequest userRequest) {
 		LocalDateTime previousRequestDate = userRequest.getDate();
 
-		// update date
-		userRequestService.updateDate(messageId, group.getId(), userId, requestDate);
-
 		// new request date should be after a cooldown period
 		LocalDateTime minDateForNewRequest = previousRequestDate.plusHours(HOURS_BEFORE_REPEATING_REQUEST);
 
@@ -143,6 +140,7 @@ public class RequestManagementService {
 		boolean specialTags = hasSpecialTags(group, request.getSource());
 		if (!specialTags && minDateForNewRequest.isBefore(requestDate)) {
 			// no special tags and the request was after 48 hours
+			userRequestService.updateDate(messageId, group.getId(), userId, requestDate);
 			result = new RequestResult(Result.REPEATED_REQUEST);
 		} else if (specialTags) {
 			// special tags request
