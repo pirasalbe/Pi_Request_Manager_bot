@@ -102,7 +102,9 @@ public class TelegramContributorsCommandHandlerService {
 					stringBuilder.append(" not found");
 				}
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
-				sendMessage.replyToMessageId(message.messageId());
+				if (reply) {
+					sendMessage.replyToMessageId(message.messageId());
+				}
 				sendMessage.parseMode(ParseMode.HTML);
 				SendResponse response = bot.execute(sendMessage);
 
@@ -163,7 +165,6 @@ public class TelegramContributorsCommandHandlerService {
 					stringBuilder.append(" not found");
 				}
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
-				sendMessage.replyToMessageId(update.message().messageId());
 				sendMessage.parseMode(ParseMode.HTML);
 
 				SendResponse response = bot.execute(sendMessage);

@@ -83,6 +83,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		stringBuilder.append("<i>Publisher (or Self-published when publisher isn't specified)</i>\n");
 		stringBuilder.append("<i>Link</i>\n\n");
 		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+		sendMessage.replyToMessageId(message.messageId());
 		sendMessage.parseMode(ParseMode.HTML);
 
 		bot.execute(sendMessage);
