@@ -75,6 +75,11 @@ public class TelegramHelpCommandHandlerService implements TelegramHandler {
 
 		message.append("<i>Group commands:</i>").append("\n");
 		if (chatType != Type.channel) {
+			message.append(TelegramContributorsCommandHandlerService.COMMAND_GET).append(" - ")
+					.append("Return a list of pending requests. ")
+					.append("Can be filtered with <code>format=[EBOOK/AUDIOBOOK] source=[AMAZON/AUDIBLE/KU/SCRIBD/STORYTEL/ARCHIVE] order=[OLD/NEW]</code>. ")
+					.append("By default it returns a list of all formats and sources, order=NEW.").append("\n\n");
+
 			message.append("<code>Reply to a request with a file</code>").append(" - ")
 					.append("Mark the request as done").append("\n");
 			message.append("<code>Reply to a request with</code> ")

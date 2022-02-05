@@ -218,6 +218,10 @@ public class TelegramService {
 		TelegramCondition contributorRoleCondition = roleConditionFactory
 				.onRole(TelegramContributorsCommandHandlerService.ROLE);
 
+		bot.register(Arrays.asList(groupChatCondition,
+				commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_GET),
+				contributorRoleCondition), contributorsCommandHandlerService.getGroupRequests());
+
 		bot.register(
 				Arrays.asList(groupChatCondition,
 						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_PENDING),

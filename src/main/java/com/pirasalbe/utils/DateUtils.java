@@ -42,18 +42,20 @@ public class DateUtils {
 		return localDateTime.format(DateTimeFormatter.ofPattern("dd LLL uuuu"));
 	}
 
-	public static long getHours(LocalDateTime from, LocalDateTime to) {
-		return ChronoUnit.HOURS.between(from, to);
+	public static long getDays(LocalDateTime from, LocalDateTime to) {
+		return ChronoUnit.DAYS.between(from, to);
 	}
 
-	public static long getMinutes(LocalDateTime from, LocalDateTime to) {
-		return getMinutes(from, to, getHours(from, to));
+	public static long getHours(LocalDateTime from, LocalDateTime to, long days) {
+		long hours = ChronoUnit.HOURS.between(from, to);
+
+		return hours - days * 24;
 	}
 
-	public static long getMinutes(LocalDateTime from, LocalDateTime to, long hours) {
+	public static long getMinutes(LocalDateTime from, LocalDateTime to, long days, long hours) {
 		long minutes = ChronoUnit.MINUTES.between(from, to);
 
-		return minutes - hours * 60;
+		return minutes - (hours + days * 24) * 60;
 	}
 
 }

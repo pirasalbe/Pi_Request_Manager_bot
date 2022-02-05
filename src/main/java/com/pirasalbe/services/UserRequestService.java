@@ -7,6 +7,8 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,7 @@ import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.database.UserRequest;
 import com.pirasalbe.models.database.UserRequestPK;
 import com.pirasalbe.models.request.Format;
+import com.pirasalbe.models.request.Source;
 import com.pirasalbe.repositories.UserRequestRepository;
 import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.RequestUtils;
@@ -199,6 +202,33 @@ public class UserRequestService {
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void deleteByGroupId(Long groupId) {
 		repository.deleteByGroupId(groupId);
+	}
+
+	public List<UserRequest> findRequests(Optional<Long> groupId, Optional<Source> source, Optional<Format> format,
+			boolean descendent) {
+		List<UserRequest> requests = null;
+		Direction direction = descendent ? Direction.DESC : Direction.ASC;
+		Sort sort = Sort.by(direction, "u.date");
+
+		if (groupId.isPresent() && source.isPresent() && format.isPresent()) {
+			requests = repository.findByFilters(groupId.get(), source.get(), format.get(), sort);
+		} else if (groupId.isPresent() && source.isPresent()) {
+			requests = repository.findByFilters(groupId.get(), source.get(), sort);
+		} else if (groupId.isPresent() && format.isPresent()) {
+			requests = repository.findByFilters(groupId.get(), format.get(), sort);
+		} else if (groupId.isPresent()) {
+			requests = repository.findByFilters(groupId.get(), sort);
+		} else if (source.isPresent() && format.isPresent()) {
+			requests = repository.findByFilters(source.get(), format.get(), sort);
+		} else if (source.isPresent()) {
+			requests = repository.findByFilters(source.get(), sort);
+		} else if (format.isPresent()) {
+			requests = repository.findByFilters(format.get(), sort);
+		} else {
+			requests = repository.findByFilters(sort);
+		}
+
+		return requests;
 	}
 
 }

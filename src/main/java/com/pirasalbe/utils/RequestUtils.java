@@ -66,25 +66,43 @@ public class RequestUtils {
 		return link;
 	}
 
-	public static String getComeBackAgain(LocalDateTime requestTime, LocalDateTime nextValidRequest) {
+	public static String getTimeBetweenDates(LocalDateTime from, LocalDateTime to) {
 		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.append("Come back again in ");
+
+		// get days
+		long days = DateUtils.getDays(from, to);
+		if (days > 0) {
+			stringBuilder.append(days).append(" day").append(StringUtils.getPlural(days));
+		}
 
 		// get hours
-		long hours = DateUtils.getHours(requestTime, nextValidRequest);
+		long hours = DateUtils.getHours(from, to, days);
+		if (days > 0 && hours > 0) {
+			stringBuilder.append(" and ");
+		}
+
 		if (hours > 0) {
 			stringBuilder.append(hours).append(" hour").append(StringUtils.getPlural(hours));
 		}
 
 		// get minutes
-		long minutes = DateUtils.getMinutes(requestTime, nextValidRequest, hours);
-		if (minutes > 0 && hours > 0) {
+		long minutes = DateUtils.getMinutes(from, to, days, hours);
+		if (hours > 0 && minutes > 0 || days > 0 && minutes > 0) {
 			stringBuilder.append(" and ");
 		}
 
-		if (minutes > 0) {
+		if (minutes > 0 || stringBuilder.length() == 0) {
 			stringBuilder.append(minutes).append(" minute").append(StringUtils.getPlural(minutes));
 		}
+
+		return stringBuilder.toString();
+	}
+
+	public static String getComeBackAgain(LocalDateTime requestTime, LocalDateTime nextValidRequest) {
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.append("Come back again in ");
+
+		stringBuilder.append(getTimeBetweenDates(requestTime, nextValidRequest));
 
 		stringBuilder.append(".");
 
