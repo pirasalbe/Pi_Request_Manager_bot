@@ -51,43 +51,43 @@ public interface UserRequestRepository extends JpaRepository<UserRequest, UserRe
 
 	@Query("SELECT u "
 			+ "FROM Request r JOIN UserRequest u ON u.id.messageId = r.id.messageId AND u.id.groupId = r.id.groupId "
-			+ "WHERE u.role = 'CREATOR' AND r.status <> 'RESOLVED' AND r.id.groupId = :groupId AND r.format = :format AND r.source = :source")
+			+ "WHERE u.role = 'CREATOR' AND r.status = 'NEW' AND r.id.groupId = :groupId AND r.format = :format AND r.source = :source")
 	List<UserRequest> findByFilters(@Param("groupId") Long groupId, @Param("source") Source source,
 			@Param("format") Format format, Sort sort);
 
 	@Query("SELECT u "
 			+ "FROM Request r JOIN UserRequest u ON u.id.messageId = r.id.messageId AND u.id.groupId = r.id.groupId "
-			+ "WHERE u.role = 'CREATOR' AND r.status <> 'RESOLVED' AND r.id.groupId = :groupId AND r.format = :format")
+			+ "WHERE u.role = 'CREATOR' AND r.status = 'NEW' AND r.id.groupId = :groupId AND r.format = :format")
 	List<UserRequest> findByFilters(@Param("groupId") Long groupId, @Param("format") Format format, Sort sort);
 
 	@Query("SELECT u "
 			+ "FROM Request r JOIN UserRequest u ON u.id.messageId = r.id.messageId AND u.id.groupId = r.id.groupId "
-			+ "WHERE u.role = 'CREATOR' AND r.status <> 'RESOLVED' AND r.id.groupId = :groupId AND r.source = :source")
+			+ "WHERE u.role = 'CREATOR' AND r.status = 'NEW' AND r.id.groupId = :groupId AND r.source = :source")
 	List<UserRequest> findByFilters(@Param("groupId") Long groupId, @Param("source") Source source, Sort sort);
 
 	@Query("SELECT u "
 			+ "FROM Request r JOIN UserRequest u ON u.id.messageId = r.id.messageId AND u.id.groupId = r.id.groupId "
-			+ "WHERE u.role = 'CREATOR' AND r.status <> 'RESOLVED' AND r.id.groupId = :groupId")
+			+ "WHERE u.role = 'CREATOR' AND r.status = 'NEW' AND r.id.groupId = :groupId")
 	List<UserRequest> findByFilters(@Param("groupId") Long groupId, Sort sort);
 
 	@Query("SELECT u "
 			+ "FROM Request r JOIN UserRequest u ON u.id.messageId = r.id.messageId AND u.id.groupId = r.id.groupId "
-			+ "WHERE u.role = 'CREATOR' AND r.status <> 'RESOLVED' AND r.format = :format AND r.source = :source")
+			+ "WHERE u.role = 'CREATOR' AND r.status = 'NEW' AND r.format = :format AND r.source = :source")
 	List<UserRequest> findByFilters(@Param("source") Source source, @Param("format") Format format, Sort sort);
 
 	@Query("SELECT u "
 			+ "FROM Request r JOIN UserRequest u ON u.id.messageId = r.id.messageId AND u.id.groupId = r.id.groupId "
-			+ "WHERE u.role = 'CREATOR' AND r.status <> 'RESOLVED' AND r.source = :source")
+			+ "WHERE u.role = 'CREATOR' AND r.status = 'NEW' AND r.source = :source")
 	List<UserRequest> findByFilters(@Param("source") Source source, Sort sort);
 
 	@Query("SELECT u "
 			+ "FROM Request r JOIN UserRequest u ON u.id.messageId = r.id.messageId AND u.id.groupId = r.id.groupId "
-			+ "WHERE u.role = 'CREATOR' AND r.status <> 'RESOLVED' AND r.format = :format")
+			+ "WHERE u.role = 'CREATOR' AND r.status = 'NEW' AND r.format = :format")
 	List<UserRequest> findByFilters(@Param("format") Format format, Sort sort);
 
 	@Query("SELECT u "
 			+ "FROM Request r JOIN UserRequest u ON u.id.messageId = r.id.messageId AND u.id.groupId = r.id.groupId "
-			+ "WHERE u.role = 'CREATOR' AND r.status <> 'RESOLVED'")
+			+ "WHERE u.role = 'CREATOR' AND r.status = 'NEW'")
 	List<UserRequest> findByFilters(Sort sort);
 
 }
