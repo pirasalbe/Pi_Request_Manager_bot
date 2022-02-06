@@ -90,9 +90,14 @@ public class TelegramHelpCommandHandlerService implements TelegramHandler {
 			message.append("- ").append(TelegramContributorsCommandHandlerService.COMMAND_SILENT_DONE).append(" - ")
 					.append("Mark the request as done. It doesn't notify the user.").append("\n");
 			message.append("- ").append(TelegramContributorsCommandHandlerService.COMMAND_PENDING).append(" - ")
-					.append("Mark the request as pending. Useful when a request was marked as done by mistake.");
+					.append("Mark the request as pending. Useful when a request was marked as done by mistake.")
+					.append("\n");
 			message.append("- ").append(TelegramContributorsCommandHandlerService.COMMAND_CANCEL).append(" - ")
-					.append("Mark the request as cancelled. Useful when a request was deleted.");
+					.append("Mark the request as cancelled").append("\n\n");
+
+			message.append(TelegramContributorsCommandHandlerService.COMMAND_CANCEL).append(" [message id]")
+					.append(" - ").append("Mark the request as cancelled. Useful when a request was deleted.")
+					.append("\n\n");
 		} else {
 			message.append("Go in PM or a group to see the available commands.");
 		}

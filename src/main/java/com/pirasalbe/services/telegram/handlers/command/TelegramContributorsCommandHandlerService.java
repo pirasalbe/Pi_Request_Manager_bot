@@ -223,10 +223,17 @@ public class TelegramContributorsCommandHandlerService {
 			if (optional.isPresent()) {
 				String message = null;
 
-				String messageText = TelegramUtils.removeCommand(text, update.message().entities()).trim();
-				if (!messageText.isEmpty()) {
-					Long messageId = Long.parseLong(messageText);
+				// get message id
+				Long messageId = null;
+				if (update.message().replyToMessage() != null) {
+					messageId = update.message().replyToMessage().messageId().longValue();
+				} else {
+					String messageText = TelegramUtils.removeCommand(text, update.message().entities()).trim();
+					messageId = messageText.isEmpty() ? null : Long.parseLong(messageText);
+				}
 
+				// delete message
+				if (messageId != null) {
 					boolean success = requestManagementService.markCancelled(messageId, chatId);
 
 					String link = getLink(chatId.toString(), messageId.toString());
