@@ -17,9 +17,7 @@ import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.DeleteMessage;
-import com.pengrad.telegrambot.request.GetChat;
 import com.pengrad.telegrambot.request.SendMessage;
-import com.pengrad.telegrambot.response.GetChatResponse;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Group;
@@ -321,7 +319,7 @@ public class TelegramContributorsCommandHandlerService {
 
 			// add chat info when in PM
 			if (group.isEmpty()) {
-				requestBuilder.append(getChatName(bot, chatNames, groupId)).append(" ");
+				requestBuilder.append(getChatName(chatNames, groupId)).append(" ");
 			}
 
 			requestBuilder.append(messageId).append("</a> ");
@@ -345,18 +343,15 @@ public class TelegramContributorsCommandHandlerService {
 		}
 	}
 
-	private String getChatName(TelegramBot bot, Map<Long, String> chatNames, Long groupId) {
+	private String getChatName(Map<Long, String> chatNames, Long groupId) {
 		String chatName = null;
 		if (chatNames.containsKey(groupId)) {
 			chatName = chatNames.get(groupId);
 		} else {
-			// TODO get from db
-			GetChat getChat = new GetChat(groupId);
-			GetChatResponse response = bot.execute(getChat);
-			if (response.isOk()) {
-				String title = response.chat().title();
-				chatNames.put(groupId, title);
-				chatName = title;
+			Optional<Group> optional = groupService.findById(groupId);
+			if (optional.isPresent()) {
+				chatName = optional.get().getName();
+				chatNames.put(groupId, chatName);
 			} else {
 				chatName = "Unknown";
 			}

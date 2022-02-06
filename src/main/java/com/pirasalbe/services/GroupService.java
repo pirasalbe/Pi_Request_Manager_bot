@@ -43,13 +43,14 @@ public class GroupService {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void insertIfNotExists(Long id) {
+	public void insertIfNotExists(Long id, String name) {
 		// insert
 		Optional<Group> optional = repository.findById(id);
 		if (optional.isEmpty()) {
 			// add
 			Group group = new Group();
 			group.setId(id);
+			group.setName(name);
 			group.setRequestLimit(1);
 			group.setAudiobooksDaysWait(15);
 			group.setEnglishAudiobooksDaysWait(8);

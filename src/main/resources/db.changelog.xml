@@ -122,4 +122,10 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 		<addUniqueConstraint constraintName="REQUEST_GROUP_LINK_UQ" tableName="REQUESTS" columnNames="LINK, GROUP_ID" validate="true" />
 	</changeSet>
 
+	<changeSet id="10 - Group title" author="pirasalbe">
+		<addColumn tableName="GROUPS">
+			<column afterColumn="ID" name="NAME" type="varchar(512)" />
+		</addColumn>
+	</changeSet>
+
 </databaseChangeLog>

@@ -20,6 +20,8 @@ public class Group {
 	@Id
 	private Long id;
 
+	private String name;
+
 	@Column(name = "REQUEST_LIMIT")
 	private Integer requestLimit;
 
@@ -48,6 +50,14 @@ public class Group {
 
 	public void setId(Long id) {
 		this.id = id;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public Integer getRequestLimit() {
@@ -104,6 +114,7 @@ public class Group {
 
 		builder.append("<b>Group info:</b>\n");
 		builder.append("Id: <i>").append(id).append(END_OF_LINE_TO_STRING);
+		builder.append("Name: <i>").append(name).append(END_OF_LINE_TO_STRING);
 		builder.append("Request Limit: <i>").append(requestLimit).append(END_OF_LINE_TO_STRING);
 		builder.append("Days to wait to request a new audiobook: <i>").append(audiobooksDaysWait)
 				.append(END_OF_LINE_TO_STRING);

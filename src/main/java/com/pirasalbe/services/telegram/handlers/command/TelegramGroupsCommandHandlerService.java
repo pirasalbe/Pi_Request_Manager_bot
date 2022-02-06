@@ -63,7 +63,7 @@ public class TelegramGroupsCommandHandlerService {
 		return (bot, update) -> {
 			Long chatId = TelegramUtils.getChatId(update);
 
-			groupService.insertIfNotExists(chatId);
+			groupService.insertIfNotExists(chatId, update.message().chat().title());
 			SendMessage sendMessage = new SendMessage(chatId, "Group enabled");
 
 			bot.execute(sendMessage);
