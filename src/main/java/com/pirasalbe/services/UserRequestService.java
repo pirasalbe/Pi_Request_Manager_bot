@@ -1,22 +1,31 @@
 package com.pirasalbe.services;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pirasalbe.models.LastRequestInfo;
+import com.pirasalbe.models.LastRequestInfo.Type;
 import com.pirasalbe.models.UserRequestRole;
 import com.pirasalbe.models.Validation;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.database.UserRequest;
 import com.pirasalbe.models.database.UserRequestPK;
 import com.pirasalbe.models.request.Format;
+import com.pirasalbe.models.request.Source;
 import com.pirasalbe.repositories.UserRequestRepository;
 import com.pirasalbe.utils.DateUtils;
+import com.pirasalbe.utils.RequestUtils;
+import com.pirasalbe.utils.StringUtils;
 
 /**
  * Service that manages the user request table
@@ -27,6 +36,8 @@ import com.pirasalbe.utils.DateUtils;
 @Component
 @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 public class UserRequestService {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(UserRequestService.class);
 
 	@Autowired
 	private UserRequestRepository repository;
@@ -46,21 +57,18 @@ public class UserRequestService {
 		// check format allowed
 		if (validation.isValid()) {
 
-			// check request limit
-			long requests = repository.countUserRequestsInGroupOfToday(userId, requestTime.minusDays(1));
-			if (requests < group.getRequestLimit()) {
+			// check request limit for ebooks
+			if (format.equals(Format.EBOOK)) {
+				validation = isValidEbookRequest(userId, group.getRequestLimit(), requestTime);
+
+			} else if (format.equals(Format.AUDIOBOOK)) {
 
 				// check audiobook limit
-				if (format.equals(Format.AUDIOBOOK)) {
-					LastRequestInfo lastRequestInfo = repository.getLastAudiobookRequestOfUserInGroup(userId);
+				LastRequestInfo lastRequestInfo = repository.getLastAudiobookRequestOfUserInGroup(userId);
+				LastRequestInfo lastRequestResolvedInfo = repository.getLastAudiobookResolvedOfUserInGroup(userId);
 
-					validation = isValidAudiobookRequest(group.getAudiobooksDaysWait(),
-							group.getEnglishAudiobooksDaysWait(), lastRequestInfo);
-				}
-
-			} else {
-				validation = Validation.invalid("You’re only allowed to request up to " + group.getRequestLimit()
-						+ " book" + (group.getRequestLimit() > 1 ? "s" : "") + " per day. Come back again tomorrow.");
+				validation = isValidAudiobookRequest(userId, group.getAudiobooksDaysWait(),
+						group.getEnglishAudiobooksDaysWait(), lastRequestInfo, lastRequestResolvedInfo);
 			}
 		}
 
@@ -79,20 +87,81 @@ public class UserRequestService {
 		return validation;
 	}
 
-	private Validation isValidAudiobookRequest(Integer audiobooksDaysWait, Integer englishAudiobooksDaysWait,
-			LastRequestInfo lastRequestInfo) {
+	private Validation isValidAudiobookRequest(Long userId, Integer audiobooksDaysWait,
+			Integer englishAudiobooksDaysWait, LastRequestInfo lastRequestInfo,
+			LastRequestInfo lastRequestResolvedInfo) {
 		Validation validation = Validation.valid();
 
-		if (lastRequestInfo != null) {
+		LastRequestInfo requestInfo = getLastRequestInfo(lastRequestInfo, lastRequestResolvedInfo);
+
+		if (requestInfo != null) {
 			// if null -> language was English
-			int days = lastRequestInfo.getOtherTags() == null ? englishAudiobooksDaysWait : audiobooksDaysWait;
+			int days = requestInfo.getOtherTags() == null ? englishAudiobooksDaysWait : audiobooksDaysWait;
 
 			// last audiobook
-			LocalDateTime nextValidRequest = lastRequestInfo.getDate().plusDays(days);
+			LocalDateTime nextValidRequest = requestInfo.getDate().plusDays(days);
 			if (LocalDateTime.now().isBefore(nextValidRequest)) {
-				validation = Validation.invalid("You’ve already requested an audiobook. Come back again on "
-						+ DateUtils.formatDate(nextValidRequest) + ".");
+				LOGGER.warn("User {}, last audiobook request/resolved {} (tags {}), next valid request {}", userId,
+						requestInfo.getDate(), requestInfo.getOtherTags() != null ? requestInfo.getOtherTags() : "",
+						nextValidRequest);
+
+				StringBuilder stringBuilder = new StringBuilder();
+				stringBuilder.append("You’ve already ");
+				stringBuilder.append(requestInfo.getType().name().toLowerCase());
+				stringBuilder.append(" an audiobook on ");
+				stringBuilder.append(DateUtils.formatDate(requestInfo.getDate()));
+				stringBuilder.append(".\n");
+				stringBuilder.append("Come back again on <b>");
+				stringBuilder.append(DateUtils.formatDate(nextValidRequest)).append("</b>.");
+				validation = Validation.invalid(stringBuilder.toString());
 			}
+		}
+
+		return validation;
+	}
+
+	private LastRequestInfo getLastRequestInfo(LastRequestInfo lastRequestInfo,
+			LastRequestInfo lastRequestResolvedInfo) {
+		LastRequestInfo requestInfo = null;
+
+		if (lastRequestResolvedInfo != null && lastRequestInfo != null) {
+			// take the latter
+			if (lastRequestResolvedInfo.getDate().isAfter(lastRequestInfo.getDate())) {
+				requestInfo = lastRequestResolvedInfo;
+				requestInfo.setType(Type.RECEIVED);
+			} else {
+				requestInfo = lastRequestInfo;
+				requestInfo.setType(Type.REQUESTED);
+			}
+		} else if (lastRequestResolvedInfo != null) {
+			requestInfo = lastRequestResolvedInfo;
+			requestInfo.setType(Type.RECEIVED);
+		} else if (lastRequestInfo != null) {
+			requestInfo = lastRequestInfo;
+			requestInfo.setType(Type.REQUESTED);
+		}
+
+		return requestInfo;
+	}
+
+	private Validation isValidEbookRequest(Long userId, Integer requestLimit, LocalDateTime requestTime) {
+		Validation validation = Validation.valid();
+
+		LocalDateTime last24Hours = requestTime.minusHours(24);
+		List<UserRequest> userRequests = repository.getUserEbookRequestsOfToday(userId, last24Hours);
+		long requests = userRequests.size();
+		// it's invalid if already reached the limit
+		if (requests >= requestLimit) {
+			LocalDateTime lastRequestDate = userRequests.get(0).getDate();
+			LOGGER.warn("User {}, new request {}, {} ebook requested since {}", userId, requestTime, requests,
+					lastRequestDate);
+
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append("You’re only allowed to request ").append(requestLimit > 1 ? "up to " : "");
+			stringBuilder.append(requestLimit).append(" book").append(StringUtils.getPlural(requestLimit));
+			stringBuilder.append(" every 24 hours.\n");
+			stringBuilder.append(RequestUtils.getComeBackAgain(requestTime, lastRequestDate.plusHours(24)));
+			validation = Validation.invalid(stringBuilder.toString());
 		}
 
 		return validation;
@@ -128,6 +197,38 @@ public class UserRequestService {
 
 			repository.save(userRequest);
 		}
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void deleteByGroupId(Long groupId) {
+		repository.deleteByGroupId(groupId);
+	}
+
+	public List<UserRequest> findRequests(Optional<Long> groupId, Optional<Source> source, Optional<Format> format,
+			boolean descendent) {
+		List<UserRequest> requests = null;
+		Direction direction = descendent ? Direction.DESC : Direction.ASC;
+		Sort sort = Sort.by(direction, "u.date");
+
+		if (groupId.isPresent() && source.isPresent() && format.isPresent()) {
+			requests = repository.findByFilters(groupId.get(), source.get(), format.get(), sort);
+		} else if (groupId.isPresent() && source.isPresent()) {
+			requests = repository.findByFilters(groupId.get(), source.get(), sort);
+		} else if (groupId.isPresent() && format.isPresent()) {
+			requests = repository.findByFilters(groupId.get(), format.get(), sort);
+		} else if (groupId.isPresent()) {
+			requests = repository.findByFilters(groupId.get(), sort);
+		} else if (source.isPresent() && format.isPresent()) {
+			requests = repository.findByFilters(source.get(), format.get(), sort);
+		} else if (source.isPresent()) {
+			requests = repository.findByFilters(source.get(), sort);
+		} else if (format.isPresent()) {
+			requests = repository.findByFilters(format.get(), sort);
+		} else {
+			requests = repository.findByFilters(sort);
+		}
+
+		return requests;
 	}
 
 }

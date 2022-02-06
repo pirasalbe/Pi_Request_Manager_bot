@@ -14,6 +14,7 @@ import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 import com.pirasalbe.utils.DateUtils;
+import com.pirasalbe.utils.RequestUtils;
 
 /**
  * Service to manage requests from users
@@ -41,26 +42,30 @@ public class TelegramUpdateRequestHandlerService extends AbstractTelegramRequest
 
 			Long userId = message.from().id();
 			String content = message.text();
-			String link = getLink(content, message.entities());
+			String link = RequestUtils.getLink(content, message.entities());
 
-			Group group = optional.get();
+			if (link != null) {
+				Group group = optional.get();
 
-			// check association
-			RequestAssociationInfo requestAssociationInfo = requestManagementService
-					.getRequestAssociationInfo(message.messageId().longValue(), group.getId(), userId, link);
+				// check association
+				RequestAssociationInfo requestAssociationInfo = requestManagementService
+						.getRequestAssociationInfo(message.messageId().longValue(), group.getId(), userId, link);
 
-			if (requestAssociationInfo.requestExists()
-					&& requestAssociationInfo.getAssociation() == Association.CREATOR) {
+				if (requestAssociationInfo.requestExists()
+						&& requestAssociationInfo.getAssociation() == Association.CREATOR) {
 
-				// request exists and user is creator
-				updateRequest(message, group, content, link);
+					// request exists and user is creator
+					updateRequest(message, group, content, link);
 
-			} else if (requestAssociationInfo.getAssociation() == Association.NONE) {
+				} else if (requestAssociationInfo.getAssociation() == Association.NONE) {
 
-				// request may or may not exists, but the association doesn't
-				LocalDateTime requestTime = DateUtils.integerToLocalDateTime(message.editDate());
+					// request may or may not exists, but the association doesn't
+					LocalDateTime requestTime = DateUtils.integerToLocalDateTime(message.editDate());
 
-				newRequest(bot, message, chatId, requestTime, group, content, link);
+					newRequest(bot, message, chatId, requestTime, group, content, link);
+				}
+			} else {
+				manageIncompleteRequest(bot, message, chatId);
 			}
 		}
 	}

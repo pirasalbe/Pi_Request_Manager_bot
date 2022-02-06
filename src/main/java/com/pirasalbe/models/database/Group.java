@@ -20,6 +20,8 @@ public class Group {
 	@Id
 	private Long id;
 
+	private String name;
+
 	@Column(name = "REQUEST_LIMIT")
 	private Integer requestLimit;
 
@@ -35,6 +37,9 @@ public class Group {
 	@Column(name = "ALLOW_AUDIOBOOKS")
 	private boolean allowAudiobooks;
 
+	@Column(name = "NO_REPEAT")
+	private String noRepeat;
+
 	public Group() {
 		super();
 	}
@@ -45,6 +50,14 @@ public class Group {
 
 	public void setId(Long id) {
 		this.id = id;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public Integer getRequestLimit() {
@@ -87,19 +100,29 @@ public class Group {
 		this.allowAudiobooks = allowAudiobooks;
 	}
 
+	public String getNoRepeat() {
+		return noRepeat;
+	}
+
+	public void setNoRepeat(String noRepeat) {
+		this.noRepeat = noRepeat;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
 
 		builder.append("<b>Group info:</b>\n");
 		builder.append("Id: <i>").append(id).append(END_OF_LINE_TO_STRING);
+		builder.append("Name: <i>").append(name).append(END_OF_LINE_TO_STRING);
 		builder.append("Request Limit: <i>").append(requestLimit).append(END_OF_LINE_TO_STRING);
 		builder.append("Days to wait to request a new audiobook: <i>").append(audiobooksDaysWait)
 				.append(END_OF_LINE_TO_STRING);
 		builder.append("Days to wait to request a new english audiobook: <i>").append(englishAudiobooksDaysWait)
 				.append(END_OF_LINE_TO_STRING);
 		builder.append("Can request ebooks: <i>").append(allowEbooks).append(END_OF_LINE_TO_STRING);
-		builder.append("Can request audiobooks: <i>").append(allowAudiobooks).append("</i>");
+		builder.append("Can request audiobooks: <i>").append(allowAudiobooks).append(END_OF_LINE_TO_STRING);
+		builder.append("Forbid repeated requests for: <i>").append(noRepeat).append("</i>");
 
 		return builder.toString();
 	}

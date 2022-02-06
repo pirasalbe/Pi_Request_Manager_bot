@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.TimeZone;
 
 /**
@@ -26,6 +27,10 @@ public class DateUtils {
 		return LocalDateTime.ofInstant(Instant.ofEpochSecond(timestampUnix), ZONE_ID);
 	}
 
+	public static LocalDateTime getNow() {
+		return LocalDateTime.now(ZONE_ID);
+	}
+
 	public static LocalDateTime getToday() {
 		LocalTime midnight = LocalTime.MIDNIGHT;
 		LocalDate today = LocalDate.now(ZONE_ID);
@@ -35,6 +40,22 @@ public class DateUtils {
 
 	public static String formatDate(LocalDateTime localDateTime) {
 		return localDateTime.format(DateTimeFormatter.ofPattern("dd LLL uuuu"));
+	}
+
+	public static long getDays(LocalDateTime from, LocalDateTime to) {
+		return ChronoUnit.DAYS.between(from, to);
+	}
+
+	public static long getHours(LocalDateTime from, LocalDateTime to, long days) {
+		long hours = ChronoUnit.HOURS.between(from, to);
+
+		return hours - days * 24;
+	}
+
+	public static long getMinutes(LocalDateTime from, LocalDateTime to, long days, long hours) {
+		long minutes = ChronoUnit.MINUTES.between(from, to);
+
+		return minutes - (hours + days * 24) * 60;
 	}
 
 }

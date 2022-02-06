@@ -1,5 +1,7 @@
 package com.pirasalbe.models.database;
 
+import java.time.LocalDateTime;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -39,6 +41,9 @@ public class Request {
 
 	@Column(name = "OTHER_TAGS")
 	private String otherTags;
+
+	@Column(name = "RESOLVED_DATE")
+	private LocalDateTime resolvedDate;
 
 	public Request() {
 		super();
@@ -98,6 +103,14 @@ public class Request {
 
 	public void setOtherTags(String otherTags) {
 		this.otherTags = otherTags;
+	}
+
+	public LocalDateTime getResolvedDate() {
+		return resolvedDate;
+	}
+
+	public void setResolvedDate(LocalDateTime resolvedDate) {
+		this.resolvedDate = resolvedDate;
 	}
 
 }

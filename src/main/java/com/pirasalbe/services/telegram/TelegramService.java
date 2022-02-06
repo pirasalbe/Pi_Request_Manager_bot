@@ -17,8 +17,10 @@ import com.pirasalbe.services.telegram.conditions.TelegramCommandConditionFactor
 import com.pirasalbe.services.telegram.conditions.TelegramReplyToCommandConditionFactory;
 import com.pirasalbe.services.telegram.conditions.TelegramRoleConditionFactory;
 import com.pirasalbe.services.telegram.handlers.command.TelegramAliveCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.command.TelegramContributorsCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramGroupsCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramHelpCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.command.TelegramMeCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramSuperAdminCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.request.TelegramNewRequestHandlerService;
 import com.pirasalbe.services.telegram.handlers.request.TelegramUpdateRequestHandlerService;
@@ -66,6 +68,9 @@ public class TelegramService {
 	private TelegramAliveCommandHandlerService aliveCommandHandlerService;
 
 	@Autowired
+	private TelegramMeCommandHandlerService meCommandHandlerService;
+
+	@Autowired
 	private TelegramSuperAdminCommandHandlerService superAdminCommandHandlerService;
 
 	@Autowired
@@ -76,6 +81,9 @@ public class TelegramService {
 
 	@Autowired
 	private TelegramUpdateRequestHandlerService updateRequestHandlerService;
+
+	@Autowired
+	private TelegramContributorsCommandHandlerService contributorsCommandHandlerService;
 
 	@PostConstruct
 	public void initialize() {
@@ -88,6 +96,10 @@ public class TelegramService {
 		bot.register(commandConditionFactory.onCommands(TelegramAliveCommandHandlerService.COMMANDS),
 				aliveCommandHandlerService);
 
+		// me
+		bot.register(commandConditionFactory.onCommand(TelegramMeCommandHandlerService.COMMAND),
+				meCommandHandlerService);
+
 		// super admin
 		registerSuperAdminHandlers();
 
@@ -96,6 +108,9 @@ public class TelegramService {
 
 		// requests
 		registerRequestsHandlers();
+
+		// contributors
+		registerContributorsHandlers();
 
 		bot.launch();
 
@@ -107,44 +122,45 @@ public class TelegramService {
 				.onRole(TelegramSuperAdminCommandHandlerService.ROLE);
 
 		// main command
-		bot.register(
-				Arrays.asList(superAdminChatCondition, superAdminRoleCondition,
-						commandConditionFactory.onCommand(TelegramSuperAdminCommandHandlerService.COMMAND)),
-				superAdminCommandHandlerService.showActions());
+		bot.register(Arrays.asList(superAdminChatCondition,
+				commandConditionFactory.onCommand(TelegramSuperAdminCommandHandlerService.COMMAND),
+				superAdminRoleCondition), superAdminCommandHandlerService.showActions());
 
 		// list
 		bot.register(
-				Arrays.asList(superAdminRoleCondition,
+				Arrays.asList(
 						callbackQueryConditionFactory.onCallbackQuery(
-								TelegramSuperAdminCommandHandlerService.COMMAND_LIST, Condition.STARTS_WITH)),
+								TelegramSuperAdminCommandHandlerService.COMMAND_LIST, Condition.STARTS_WITH),
+						superAdminRoleCondition),
 				superAdminCommandHandlerService.listUsers());
 		bot.register(
-				Arrays.asList(superAdminRoleCondition,
+				Arrays.asList(
 						callbackQueryConditionFactory.onCallbackQuery(
-								TelegramSuperAdminCommandHandlerService.COMMAND_COPY, Condition.STARTS_WITH)),
+								TelegramSuperAdminCommandHandlerService.COMMAND_COPY, Condition.STARTS_WITH),
+						superAdminRoleCondition),
 				superAdminCommandHandlerService.copyUser());
 
 		// add
 		bot.register(
-				Arrays.asList(superAdminRoleCondition,
-						callbackQueryConditionFactory.onCallbackQuery(
-								TelegramSuperAdminCommandHandlerService.COMMAND_ADD, Condition.EQUALS)),
+				Arrays.asList(
+						callbackQueryConditionFactory
+								.onCallbackQuery(TelegramSuperAdminCommandHandlerService.COMMAND_ADD, Condition.EQUALS),
+						superAdminRoleCondition),
 				superAdminCommandHandlerService.addUserHelp());
-		bot.register(
-				Arrays.asList(superAdminRoleCondition,
-						replyToCommandConditionFactory.onCommand(TelegramSuperAdminCommandHandlerService.COMMAND_ADD)),
-				superAdminCommandHandlerService.addUser());
+		bot.register(Arrays.asList(
+				replyToCommandConditionFactory.onCommand(TelegramSuperAdminCommandHandlerService.COMMAND_ADD),
+				superAdminRoleCondition), superAdminCommandHandlerService.addUser());
 
 		// remove
 		bot.register(
-				Arrays.asList(superAdminRoleCondition,
+				Arrays.asList(
 						callbackQueryConditionFactory.onCallbackQuery(
-								TelegramSuperAdminCommandHandlerService.COMMAND_REMOVE, Condition.EQUALS)),
+								TelegramSuperAdminCommandHandlerService.COMMAND_REMOVE, Condition.EQUALS),
+						superAdminRoleCondition),
 				superAdminCommandHandlerService.removeUserHelp());
 		bot.register(
-				Arrays.asList(superAdminRoleCondition,
-						replyToCommandConditionFactory
-								.onCommand(TelegramSuperAdminCommandHandlerService.COMMAND_REMOVE)),
+				Arrays.asList(replyToCommandConditionFactory
+						.onCommand(TelegramSuperAdminCommandHandlerService.COMMAND_REMOVE), superAdminRoleCondition),
 				superAdminCommandHandlerService.removeUser());
 
 	}
@@ -154,47 +170,82 @@ public class TelegramService {
 				.onChatTypes(Arrays.asList(Type.group, Type.supergroup));
 		TelegramCondition groupRoleCondition = roleConditionFactory.onRole(TelegramGroupsCommandHandlerService.ROLE);
 
-		bot.register(
-				Arrays.asList(groupChatCondition, groupRoleCondition,
-						commandConditionFactory.onCommand(TelegramGroupsCommandHandlerService.COMMAND_INFO)),
-				groupsCommandHandlerService.showInfo());
+		bot.register(Arrays.asList(groupChatCondition,
+				commandConditionFactory.onCommand(TelegramGroupsCommandHandlerService.COMMAND_INFO),
+				groupRoleCondition), groupsCommandHandlerService.showInfo());
+
+		bot.register(Arrays.asList(groupChatCondition,
+				commandConditionFactory.onCommand(TelegramGroupsCommandHandlerService.COMMAND_ENABLE),
+				groupRoleCondition), groupsCommandHandlerService.enableGroup());
+
+		bot.register(Arrays.asList(groupChatCondition,
+				commandConditionFactory.onCommand(TelegramGroupsCommandHandlerService.COMMAND_DISABLE),
+				groupRoleCondition), groupsCommandHandlerService.disableGroup());
+
+		bot.register(Arrays.asList(groupChatCondition,
+				commandConditionFactory.onCommand(TelegramGroupsCommandHandlerService.COMMAND_REQUEST_LIMIT),
+				groupRoleCondition), groupsCommandHandlerService.updateRequestLimit());
 
 		bot.register(
-				Arrays.asList(groupChatCondition, groupRoleCondition,
-						commandConditionFactory.onCommand(TelegramGroupsCommandHandlerService.COMMAND_ENABLE)),
-				groupsCommandHandlerService.enableGroup());
-
-		bot.register(
-				Arrays.asList(groupChatCondition, groupRoleCondition,
-						commandConditionFactory.onCommand(TelegramGroupsCommandHandlerService.COMMAND_DISABLE)),
-				groupsCommandHandlerService.disableGroup());
-
-		bot.register(
-				Arrays.asList(groupChatCondition, groupRoleCondition,
-						commandConditionFactory.onCommand(TelegramGroupsCommandHandlerService.COMMAND_REQUEST_LIMIT)),
-				groupsCommandHandlerService.updateRequestLimit());
-
-		bot.register(
-				Arrays.asList(groupChatCondition, groupRoleCondition,
-						commandConditionFactory
-								.onCommand(TelegramGroupsCommandHandlerService.COMMAND_AUDIOBOOK_DAYS_WAIT)),
+				Arrays.asList(groupChatCondition,
+						commandConditionFactory.onCommand(
+								TelegramGroupsCommandHandlerService.COMMAND_AUDIOBOOK_DAYS_WAIT),
+						groupRoleCondition),
 				groupsCommandHandlerService.updateAudiobooksDaysWait());
 
-		bot.register(
-				Arrays.asList(groupChatCondition, groupRoleCondition,
-						commandConditionFactory
-								.onCommand(TelegramGroupsCommandHandlerService.COMMAND_ENGLISH_AUDIOBOOK_DAYS_WAIT)),
-				groupsCommandHandlerService.updateEnglishAudiobooksDaysWait());
+		bot.register(Arrays.asList(groupChatCondition,
+				commandConditionFactory.onCommand(
+						TelegramGroupsCommandHandlerService.COMMAND_ENGLISH_AUDIOBOOK_DAYS_WAIT),
+				groupRoleCondition), groupsCommandHandlerService.updateEnglishAudiobooksDaysWait());
 
-		bot.register(
-				Arrays.asList(groupChatCondition, groupRoleCondition,
-						commandConditionFactory.onCommand(TelegramGroupsCommandHandlerService.COMMAND_ALLOW)),
-				groupsCommandHandlerService.updateAllow());
+		bot.register(Arrays.asList(groupChatCondition,
+				commandConditionFactory.onCommand(TelegramGroupsCommandHandlerService.COMMAND_ALLOW),
+				groupRoleCondition), groupsCommandHandlerService.updateAllow());
+
+		bot.register(Arrays.asList(groupChatCondition,
+				commandConditionFactory.onCommand(TelegramGroupsCommandHandlerService.COMMAND_NO_REPEAT),
+				groupRoleCondition), groupsCommandHandlerService.updateNoRepeat());
 	}
 
 	private void registerRequestsHandlers() {
 		bot.register(newRequestHandlerService.geCondition(), newRequestHandlerService);
 		bot.register(updateRequestHandlerService.geCondition(), updateRequestHandlerService);
+	}
+
+	private void registerContributorsHandlers() {
+		TelegramCondition groupChatCondition = chatConditionFactory
+				.onChatTypes(Arrays.asList(Type.group, Type.supergroup));
+		TelegramCondition contributorRoleCondition = roleConditionFactory
+				.onRole(TelegramContributorsCommandHandlerService.ROLE);
+
+		bot.register(Arrays.asList(
+				chatConditionFactory.onChatTypes(Arrays.asList(Type.group, Type.supergroup, Type.Private)),
+				commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_GET),
+				contributorRoleCondition), contributorsCommandHandlerService.getGroupRequests());
+
+		bot.register(
+				Arrays.asList(groupChatCondition,
+						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_PENDING),
+						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
+				contributorsCommandHandlerService.markPending());
+		bot.register(Arrays.asList(groupChatCondition,
+				commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_CANCEL),
+				contributorRoleCondition), contributorsCommandHandlerService.markCancelled());
+		bot.register(
+				Arrays.asList(groupChatCondition,
+						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_DONE),
+						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
+				contributorsCommandHandlerService.markDone());
+		bot.register(
+				Arrays.asList(groupChatCondition,
+						commandConditionFactory
+								.onCommand(TelegramContributorsCommandHandlerService.COMMAND_SILENT_DONE),
+						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
+				contributorsCommandHandlerService.markDoneSilently());
+
+		bot.register(Arrays.asList(groupChatCondition,
+				contributorsCommandHandlerService.replyToMessageWithFileCondition(), contributorRoleCondition),
+				contributorsCommandHandlerService.markDoneWithFile());
 	}
 
 }

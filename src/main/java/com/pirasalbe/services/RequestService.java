@@ -13,6 +13,7 @@ import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.request.RequestStatus;
 import com.pirasalbe.models.request.Source;
 import com.pirasalbe.repositories.RequestRepository;
+import com.pirasalbe.utils.DateUtils;
 
 /**
  * Service that manages the request table
@@ -27,8 +28,8 @@ public class RequestService {
 	@Autowired
 	private RequestRepository repository;
 
-	public Request findByLink(String link) {
-		return repository.findByLink(link);
+	public Request findByUniqueKey(Long groupId, String link) {
+		return repository.findByUniqueKey(groupId, link);
 	}
 
 	public Optional<Request> findById(Long messageId, Long groupId) {
@@ -66,6 +67,23 @@ public class RequestService {
 
 			repository.save(request);
 		}
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void deleteByGroupId(Long groupId) {
+		repository.deleteByGroupId(groupId);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void updateStatus(Request request, RequestStatus status) {
+		request.setStatus(status);
+		if (status == RequestStatus.RESOLVED) {
+			request.setResolvedDate(DateUtils.getNow());
+		} else {
+			request.setResolvedDate(null);
+		}
+
+		repository.save(request);
 	}
 
 }

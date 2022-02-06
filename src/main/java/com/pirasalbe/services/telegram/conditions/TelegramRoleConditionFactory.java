@@ -28,11 +28,18 @@ public class TelegramRoleConditionFactory {
 	 */
 	public TelegramCondition onRole(UserRole role) {
 		return update -> {
-			// get the user role
-			UserRole authority = adminService.getAuthority(TelegramUtils.getUserId(update));
+			boolean asserted = false;
 
-			// check if the authority level is valid
-			return role.getAuthorityLevel() <= authority.getAuthorityLevel();
+			// get the user role
+			Long userId = TelegramUtils.getUserId(update);
+			if (userId != null) {
+				UserRole authority = adminService.getAuthority(userId);
+
+				// check if the authority level is valid
+				asserted = role.getAuthorityLevel() <= authority.getAuthorityLevel();
+			}
+
+			return asserted;
 		};
 	}
 

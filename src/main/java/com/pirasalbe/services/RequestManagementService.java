@@ -1,20 +1,29 @@
 package com.pirasalbe.services;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.pengrad.telegrambot.model.Message;
 import com.pirasalbe.models.RequestAssociationInfo;
 import com.pirasalbe.models.RequestResult;
+import com.pirasalbe.models.RequestResult.Result;
 import com.pirasalbe.models.UserRequestRole;
+import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.database.Request;
 import com.pirasalbe.models.database.UserRequest;
 import com.pirasalbe.models.request.Format;
+import com.pirasalbe.models.request.RequestStatus;
 import com.pirasalbe.models.request.Source;
+import com.pirasalbe.utils.DateUtils;
+import com.pirasalbe.utils.RequestUtils;
 
 /**
  * Service that manages the user request table
@@ -25,6 +34,8 @@ import com.pirasalbe.models.request.Source;
 @Component
 @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 public class RequestManagementService {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(RequestManagementService.class);
 
 	private static final long HOURS_BEFORE_REPEATING_REQUEST = 48l;
 
@@ -54,7 +65,7 @@ public class RequestManagementService {
 			result = RequestAssociationInfo.creator();
 		} else {
 			// get request by UQ
-			Request request = requestService.findByLink(link);
+			Request request = requestService.findByUniqueKey(groupId, link);
 
 			if (request == null) {
 				// the request doesn't exists
@@ -73,16 +84,16 @@ public class RequestManagementService {
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public RequestResult manageRequest(Long messageId, String content, String link, Format format, Source source,
-			String otherTags, Long userId, Long groupId, LocalDateTime requestDate) {
+			String otherTags, Long userId, Group group, LocalDateTime requestDate) {
 		RequestResult result = null;
 
-		Request request = requestService.findByLink(link);
+		Request request = requestService.findByUniqueKey(group.getId(), link);
 		// request doesn't exists
 		if (request == null) {
-			insertNewRequest(messageId, content, link, format, source, otherTags, userId, groupId, requestDate);
-			result = RequestResult.NEW;
+			insertNewRequest(messageId, content, link, format, source, otherTags, userId, group.getId(), requestDate);
+			result = new RequestResult(Result.NEW);
 		} else {
-			result = manageAssociation(userId, requestDate, request);
+			result = manageAssociation(userId, group, requestDate, request);
 		}
 
 		return result;
@@ -97,7 +108,7 @@ public class RequestManagementService {
 		userRequestService.insert(messageId, groupId, userId, UserRequestRole.CREATOR, requestDate);
 	}
 
-	private RequestResult manageAssociation(Long userId, LocalDateTime requestDate, Request request) {
+	private RequestResult manageAssociation(Long userId, Group group, LocalDateTime requestDate, Request request) {
 		RequestResult result = null;
 
 		// request exists
@@ -108,34 +119,105 @@ public class RequestManagementService {
 		Optional<UserRequest> optional = userRequestService.findById(messageId, groupId, userId);
 		if (optional.isPresent()) {
 			// update association
-			result = updateAssociation(userId, requestDate, messageId, groupId, optional.get());
+			result = updateAssociation(userId, requestDate, messageId, group, request, optional.get());
 		} else {
 			// create association
 			userRequestService.insert(messageId, groupId, userId, UserRequestRole.SUBSCRIBER, requestDate);
-			result = RequestResult.SUBSCRIBED;
+			result = new RequestResult(Result.SUBSCRIBED);
 		}
 
 		return result;
 	}
 
-	private RequestResult updateAssociation(Long userId, LocalDateTime requestDate, Long messageId, Long groupId,
-			UserRequest userRequest) {
+	private RequestResult updateAssociation(Long userId, LocalDateTime requestDate, Long messageId, Group group,
+			Request request, UserRequest userRequest) {
 		LocalDateTime previousRequestDate = userRequest.getDate();
-
-		// update date
-		userRequestService.updateDate(messageId, groupId, userId, requestDate);
 
 		// new request date should be after a cooldown period
 		LocalDateTime minDateForNewRequest = previousRequestDate.plusHours(HOURS_BEFORE_REPEATING_REQUEST);
 
 		RequestResult result = null;
-		if (minDateForNewRequest.isBefore(requestDate)) {
-			result = RequestResult.REPEATED_REQUEST;
+		boolean specialTags = hasSpecialTags(group, request.getSource());
+		if (!specialTags && minDateForNewRequest.isBefore(requestDate)) {
+			// no special tags and the request was after 48 hours
+			userRequestService.updateDate(messageId, group.getId(), userId, requestDate);
+			result = new RequestResult(Result.REPEATED_REQUEST);
+		} else if (specialTags) {
+			// special tags request
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append("You already requested this title on ");
+			stringBuilder.append(DateUtils.formatDate(previousRequestDate)).append(".\n");
+			stringBuilder.append("No need to bump requests with special hashtags.");
+			result = new RequestResult(Result.CANNOT_REPEAT_REQUEST, stringBuilder.toString());
 		} else {
-			result = RequestResult.REQUEST_REPEATED_TOO_EARLY;
+			// no special tags, but before 48 hours
+			LOGGER.warn("User {} repeated the request on {}, which is before {}", userId, requestDate,
+					minDateForNewRequest);
+
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append("You already requested this title on ")
+					.append(DateUtils.formatDate(previousRequestDate)).append(".\n");
+			stringBuilder.append(RequestUtils.getComeBackAgain(requestDate, minDateForNewRequest)).append("\n");
+			stringBuilder.append(
+					"If you have requested it many times and still haven't received the book, then it's most likely that the book is not available as of now. It's better if you request again after a month or so.");
+			result = new RequestResult(Result.REQUEST_REPEATED_TOO_EARLY, stringBuilder.toString());
 		}
 
 		return result;
+	}
+
+	private boolean hasSpecialTags(Group group, Source source) {
+		List<Source> sources = RequestUtils.getNoRepeatSources(group.getNoRepeat());
+
+		return sources.contains(source);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void deleteGroupRequests(Long groupId) {
+		userRequestService.deleteByGroupId(groupId);
+		requestService.deleteByGroupId(groupId);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public boolean markPending(Message message) {
+		return updateStatus(message, RequestStatus.NEW);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public boolean markDone(Message message) {
+		return updateStatus(message, RequestStatus.RESOLVED);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public boolean markCancelled(Long messageId, Long groupId) {
+		boolean success = false;
+
+		Optional<Request> optional = requestService.findById(messageId, groupId);
+		if (optional.isPresent()) {
+			// mark request as done
+			requestService.updateStatus(optional.get(), RequestStatus.CANCELLED);
+			success = true;
+		}
+
+		return success;
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	private boolean updateStatus(Message message, RequestStatus status) {
+		String link = RequestUtils.getLink(message.text(), message.entities());
+
+		boolean success = false;
+
+		if (link != null) {
+			Request request = requestService.findByUniqueKey(message.chat().id(), link);
+			if (request != null) {
+				// mark request as done
+				requestService.updateStatus(request, status);
+				success = true;
+			}
+		}
+
+		return success;
 	}
 
 }

@@ -36,6 +36,10 @@ public class TelegramBotService {
 		this.bot = new TelegramBot(configuration.getToken());
 	}
 
+	public TelegramBot getBot() {
+		return bot;
+	}
+
 	public void launch() {
 		// Register for updates
 		bot.setUpdatesListener(updates -> {

@@ -96,4 +96,36 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 		<addForeignKeyConstraint baseColumnNames="REQUEST_MESSAGE_ID,REQUEST_GROUP_ID" baseTableName="USER_REQUESTS" constraintName="REQUEST_ID_FK" referencedColumnNames="MESSAGE_ID,GROUP_ID" referencedTableName="REQUESTS" validate="true"/>
 	</changeSet>
 
+	<changeSet id="5 - Add column NO_REPEAT to Groups" author="pirasalbe">
+		<addColumn tableName="GROUPS">
+			<column name="NO_REPEAT" type="varchar(255)" />
+		</addColumn>
+	</changeSet>
+
+	<changeSet id="6 - Add column NO_REPEAT to Requests" author="pirasalbe">
+		<addColumn tableName="REQUESTS">
+			<column name="RESOLVED_DATE" type="timestamp" />
+		</addColumn>
+	</changeSet>
+
+	<changeSet id="7 - Add column NAME to Admins" author="pirasalbe">
+		<addColumn tableName="ADMINS">
+			<column afterColumn="ID" name="NAME" type="varchar(128)" />
+		</addColumn>
+	</changeSet>
+
+	<changeSet id="8 - Drop REQUEST_LINK_UQ constraint" author="pirasalbe">
+		<dropUniqueConstraint constraintName="REQUEST_LINK_UQ" tableName="REQUESTS" uniqueColumns="LINK" />
+	</changeSet>
+
+	<changeSet id="9 - Add REQUEST_GROUP_LINK_UQ constraint" author="pirasalbe">
+		<addUniqueConstraint constraintName="REQUEST_GROUP_LINK_UQ" tableName="REQUESTS" columnNames="LINK, GROUP_ID" validate="true" />
+	</changeSet>
+
+	<changeSet id="10 - Group title" author="pirasalbe">
+		<addColumn tableName="GROUPS">
+			<column afterColumn="ID" name="NAME" type="varchar(512)" />
+		</addColumn>
+	</changeSet>
+
 </databaseChangeLog>

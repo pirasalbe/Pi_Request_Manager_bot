@@ -6,6 +6,30 @@ package com.pirasalbe.models;
  * @author pirasalbe
  *
  */
-public enum RequestResult {
-	NEW, SUBSCRIBED, REPEATED_REQUEST, REQUEST_REPEATED_TOO_EARLY;
+public class RequestResult {
+	public enum Result {
+		NEW, SUBSCRIBED, REPEATED_REQUEST, REQUEST_REPEATED_TOO_EARLY, CANNOT_REPEAT_REQUEST;
+	}
+
+	private Result result;
+
+	private String reason;
+
+	public RequestResult(Result result) {
+		this.result = result;
+	}
+
+	public RequestResult(Result result, String reason) {
+		this(result);
+		this.reason = reason;
+	}
+
+	public Result getResult() {
+		return result;
+	}
+
+	public String getReason() {
+		return reason;
+	}
+
 }
