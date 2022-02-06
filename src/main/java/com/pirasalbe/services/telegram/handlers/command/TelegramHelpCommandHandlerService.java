@@ -80,18 +80,19 @@ public class TelegramHelpCommandHandlerService implements TelegramHandler {
 					.append("Can be filtered with <code>format=[EBOOK/AUDIOBOOK] source=[AMAZON/AUDIBLE/KU/SCRIBD/STORYTEL/ARCHIVE] order=[OLD/NEW]</code>. ")
 					.append("By default it returns a list of all formats and sources, order=NEW.").append("\n\n");
 
-			message.append("<code>Reply to a request with a file</code>").append(" - ")
-					.append("Mark the request as done").append("\n");
-			message.append("<code>Reply to a request with</code> ")
-					.append(TelegramContributorsCommandHandlerService.COMMAND_DONE).append(" [text]").append(" - ")
-					.append("Mark the request as done and reply to the user with <i>[text]</i>").append("\n");
-			message.append("<code>Reply to a request with</code> ")
-					.append(TelegramContributorsCommandHandlerService.COMMAND_SILENT_DONE).append(" - ")
-					.append("Mark the request as done. It doesn't notify the user.").append("\n\n");
+			message.append("<code>Reply to a request with:</code>\n");
 
-			message.append("<code>Reply to a request with</code> ")
-					.append(TelegramContributorsCommandHandlerService.COMMAND_PENDING).append(" - ")
+			message.append("- ").append("<code>a file</code>").append(" - ").append("Mark the request as done")
+					.append("\n");
+			message.append("- ").append(TelegramContributorsCommandHandlerService.COMMAND_DONE).append(" [text]")
+					.append(" - ").append("Mark the request as done and reply to the user with <i>[text]</i>")
+					.append("\n");
+			message.append("- ").append(TelegramContributorsCommandHandlerService.COMMAND_SILENT_DONE).append(" - ")
+					.append("Mark the request as done. It doesn't notify the user.").append("\n");
+			message.append("- ").append(TelegramContributorsCommandHandlerService.COMMAND_PENDING).append(" - ")
 					.append("Mark the request as pending. Useful when a request was marked as done by mistake.");
+			message.append("- ").append(TelegramContributorsCommandHandlerService.COMMAND_CANCEL).append(" - ")
+					.append("Mark the request as cancelled. Useful when a request was deleted.");
 		} else {
 			message.append("Go in PM or a group to see the available commands.");
 		}

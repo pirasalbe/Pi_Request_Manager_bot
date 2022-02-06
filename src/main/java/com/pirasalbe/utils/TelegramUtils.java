@@ -1,6 +1,8 @@
 package com.pirasalbe.utils;
 
 import com.pengrad.telegrambot.model.Message;
+import com.pengrad.telegrambot.model.MessageEntity;
+import com.pengrad.telegrambot.model.MessageEntity.Type;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.User;
 
@@ -140,6 +142,30 @@ public class TelegramUtils {
 		}
 
 		return result;
+	}
+
+	/**
+	 * Get text without command
+	 *
+	 * @param text     Message text
+	 * @param entities Message entities
+	 * @return Text of the message without commands
+	 */
+	public static String removeCommand(String text, MessageEntity[] entities) {
+		StringBuilder builder = new StringBuilder();
+
+		if (entities != null) {
+			for (int i = 0; i < entities.length && builder.length() == 0; i++) {
+				MessageEntity entity = entities[i];
+				if (entity.type() == Type.bot_command) {
+					Integer offset = entity.offset();
+					builder.append(text.substring(0, offset));
+					builder.append(text.substring(offset + entity.length()));
+				}
+			}
+		}
+
+		return builder.toString();
 	}
 
 }

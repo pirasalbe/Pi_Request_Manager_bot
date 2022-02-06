@@ -189,6 +189,20 @@ public class RequestManagementService {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public boolean markCancelled(Long messageId, Long groupId) {
+		boolean success = false;
+
+		Optional<Request> optional = requestService.findById(messageId, groupId);
+		if (optional.isPresent()) {
+			// mark request as done
+			requestService.updateStatus(optional.get(), RequestStatus.CANCELLED);
+			success = true;
+		}
+
+		return success;
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	private boolean updateStatus(Message message, RequestStatus status) {
 		String link = RequestUtils.getLink(message.text(), message.entities());
 
