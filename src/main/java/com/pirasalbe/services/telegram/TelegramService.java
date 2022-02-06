@@ -232,11 +232,6 @@ public class TelegramService {
 				contributorRoleCondition), contributorsCommandHandlerService.markCancelled());
 		bot.register(
 				Arrays.asList(groupChatCondition,
-						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_CANCEL),
-						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
-				contributorsCommandHandlerService.markCancelled());
-		bot.register(
-				Arrays.asList(groupChatCondition,
 						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_DONE),
 						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
 				contributorsCommandHandlerService.markDone());
