@@ -1,7 +1,9 @@
 package com.pirasalbe.services.telegram.handlers.command;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -10,11 +12,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.Chat.Type;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.DeleteMessage;
+import com.pengrad.telegrambot.request.GetChat;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.response.GetChatResponse;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Group;
@@ -261,19 +266,27 @@ public class TelegramContributorsCommandHandlerService {
 		return (bot, update) -> {
 			Long chatId = TelegramUtils.getChatId(update);
 
-			Optional<Group> optional = groupService.findById(chatId);
+			Optional<Long> group = null;
+			boolean isPrivate = update.message().chat().type() == Type.Private;
+			if (isPrivate) {
+				// get requests in PM
+				group = Optional.empty();
+			} else {
+				// get requests of the group
+				group = Optional.of(chatId);
+			}
 
-			if (optional.isPresent()) {
-				Message message = update.message();
-				bot.execute(new DeleteMessage(chatId, message.messageId()));
+			// check if the context is valid, either enabled group or PM
+			if (groupService.existsById(chatId) || isPrivate) {
+				bot.execute(new DeleteMessage(chatId, update.message().messageId()));
+				String text = update.message().text();
 
-				Optional<Format> format = getFormat(message.text());
-				Optional<Source> source = getSource(message.text());
-				Optional<Boolean> optionalDescendent = getDescendent(message.text());
+				Optional<Format> format = getFormat(text);
+				Optional<Source> source = getSource(text);
+				Optional<Boolean> optionalDescendent = getDescendent(text);
 
 				boolean descendent = optionalDescendent.isPresent() && optionalDescendent.get();
-				List<UserRequest> requests = userRequestService.findRequests(Optional.of(chatId), source, format,
-						descendent);
+				List<UserRequest> requests = userRequestService.findRequests(group, source, format, descendent);
 
 				String title = getTitle(format, source, descendent);
 
@@ -282,17 +295,21 @@ public class TelegramContributorsCommandHandlerService {
 					sendMessage.parseMode(ParseMode.HTML);
 					sendMessageAndDelete(bot, chatId, sendMessage, 30, TimeUnit.SECONDS);
 				} else {
-					sendRequestList(bot, chatId, title, requests);
+					sendRequestList(bot, chatId, group, title, requests);
 				}
 			}
 		};
 	}
 
-	private void sendRequestList(TelegramBot bot, Long chatId, String title, List<UserRequest> requests) {
+	private void sendRequestList(TelegramBot bot, Long chatId, Optional<Long> group, String title,
+			List<UserRequest> requests) {
 		StringBuilder builder = new StringBuilder(title);
 
+		// chat name, when in PM
+		Map<Long, String> chatNames = new HashMap<>();
 		LocalDateTime now = DateUtils.getNow();
 
+		// create text foreach request
 		for (int i = 0; i < requests.size(); i++) {
 			UserRequest request = requests.get(i);
 
@@ -301,6 +318,12 @@ public class TelegramContributorsCommandHandlerService {
 			Long messageId = request.getId().getMessageId();
 			Long groupId = request.getId().getGroupId();
 			requestBuilder.append("<a href='").append(getLink(groupId.toString(), messageId.toString())).append("'>");
+
+			// add chat info when in PM
+			if (group.isEmpty()) {
+				requestBuilder.append(getChatName(bot, chatNames, groupId)).append(" ");
+			}
+
 			requestBuilder.append(messageId).append("</a> ");
 			requestBuilder.append(RequestUtils.getTimeBetweenDates(request.getDate(), now)).append(" ago\n");
 			String requestText = requestBuilder.toString();
@@ -320,6 +343,26 @@ public class TelegramContributorsCommandHandlerService {
 				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.MINUTES);
 			}
 		}
+	}
+
+	private String getChatName(TelegramBot bot, Map<Long, String> chatNames, Long groupId) {
+		String chatName = null;
+		if (chatNames.containsKey(groupId)) {
+			chatName = chatNames.get(groupId);
+		} else {
+			// TODO get from db
+			GetChat getChat = new GetChat(groupId);
+			GetChatResponse response = bot.execute(getChat);
+			if (response.isOk()) {
+				String title = response.chat().title();
+				chatNames.put(groupId, title);
+				chatName = title;
+			} else {
+				chatName = "Unknown";
+			}
+		}
+
+		return chatName;
 	}
 
 	private <T> Optional<T> getCondition(String text, String condition, Function<String, T> function) {

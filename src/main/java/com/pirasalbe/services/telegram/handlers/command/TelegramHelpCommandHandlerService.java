@@ -78,7 +78,8 @@ public class TelegramHelpCommandHandlerService implements TelegramHandler {
 			message.append(TelegramContributorsCommandHandlerService.COMMAND_GET).append(" - ")
 					.append("Return a list of pending requests. ")
 					.append("Can be filtered with <code>format=[EBOOK/AUDIOBOOK] source=[AMAZON/AUDIBLE/KU/SCRIBD/STORYTEL/ARCHIVE] order=[OLD/NEW]</code>. ")
-					.append("By default it returns a list of all formats and sources, order=NEW.").append("\n\n");
+					.append("By default it returns a list of all formats and sources, order=NEW. <b>Works in PM too</b>.")
+					.append("\n\n");
 
 			message.append("<code>Reply to a request with:</code>\n");
 
