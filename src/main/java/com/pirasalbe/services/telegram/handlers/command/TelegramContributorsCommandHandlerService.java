@@ -294,7 +294,7 @@ public class TelegramContributorsCommandHandlerService {
 				if (requests.isEmpty()) {
 					SendMessage sendMessage = new SendMessage(chatId, title + "No requests found");
 					sendMessage.parseMode(ParseMode.HTML);
-					sendMessageAndDelete(bot, chatId, sendMessage, 30, TimeUnit.SECONDS);
+					sendMessageAndDelete(bot, chatId, sendMessage, 30, TimeUnit.SECONDS, group.isPresent());
 				} else {
 					sendRequestList(bot, chatId, group, title, requests);
 				}
@@ -322,7 +322,7 @@ public class TelegramContributorsCommandHandlerService {
 			requestBuilder.append("<a href='").append(getLink(groupId.toString(), messageId.toString())).append("'>");
 
 			requestBuilder.append(getChatName(chatNames, groupId)).append(" ");
-			requestBuilder.append(i).append("</a> ");
+			requestBuilder.append(i + 1).append("</a> ");
 
 			requestBuilder.append(RequestUtils.getTimeBetweenDates(request.getDate(), now)).append(" ago ");
 			requestBuilder.append("(<code>").append(COMMAND_CANCEL).append(" ").append(messageId).append("</code>)\n");
