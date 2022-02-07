@@ -86,11 +86,19 @@ public class TelegramContributorsCommandHandlerService {
 
 	private void sendMessageAndDelete(TelegramBot bot, Long chatId, SendMessage sendMessage, long timeout,
 			TimeUnit timeUnit) {
+		sendMessageAndDelete(bot, chatId, sendMessage, timeout, timeUnit, true);
+	}
+
+	private void sendMessageAndDelete(TelegramBot bot, Long chatId, SendMessage sendMessage, long timeout,
+			TimeUnit timeUnit, boolean delete) {
+
 		SendResponse response = bot.execute(sendMessage);
 
 		// schedule delete
-		schedulerService.schedule((b, r) -> b.execute(new DeleteMessage(chatId, r.message().messageId())), response,
-				timeout, timeUnit);
+		if (delete) {
+			schedulerService.schedule((b, r) -> b.execute(new DeleteMessage(chatId, r.message().messageId())), response,
+					timeout, timeUnit);
+		}
 	}
 
 	public TelegramCondition replyToMessageCondition() {
@@ -176,12 +184,7 @@ public class TelegramContributorsCommandHandlerService {
 				sendMessage.parseMode(ParseMode.HTML);
 
 				// schedule delete for no reply
-				if (reply) {
-					sendMessage.replyToMessageId(message.messageId());
-					bot.execute(sendMessage);
-				} else {
-					sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.SECONDS);
-				}
+				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.SECONDS, !reply);
 
 				// delete command
 				DeleteMessage deleteMessage = new DeleteMessage(chatId, update.message().messageId());
@@ -306,6 +309,7 @@ public class TelegramContributorsCommandHandlerService {
 		// chat name, when in PM
 		Map<Long, String> chatNames = new HashMap<>();
 		LocalDateTime now = DateUtils.getNow();
+		boolean deleteMessages = group.isPresent();
 
 		// create text foreach request
 		for (int i = 0; i < requests.size(); i++) {
@@ -317,20 +321,19 @@ public class TelegramContributorsCommandHandlerService {
 			Long groupId = request.getId().getGroupId();
 			requestBuilder.append("<a href='").append(getLink(groupId.toString(), messageId.toString())).append("'>");
 
-			// add chat info when in PM
-			if (group.isEmpty()) {
-				requestBuilder.append(getChatName(chatNames, groupId)).append(" ");
-			}
+			requestBuilder.append(getChatName(chatNames, groupId)).append(" ");
+			requestBuilder.append(i).append("</a> ");
 
-			requestBuilder.append(messageId).append("</a> ");
-			requestBuilder.append(RequestUtils.getTimeBetweenDates(request.getDate(), now)).append(" ago\n");
+			requestBuilder.append(RequestUtils.getTimeBetweenDates(request.getDate(), now)).append(" ago ");
+			requestBuilder.append("(<code>").append(COMMAND_CANCEL).append(" ").append(messageId).append("</code>)\n");
+
 			String requestText = requestBuilder.toString();
 
 			// if length is > message limit, send current text
 			if (builder.length() + requestText.length() > 4096) {
 				SendMessage sendMessage = new SendMessage(chatId, builder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
-				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.MINUTES);
+				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.MINUTES, deleteMessages);
 				builder = new StringBuilder(title);
 			}
 			builder.append(requestText);
@@ -338,7 +341,7 @@ public class TelegramContributorsCommandHandlerService {
 			if (i == requests.size() - 1) {
 				SendMessage sendMessage = new SendMessage(chatId, builder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
-				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.MINUTES);
+				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.MINUTES, deleteMessages);
 			}
 		}
 	}
