@@ -21,15 +21,15 @@ import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Group;
-import com.pirasalbe.models.database.UserRequest;
+import com.pirasalbe.models.database.Request;
 import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.request.Source;
 import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
+import com.pirasalbe.services.RequestService;
 import com.pirasalbe.services.SchedulerService;
-import com.pirasalbe.services.UserRequestService;
 import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramUtils;
@@ -45,6 +45,7 @@ public class TelegramContributorsCommandHandlerService {
 
 	public static final String COMMAND_PENDING = "/pending";
 	public static final String COMMAND_CANCEL = "/cancel";
+	public static final String COMMAND_REMOVE = "/remove";
 	public static final String COMMAND_DONE = "/done";
 	public static final String COMMAND_SILENT_DONE = "/sdone";
 
@@ -65,7 +66,7 @@ public class TelegramContributorsCommandHandlerService {
 	private RequestManagementService requestManagementService;
 
 	@Autowired
-	private UserRequestService userRequestService;
+	private RequestService requestService;
 
 	@Autowired
 	private SchedulerService schedulerService;
@@ -263,6 +264,49 @@ public class TelegramContributorsCommandHandlerService {
 		};
 	}
 
+	public TelegramHandler removeRequest() {
+		return (bot, update) -> {
+			Long chatId = TelegramUtils.getChatId(update);
+			String text = update.message().text();
+
+			Optional<Group> optional = groupService.findById(chatId);
+			if (optional.isPresent()) {
+				String message = null;
+
+				// get message id
+				Long messageId = null;
+				if (update.message().replyToMessage() != null) {
+					messageId = update.message().replyToMessage().messageId().longValue();
+				} else {
+					String messageText = TelegramUtils.removeCommand(text, update.message().entities()).trim();
+					messageId = messageText.isEmpty() ? null : Long.parseLong(messageText);
+				}
+
+				// delete message
+				if (messageId != null) {
+					boolean success = requestManagementService.deleteRequest(messageId, chatId);
+
+					String link = getLink(chatId.toString(), messageId.toString());
+					StringBuilder builder = new StringBuilder();
+					builder.append(requestStatusMessage(link, success, "removed"));
+					message = builder.toString();
+				} else {
+					StringBuilder builder = new StringBuilder();
+
+					builder.append("The right format is: <code>");
+					builder.append(COMMAND_REMOVE);
+					builder.append("</code> [message id]");
+					message = builder.toString();
+				}
+
+				SendMessage sendMessage = new SendMessage(chatId, message);
+				sendMessage.parseMode(ParseMode.HTML);
+				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.SECONDS);
+				bot.execute(new DeleteMessage(chatId, update.message().messageId()));
+			}
+		};
+	}
+
 	public TelegramHandler getGroupRequests() {
 		return (bot, update) -> {
 			Long chatId = TelegramUtils.getChatId(update);
@@ -287,7 +331,7 @@ public class TelegramContributorsCommandHandlerService {
 				Optional<Boolean> optionalDescendent = getDescendent(text);
 
 				boolean descendent = optionalDescendent.isPresent() && optionalDescendent.get();
-				List<UserRequest> requests = userRequestService.findRequests(group, source, format, descendent);
+				List<Request> requests = requestService.findRequests(group, source, format, descendent);
 
 				String title = getTitle(format, source, descendent);
 
@@ -303,7 +347,7 @@ public class TelegramContributorsCommandHandlerService {
 	}
 
 	private void sendRequestList(TelegramBot bot, Long chatId, Optional<Long> group, String title,
-			List<UserRequest> requests) {
+			List<Request> requests) {
 		StringBuilder builder = new StringBuilder(title);
 
 		// chat name, when in PM
@@ -313,7 +357,7 @@ public class TelegramContributorsCommandHandlerService {
 
 		// create text foreach request
 		for (int i = 0; i < requests.size(); i++) {
-			UserRequest request = requests.get(i);
+			Request request = requests.get(i);
 
 			// build request text
 			StringBuilder requestBuilder = new StringBuilder();
@@ -324,7 +368,7 @@ public class TelegramContributorsCommandHandlerService {
 			requestBuilder.append(getChatName(chatNames, groupId)).append(" ");
 			requestBuilder.append(i + 1).append("</a> ");
 
-			requestBuilder.append(RequestUtils.getTimeBetweenDates(request.getDate(), now)).append(" ago ");
+			requestBuilder.append(RequestUtils.getTimeBetweenDates(request.getRequestDate(), now)).append(" ago ");
 			requestBuilder.append("(<code>").append(COMMAND_CANCEL).append(" ").append(messageId).append("</code>)\n");
 
 			String requestText = requestBuilder.toString();

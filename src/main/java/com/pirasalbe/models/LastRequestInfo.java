@@ -14,8 +14,9 @@ public class LastRequestInfo {
 
 	private String otherTags;
 
-	public LastRequestInfo(LocalDateTime date, String otherTags) {
+	public LastRequestInfo(Type type, LocalDateTime date, String otherTags) {
 		super();
+		this.type = type;
 		this.date = date;
 		this.otherTags = otherTags;
 	}

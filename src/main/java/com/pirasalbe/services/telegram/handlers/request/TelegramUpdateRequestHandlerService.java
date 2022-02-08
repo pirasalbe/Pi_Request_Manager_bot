@@ -8,8 +8,7 @@ import org.springframework.stereotype.Component;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
-import com.pirasalbe.models.RequestAssociationInfo;
-import com.pirasalbe.models.RequestAssociationInfo.Association;
+import com.pirasalbe.models.UpdateRequestAction;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.telegram.handlers.TelegramCondition;
@@ -48,18 +47,14 @@ public class TelegramUpdateRequestHandlerService extends AbstractTelegramRequest
 				Group group = optional.get();
 
 				// check association
-				RequestAssociationInfo requestAssociationInfo = requestManagementService
-						.getRequestAssociationInfo(message.messageId().longValue(), group.getId(), userId, link);
+				UpdateRequestAction requestAssociationInfo = requestManagementService
+						.getUpdateRequestAction(message.messageId().longValue(), group.getId(), userId, link);
 
-				if (requestAssociationInfo.requestExists()
-						&& requestAssociationInfo.getAssociation() == Association.CREATOR) {
-
+				if (requestAssociationInfo == UpdateRequestAction.UPDATE_REQUEST) {
 					// request exists and user is creator
 					updateRequest(message, group, content, link);
-
-				} else if (requestAssociationInfo.getAssociation() == Association.NONE) {
-
-					// request may or may not exists, but the association doesn't
+				} else if (requestAssociationInfo == UpdateRequestAction.NEW_REQUEST) {
+					// request may or may not exists
 					LocalDateTime requestTime = DateUtils.integerToLocalDateTime(message.editDate());
 
 					newRequest(bot, message, chatId, requestTime, group, content, link);
