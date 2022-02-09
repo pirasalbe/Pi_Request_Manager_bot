@@ -112,8 +112,7 @@ public class RequestManagementService {
 				stringBuilder.append(" an audiobook on ");
 				stringBuilder.append(DateUtils.formatDate(requestInfo.getDate()));
 				stringBuilder.append(".\n");
-				stringBuilder.append("Come back again on <b>");
-				stringBuilder.append(DateUtils.formatDate(nextValidRequest)).append("</b>.");
+				stringBuilder.append(RequestUtils.getComeBackAgain(DateUtils.getNow(), nextValidRequest));
 				validation = Validation.invalid(stringBuilder.toString());
 			}
 		}
