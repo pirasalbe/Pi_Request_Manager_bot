@@ -183,6 +183,10 @@ public class TelegramContributorsCommandHandlerService {
 				stringBuilder.append(requestStatusMessage(link, success, "marked as done"));
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
+				if (reply) {
+					// reply to the request
+					sendMessage.replyToMessageId(message.messageId());
+				}
 
 				// schedule delete for no reply
 				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.SECONDS, !reply);

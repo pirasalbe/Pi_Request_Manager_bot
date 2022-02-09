@@ -120,7 +120,7 @@ public class RequestManagementService {
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append("You’ve already ");
 				stringBuilder.append(requestInfo.getType().name().toLowerCase());
-				stringBuilder.append(" an audiobook on ");
+				stringBuilder.append(" an audiobook in one of our groups on ");
 				stringBuilder.append(DateUtils.formatDate(requestInfo.getDate()));
 				stringBuilder.append(".\n");
 				stringBuilder.append(RequestUtils.getComeBackAgain(DateUtils.getNow(), nextValidRequest));
