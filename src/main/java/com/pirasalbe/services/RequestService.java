@@ -53,6 +53,13 @@ public class RequestService {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void deleteOldRequests() {
+		LocalDateTime twoMonths = DateUtils.getNow().minusMonths(2);
+		repository.deleteOldCancelled(twoMonths);
+		repository.deleteOldResolved(twoMonths);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void insert(Long messageId, Long groupId, String link, String content, Format format, Source source,
 			String otherTags, Long userId, LocalDateTime requestDate) {
 		Request request = new Request();

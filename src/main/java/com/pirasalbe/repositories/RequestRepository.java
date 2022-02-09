@@ -44,6 +44,14 @@ public interface RequestRepository extends JpaRepository<Request, RequestPK> {
 	@Query("DELETE FROM Request r WHERE r.id.groupId = :groupId")
 	void deleteByGroupId(@Param("groupId") Long groupId);
 
+	@Modifying
+	@Query("DELETE FROM Request r WHERE r.status = 'CANCELLED' AND r.requestDate < :requestDate")
+	void deleteOldCancelled(@Param("requestDate") LocalDateTime requestDate);
+
+	@Modifying
+	@Query("DELETE FROM Request r WHERE r.status = 'RESOLVED' AND r.resolvedDate < :resolvedDate")
+	void deleteOldResolved(@Param("resolvedDate") LocalDateTime resolvedDate);
+
 	@Query("SELECT r " + "FROM Request r "
 			+ "WHERE r.status = 'NEW' AND r.id.groupId = :groupId AND r.format = :format AND r.source = :source")
 	List<Request> findByFilters(@Param("groupId") Long groupId, @Param("source") Source source,

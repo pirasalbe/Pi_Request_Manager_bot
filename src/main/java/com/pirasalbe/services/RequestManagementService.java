@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +44,16 @@ public class RequestManagementService {
 
 	@Autowired
 	private RequestService requestService;
+
+	@Scheduled(cron = "0 0 0 1 * ?")
+	public void deleteOldRequests() {
+		LOGGER.info("Start scheduled cleaning");
+		try {
+			requestService.deleteOldRequests();
+		} catch (Exception e) {
+			LOGGER.error("Cannot delete old requests", e);
+		}
+	}
 
 	/**
 	 * Check if user can send a new request
