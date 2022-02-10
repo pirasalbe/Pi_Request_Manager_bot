@@ -83,7 +83,7 @@ public class RequestUtils {
 
 		// get hours
 		if (days > 0 && hours > 0) {
-			stringBuilder.append(minutes == 0 ? ", " : " and ");
+			stringBuilder.append(minutes > 0 ? ", " : " and ");
 		}
 
 		if (hours > 0) {

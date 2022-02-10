@@ -1,6 +1,7 @@
 package com.pirasalbe.services.telegram.handlers.command;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.Audio;
 import com.pengrad.telegrambot.model.Chat.Type;
+import com.pengrad.telegrambot.model.Document;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
@@ -42,6 +45,14 @@ import com.pirasalbe.utils.TelegramUtils;
  */
 @Component
 public class TelegramContributorsCommandHandlerService {
+
+	private static final List<String> VALID_MIME_TYPES = Arrays.asList("application/zip", "application/vnd.rar",
+			"document/x-m4b", "audio/x-m4b", "audio/mpeg", "application/epub+zip", "application/vnd.amazon.mobi8-ebook",
+			"application/vnd.amazon.ebook", "application/x-mobipocket-ebook", "application/pdf", "image/vnd.djvu",
+			"application/octet-stream");
+	private static final List<String> VALID_EXTENSIONS = Arrays.asList(".zip", ".rar", ".mobi", ".pdf", ".epub",
+			".azw3", ".azw", ".txt", ".doc", ".docx", ".rtf", ".cbz", ".cbr", ".djvu", ".chm", ".fb2", ".mp3", ".m4b",
+			".opus");
 
 	public static final String COMMAND_PENDING = "/pending";
 	public static final String COMMAND_CANCEL = "/cancel";
@@ -200,7 +211,30 @@ public class TelegramContributorsCommandHandlerService {
 
 	public TelegramCondition replyToMessageWithFileCondition() {
 		return update -> replyToMessage(update)
-				&& (update.message().document() != null || update.message().audio() != null);
+				&& (isValidDocument(update.message().document()) || isValidAudio(update.message().audio()));
+	}
+
+	private boolean isValidDocument(Document document) {
+		return document != null && (document.mimeType().isEmpty() || VALID_MIME_TYPES.contains(document.mimeType())
+				|| isValidExtension(document.fileName()));
+	}
+
+	private boolean isValidAudio(Audio audio) {
+		return audio != null && (audio.mimeType().isEmpty() || VALID_MIME_TYPES.contains(audio.mimeType())
+				|| isValidExtension(audio.fileName()));
+	}
+
+	private boolean isValidExtension(String filename) {
+		boolean valid = false;
+
+		String lowerFileName = filename.toLowerCase();
+		for (int i = 0; i < VALID_EXTENSIONS.size() && !valid; i++) {
+			String extension = VALID_EXTENSIONS.get(i);
+
+			valid = lowerFileName.endsWith(extension);
+		}
+
+		return valid;
 	}
 
 	public TelegramHandler markDoneWithFile() {
