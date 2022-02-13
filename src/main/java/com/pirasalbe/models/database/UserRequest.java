@@ -4,12 +4,8 @@ import java.time.LocalDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Table;
-
-import com.pirasalbe.models.UserRequestRole;
 
 /**
  * User Request
@@ -27,8 +23,7 @@ public class UserRequest {
 	@Column(name = "GROUP_ID")
 	private Long groupId;
 
-	@Enumerated(EnumType.STRING)
-	private UserRequestRole role;
+	private String role;
 
 	private LocalDateTime date;
 
@@ -52,11 +47,11 @@ public class UserRequest {
 		this.groupId = groupId;
 	}
 
-	public UserRequestRole getRole() {
+	public String getRole() {
 		return role;
 	}
 
-	public void setRole(UserRequestRole role) {
+	public void setRole(String role) {
 		this.role = role;
 	}
 

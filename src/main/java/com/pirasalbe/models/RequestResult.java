@@ -8,7 +8,7 @@ package com.pirasalbe.models;
  */
 public class RequestResult {
 	public enum Result {
-		NEW, SUBSCRIBED, REPEATED_REQUEST, REQUEST_REPEATED_TOO_EARLY, CANNOT_REPEAT_REQUEST;
+		NEW, REPEATED_REQUEST, REQUEST_REPEATED_TOO_EARLY, CANNOT_REPEAT_REQUEST;
 	}
 
 	private Result result;

@@ -42,6 +42,12 @@ public class Request {
 	@Column(name = "OTHER_TAGS")
 	private String otherTags;
 
+	@Column(name = "USER_ID")
+	private Long userId;
+
+	@Column(name = "REQUEST_DATE")
+	private LocalDateTime requestDate;
+
 	@Column(name = "RESOLVED_DATE")
 	private LocalDateTime resolvedDate;
 
@@ -103,6 +109,22 @@ public class Request {
 
 	public void setOtherTags(String otherTags) {
 		this.otherTags = otherTags;
+	}
+
+	public Long getUserId() {
+		return userId;
+	}
+
+	public void setUserId(Long userId) {
+		this.userId = userId;
+	}
+
+	public LocalDateTime getRequestDate() {
+		return requestDate;
+	}
+
+	public void setRequestDate(LocalDateTime requestDate) {
+		this.requestDate = requestDate;
 	}
 
 	public LocalDateTime getResolvedDate() {

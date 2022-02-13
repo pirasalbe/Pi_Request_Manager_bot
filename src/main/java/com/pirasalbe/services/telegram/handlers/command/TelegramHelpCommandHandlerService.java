@@ -94,11 +94,17 @@ public class TelegramHelpCommandHandlerService implements TelegramHandler {
 					.append("Mark the request as pending. Useful when a request was marked as done by mistake.")
 					.append("\n");
 			message.append("- ").append(TelegramContributorsCommandHandlerService.COMMAND_CANCEL).append(" - ")
-					.append("Mark the request as cancelled").append("\n\n");
+					.append("Mark the request as cancelled. It is still counted for the request limit.").append("\n");
+			message.append("- ").append(TelegramContributorsCommandHandlerService.COMMAND_REMOVE).append(" - ")
+					.append("Delete the request. It is <b>not</b> counted for the request limit.").append("\n\n");
 
 			message.append(TelegramContributorsCommandHandlerService.COMMAND_CANCEL).append(" [message id]")
-					.append(" - ").append("Mark the request as cancelled. Useful when a request was deleted.")
-					.append("\n\n");
+					.append(" - ")
+					.append("Mark the request as cancelled. It is still counted for the request limit. Useful when a request was deleted.")
+					.append("\n");
+			message.append(TelegramContributorsCommandHandlerService.COMMAND_REMOVE).append(" [message id]")
+					.append(" - ")
+					.append("Mark the request as cancelled. It is <b>not</b> counted for the request limit. Useful to allow users to request again.");
 		} else {
 			message.append("Go in PM or a group to see the available commands.");
 		}

@@ -21,7 +21,6 @@ import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
 import com.pirasalbe.services.RequestService;
-import com.pirasalbe.services.UserRequestService;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramUtils;
 
@@ -38,7 +37,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 	protected static final String AUDIOBOOK_TAG = "#audiobook";
 	protected static final String KU_TAG = "#ku";
 	protected static final String ARCHIVE_TAG = "#archive";
-	protected static final String STORYTEL_TAG = "#stortytel";
+	protected static final String STORYTEL_TAG = "#storytel";
 	protected static final String SCRIBD_TAG = "#scribd";
 
 	protected static final List<String> KNOWN_TAGS = Arrays.asList(REQUEST_TAG, EBOOK_TAG, AUDIOBOOK_TAG, KU_TAG,
@@ -46,9 +45,6 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 
 	@Autowired
 	protected RequestManagementService requestManagementService;
-
-	@Autowired
-	protected UserRequestService userRequestService;
 
 	@Autowired
 	protected RequestService requestService;
@@ -96,7 +92,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		Format format = getFormat(content);
 
 		// check if user can request
-		Validation validation = userRequestService.canRequest(group, userId, format, requestTime);
+		Validation validation = requestManagementService.canRequest(group, userId, format, requestTime);
 		if (validation.isValid()) {
 			// create request
 			manageRequest(bot, message, chatId, message.messageId(), requestTime, group, content, link, format);

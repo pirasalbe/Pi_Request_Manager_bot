@@ -55,11 +55,13 @@ public class RequestUtils {
 	public static String getLink(String content, MessageEntity[] entities) {
 		String link = null;
 
-		for (MessageEntity entity : entities) {
-			if (entity.type().equals(Type.text_link)) {
-				link = entity.url();
-			} else if (entity.type().equals(Type.url)) {
-				link = content.substring(entity.offset(), entity.offset() + entity.length());
+		if (entities != null) {
+			for (MessageEntity entity : entities) {
+				if (entity.type().equals(Type.text_link)) {
+					link = entity.url();
+				} else if (entity.type().equals(Type.url)) {
+					link = content.substring(entity.offset(), entity.offset() + entity.length());
+				}
 			}
 		}
 
@@ -69,16 +71,19 @@ public class RequestUtils {
 	public static String getTimeBetweenDates(LocalDateTime from, LocalDateTime to) {
 		StringBuilder stringBuilder = new StringBuilder();
 
-		// get days
+		// get numbers
 		long days = DateUtils.getDays(from, to);
+		long hours = DateUtils.getHours(from, to, days);
+		long minutes = DateUtils.getMinutes(from, to, days, hours);
+
+		// aggregate them
 		if (days > 0) {
 			stringBuilder.append(days).append(" day").append(StringUtils.getPlural(days));
 		}
 
 		// get hours
-		long hours = DateUtils.getHours(from, to, days);
 		if (days > 0 && hours > 0) {
-			stringBuilder.append(" and ");
+			stringBuilder.append(minutes > 0 ? ", " : " and ");
 		}
 
 		if (hours > 0) {
@@ -86,7 +91,6 @@ public class RequestUtils {
 		}
 
 		// get minutes
-		long minutes = DateUtils.getMinutes(from, to, days, hours);
 		if (hours > 0 && minutes > 0 || days > 0 && minutes > 0) {
 			stringBuilder.append(" and ");
 		}

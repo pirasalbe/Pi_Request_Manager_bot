@@ -2,14 +2,30 @@ plugins {
 	id 'org.springframework.boot' version '2.6.2'
 	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
 	id 'java'
+	id 'eclipse'
+	id 'idea'
 }
 
 group = 'com.pirasalbe'
-version = '2.0.0-SNAPSHOT'
+version = '2.1.0-SNAPSHOT'
 sourceCompatibility = '11'
 
 repositories {
 	mavenCentral()
+}
+
+eclipse {
+    classpath {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
+
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
 }
 
 dependencies {

@@ -128,4 +128,27 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 		</addColumn>
 	</changeSet>
 
+	<changeSet id="11 - Add columns to Requests" author="pirasalbe">
+		<addColumn tableName="REQUESTS">
+			<column name="REQUEST_DATE" type="timestamp">
+				<constraints nullable="false" />
+			</column>
+			<column name="USER_ID" type="bigint">
+				<constraints nullable="false" />
+			</column>
+		</addColumn>
+	</changeSet>
+
+	<changeSet id="12 - Drop REQUEST_GROUP_LINK_UQ constraint" author="pirasalbe">
+		<dropUniqueConstraint constraintName="REQUEST_GROUP_LINK_UQ" tableName="REQUESTS" uniqueColumns="LINK" />
+	</changeSet>
+
+	<changeSet id="13 - Add REQUEST_GROUP_USER_LINK_UQ constraint" author="pirasalbe">
+		<addUniqueConstraint constraintName="REQUEST_GROUP_USER_LINK_UQ" tableName="REQUESTS" columnNames="LINK, USER_ID, GROUP_ID" validate="true" />
+	</changeSet>
+
+	<changeSet id="14 - Drop USER_REQUESTS" author="pirasalbe">
+		<dropTable cascadeConstraints="true" tableName="USER_REQUESTS"/>
+	</changeSet>
+
 </databaseChangeLog>

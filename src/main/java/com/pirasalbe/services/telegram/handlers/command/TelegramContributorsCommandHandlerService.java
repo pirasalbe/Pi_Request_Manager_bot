@@ -1,6 +1,7 @@
 package com.pirasalbe.services.telegram.handlers.command;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.Audio;
 import com.pengrad.telegrambot.model.Chat.Type;
+import com.pengrad.telegrambot.model.Document;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
@@ -21,15 +24,15 @@ import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Group;
-import com.pirasalbe.models.database.UserRequest;
+import com.pirasalbe.models.database.Request;
 import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.request.Source;
 import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
+import com.pirasalbe.services.RequestService;
 import com.pirasalbe.services.SchedulerService;
-import com.pirasalbe.services.UserRequestService;
 import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramUtils;
@@ -43,8 +46,17 @@ import com.pirasalbe.utils.TelegramUtils;
 @Component
 public class TelegramContributorsCommandHandlerService {
 
+	private static final List<String> VALID_MIME_TYPES = Arrays.asList("application/zip", "application/vnd.rar",
+			"document/x-m4b", "audio/x-m4b", "audio/mpeg", "application/epub+zip", "application/vnd.amazon.mobi8-ebook",
+			"application/vnd.amazon.ebook", "application/x-mobipocket-ebook", "application/pdf", "image/vnd.djvu",
+			"application/octet-stream");
+	private static final List<String> VALID_EXTENSIONS = Arrays.asList(".zip", ".rar", ".mobi", ".pdf", ".epub",
+			".azw3", ".azw", ".txt", ".doc", ".docx", ".rtf", ".cbz", ".cbr", ".djvu", ".chm", ".fb2", ".mp3", ".m4b",
+			".opus");
+
 	public static final String COMMAND_PENDING = "/pending";
 	public static final String COMMAND_CANCEL = "/cancel";
+	public static final String COMMAND_REMOVE = "/remove";
 	public static final String COMMAND_DONE = "/done";
 	public static final String COMMAND_SILENT_DONE = "/sdone";
 
@@ -65,7 +77,7 @@ public class TelegramContributorsCommandHandlerService {
 	private RequestManagementService requestManagementService;
 
 	@Autowired
-	private UserRequestService userRequestService;
+	private RequestService requestService;
 
 	@Autowired
 	private SchedulerService schedulerService;
@@ -86,11 +98,19 @@ public class TelegramContributorsCommandHandlerService {
 
 	private void sendMessageAndDelete(TelegramBot bot, Long chatId, SendMessage sendMessage, long timeout,
 			TimeUnit timeUnit) {
+		sendMessageAndDelete(bot, chatId, sendMessage, timeout, timeUnit, true);
+	}
+
+	private void sendMessageAndDelete(TelegramBot bot, Long chatId, SendMessage sendMessage, long timeout,
+			TimeUnit timeUnit, boolean delete) {
+
 		SendResponse response = bot.execute(sendMessage);
 
 		// schedule delete
-		schedulerService.schedule((b, r) -> b.execute(new DeleteMessage(chatId, r.message().messageId())), response,
-				timeout, timeUnit);
+		if (delete) {
+			schedulerService.schedule((b, r) -> b.execute(new DeleteMessage(chatId, r.message().messageId())), response,
+					timeout, timeUnit);
+		}
 	}
 
 	public TelegramCondition replyToMessageCondition() {
@@ -174,14 +194,13 @@ public class TelegramContributorsCommandHandlerService {
 				stringBuilder.append(requestStatusMessage(link, success, "marked as done"));
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
+				if (reply) {
+					// reply to the request
+					sendMessage.replyToMessageId(message.messageId());
+				}
 
 				// schedule delete for no reply
-				if (reply) {
-					sendMessage.replyToMessageId(message.messageId());
-					bot.execute(sendMessage);
-				} else {
-					sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.SECONDS);
-				}
+				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.SECONDS, !reply);
 
 				// delete command
 				DeleteMessage deleteMessage = new DeleteMessage(chatId, update.message().messageId());
@@ -192,7 +211,30 @@ public class TelegramContributorsCommandHandlerService {
 
 	public TelegramCondition replyToMessageWithFileCondition() {
 		return update -> replyToMessage(update)
-				&& (update.message().document() != null || update.message().audio() != null);
+				&& (isValidDocument(update.message().document()) || isValidAudio(update.message().audio()));
+	}
+
+	private boolean isValidDocument(Document document) {
+		return document != null && (document.mimeType().isEmpty() || VALID_MIME_TYPES.contains(document.mimeType())
+				|| isValidExtension(document.fileName()));
+	}
+
+	private boolean isValidAudio(Audio audio) {
+		return audio != null && (audio.mimeType().isEmpty() || VALID_MIME_TYPES.contains(audio.mimeType())
+				|| isValidExtension(audio.fileName()));
+	}
+
+	private boolean isValidExtension(String filename) {
+		boolean valid = false;
+
+		String lowerFileName = filename.toLowerCase();
+		for (int i = 0; i < VALID_EXTENSIONS.size() && !valid; i++) {
+			String extension = VALID_EXTENSIONS.get(i);
+
+			valid = lowerFileName.endsWith(extension);
+		}
+
+		return valid;
 	}
 
 	public TelegramHandler markDoneWithFile() {
@@ -260,6 +302,49 @@ public class TelegramContributorsCommandHandlerService {
 		};
 	}
 
+	public TelegramHandler removeRequest() {
+		return (bot, update) -> {
+			Long chatId = TelegramUtils.getChatId(update);
+			String text = update.message().text();
+
+			Optional<Group> optional = groupService.findById(chatId);
+			if (optional.isPresent()) {
+				String message = null;
+
+				// get message id
+				Long messageId = null;
+				if (update.message().replyToMessage() != null) {
+					messageId = update.message().replyToMessage().messageId().longValue();
+				} else {
+					String messageText = TelegramUtils.removeCommand(text, update.message().entities()).trim();
+					messageId = messageText.isEmpty() ? null : Long.parseLong(messageText);
+				}
+
+				// delete message
+				if (messageId != null) {
+					boolean success = requestManagementService.deleteRequest(messageId, chatId);
+
+					String link = getLink(chatId.toString(), messageId.toString());
+					StringBuilder builder = new StringBuilder();
+					builder.append(requestStatusMessage(link, success, "removed"));
+					message = builder.toString();
+				} else {
+					StringBuilder builder = new StringBuilder();
+
+					builder.append("The right format is: <code>");
+					builder.append(COMMAND_REMOVE);
+					builder.append("</code> [message id]");
+					message = builder.toString();
+				}
+
+				SendMessage sendMessage = new SendMessage(chatId, message);
+				sendMessage.parseMode(ParseMode.HTML);
+				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.SECONDS);
+				bot.execute(new DeleteMessage(chatId, update.message().messageId()));
+			}
+		};
+	}
+
 	public TelegramHandler getGroupRequests() {
 		return (bot, update) -> {
 			Long chatId = TelegramUtils.getChatId(update);
@@ -284,14 +369,14 @@ public class TelegramContributorsCommandHandlerService {
 				Optional<Boolean> optionalDescendent = getDescendent(text);
 
 				boolean descendent = optionalDescendent.isPresent() && optionalDescendent.get();
-				List<UserRequest> requests = userRequestService.findRequests(group, source, format, descendent);
+				List<Request> requests = requestService.findRequests(group, source, format, descendent);
 
 				String title = getTitle(format, source, descendent);
 
 				if (requests.isEmpty()) {
 					SendMessage sendMessage = new SendMessage(chatId, title + "No requests found");
 					sendMessage.parseMode(ParseMode.HTML);
-					sendMessageAndDelete(bot, chatId, sendMessage, 30, TimeUnit.SECONDS);
+					sendMessageAndDelete(bot, chatId, sendMessage, 30, TimeUnit.SECONDS, group.isPresent());
 				} else {
 					sendRequestList(bot, chatId, group, title, requests);
 				}
@@ -300,16 +385,17 @@ public class TelegramContributorsCommandHandlerService {
 	}
 
 	private void sendRequestList(TelegramBot bot, Long chatId, Optional<Long> group, String title,
-			List<UserRequest> requests) {
+			List<Request> requests) {
 		StringBuilder builder = new StringBuilder(title);
 
 		// chat name, when in PM
 		Map<Long, String> chatNames = new HashMap<>();
 		LocalDateTime now = DateUtils.getNow();
+		boolean deleteMessages = group.isPresent();
 
 		// create text foreach request
 		for (int i = 0; i < requests.size(); i++) {
-			UserRequest request = requests.get(i);
+			Request request = requests.get(i);
 
 			// build request text
 			StringBuilder requestBuilder = new StringBuilder();
@@ -317,20 +403,19 @@ public class TelegramContributorsCommandHandlerService {
 			Long groupId = request.getId().getGroupId();
 			requestBuilder.append("<a href='").append(getLink(groupId.toString(), messageId.toString())).append("'>");
 
-			// add chat info when in PM
-			if (group.isEmpty()) {
-				requestBuilder.append(getChatName(chatNames, groupId)).append(" ");
-			}
+			requestBuilder.append(getChatName(chatNames, groupId)).append(" ");
+			requestBuilder.append(i + 1).append("</a> ");
 
-			requestBuilder.append(messageId).append("</a> ");
-			requestBuilder.append(RequestUtils.getTimeBetweenDates(request.getDate(), now)).append(" ago\n");
+			requestBuilder.append(RequestUtils.getTimeBetweenDates(request.getRequestDate(), now)).append(" ago ");
+			requestBuilder.append("(<code>").append(COMMAND_CANCEL).append(" ").append(messageId).append("</code>)\n");
+
 			String requestText = requestBuilder.toString();
 
 			// if length is > message limit, send current text
 			if (builder.length() + requestText.length() > 4096) {
 				SendMessage sendMessage = new SendMessage(chatId, builder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
-				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.MINUTES);
+				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.MINUTES, deleteMessages);
 				builder = new StringBuilder(title);
 			}
 			builder.append(requestText);
@@ -338,7 +423,7 @@ public class TelegramContributorsCommandHandlerService {
 			if (i == requests.size() - 1) {
 				SendMessage sendMessage = new SendMessage(chatId, builder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
-				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.MINUTES);
+				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.MINUTES, deleteMessages);
 			}
 		}
 	}

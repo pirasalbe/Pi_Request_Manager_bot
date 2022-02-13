@@ -228,9 +228,14 @@ public class TelegramService {
 						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_PENDING),
 						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
 				contributorsCommandHandlerService.markPending());
+
 		bot.register(Arrays.asList(groupChatCondition,
 				commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_CANCEL),
 				contributorRoleCondition), contributorsCommandHandlerService.markCancelled());
+		bot.register(Arrays.asList(groupChatCondition,
+				commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_REMOVE),
+				contributorRoleCondition), contributorsCommandHandlerService.removeRequest());
+
 		bot.register(
 				Arrays.asList(groupChatCondition,
 						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_DONE),
