@@ -3,6 +3,7 @@ package com.pirasalbe.repositories;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -32,17 +33,17 @@ public interface RequestRepository extends JpaRepository<Request, RequestPK> {
 
 	@Query("SELECT r " + "FROM Request r " + "WHERE r.userId = :userId AND r.format = 'EBOOK' "
 			+ "ORDER BY r.requestDate DESC")
-	List<Request> getLastEbookRequestOfUser(@Param("userId") long user);
+	List<Request> getLastEbookRequestOfUser(@Param("userId") long user, Pageable pageable);
 
 	@Query("SELECT r " + "FROM Request r "
 			+ "WHERE r.userId = :userId AND r.format = 'AUDIOBOOK' AND r.status <> 'RESOLVED' "
 			+ "ORDER BY r.requestDate DESC")
-	List<Request> getLastAudiobookRequestOfUser(@Param("userId") long user);
+	List<Request> getLastAudiobookRequestOfUser(@Param("userId") long user, Pageable pageable);
 
 	@Query("SELECT r " + "FROM Request r "
 			+ "WHERE r.userId = :userId AND r.format = 'AUDIOBOOK' AND r.status = 'RESOLVED' "
 			+ "ORDER BY r.resolvedDate DESC")
-	List<Request> getLastAudiobookResolvedOfUser(@Param("userId") long user);
+	List<Request> getLastAudiobookResolvedOfUser(@Param("userId") long user, Pageable pageable);
 
 	@Modifying
 	@Query("DELETE FROM Request r WHERE r.id.groupId = :groupId")

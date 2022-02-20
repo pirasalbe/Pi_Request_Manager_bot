@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Component;
@@ -129,7 +130,7 @@ public class RequestService {
 	public Request getLastEbookRequestOfUser(Long userId) {
 		Request request = null;
 
-		List<Request> requests = repository.getLastEbookRequestOfUser(userId);
+		List<Request> requests = repository.getLastEbookRequestOfUser(userId, PageRequest.of(0, 1));
 		if (!requests.isEmpty()) {
 			request = requests.get(0);
 		}
@@ -140,7 +141,7 @@ public class RequestService {
 	public Request getLastAudiobookRequestOfUser(Long userId) {
 		Request request = null;
 
-		List<Request> requests = repository.getLastAudiobookRequestOfUser(userId);
+		List<Request> requests = repository.getLastAudiobookRequestOfUser(userId, PageRequest.of(0, 1));
 		if (!requests.isEmpty()) {
 			request = requests.get(0);
 		}
@@ -151,7 +152,7 @@ public class RequestService {
 	public Request getLastAudiobookResolvedOfUser(Long userId) {
 		Request request = null;
 
-		List<Request> requests = repository.getLastAudiobookResolvedOfUser(userId);
+		List<Request> requests = repository.getLastAudiobookResolvedOfUser(userId, PageRequest.of(0, 1));
 		if (!requests.isEmpty()) {
 			request = requests.get(0);
 		}
