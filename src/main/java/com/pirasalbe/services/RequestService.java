@@ -127,15 +127,36 @@ public class RequestService {
 	}
 
 	public Request getLastEbookRequestOfUser(Long userId) {
-		return repository.getLastEbookRequestOfUser(userId);
+		Request request = null;
+
+		List<Request> requests = repository.getLastEbookRequestOfUser(userId);
+		if (!requests.isEmpty()) {
+			request = requests.get(0);
+		}
+
+		return request;
 	}
 
 	public Request getLastAudiobookRequestOfUser(Long userId) {
-		return repository.getLastAudiobookRequestOfUser(userId);
+		Request request = null;
+
+		List<Request> requests = repository.getLastAudiobookRequestOfUser(userId);
+		if (!requests.isEmpty()) {
+			request = requests.get(0);
+		}
+
+		return request;
 	}
 
 	public Request getLastAudiobookResolvedOfUser(Long userId) {
-		return repository.getLastAudiobookResolvedOfUser(userId);
+		Request request = null;
+
+		List<Request> requests = repository.getLastAudiobookResolvedOfUser(userId);
+		if (!requests.isEmpty()) {
+			request = requests.get(0);
+		}
+
+		return request;
 	}
 
 	public List<Request> getUserEbookRequestsOfToday(Long userId, LocalDateTime last24Hours) {
