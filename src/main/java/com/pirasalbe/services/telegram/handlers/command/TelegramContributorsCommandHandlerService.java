@@ -60,6 +60,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public static final String COMMAND_REQUESTS = "/requests";
 
+	private static final String GROUP_CONDITION = "group=";
 	private static final String FORMAT_CONDITION = "format=";
 	private static final String SOURCE_CONDITION = "source=";
 	private static final String ORDER_CONDITION = "order=";
@@ -323,20 +324,13 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		return (bot, update) -> {
 			Long chatId = TelegramUtils.getChatId(update);
 
-			Optional<Long> group = null;
+			String text = update.message().text();
 			boolean isPrivate = update.message().chat().type() == Type.Private;
-			if (isPrivate) {
-				// get requests in PM
-				group = Optional.empty();
-			} else {
-				// get requests of the group
-				group = Optional.of(chatId);
-			}
+			Optional<Long> group = getGroup(chatId, text, isPrivate);
 
 			// check if the context is valid, either enabled group or PM
 			if (groupService.existsById(chatId) || isPrivate) {
 				deleteMessage(bot, update.message(), !isPrivate);
-				String text = update.message().text();
 
 				Optional<Format> format = getFormat(text);
 				Optional<Source> source = getSource(text);
@@ -356,6 +350,20 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				}
 			}
 		};
+	}
+
+	private Optional<Long> getGroup(Long chatId, String text, boolean isPrivate) {
+		Optional<Long> group;
+
+		if (isPrivate) {
+			// get requests in PM
+			group = getGroupId(text);
+		} else {
+			// get requests of the group
+			group = Optional.of(chatId);
+		}
+
+		return group;
 	}
 
 	private void sendRequestList(TelegramBot bot, Long chatId, Optional<Long> group, String title,
@@ -436,6 +444,10 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		}
 
 		return Optional.ofNullable(result);
+	}
+
+	private Optional<Long> getGroupId(String text) {
+		return getCondition(text, GROUP_CONDITION, Long::parseLong);
 	}
 
 	private Optional<Format> getFormat(String text) {
