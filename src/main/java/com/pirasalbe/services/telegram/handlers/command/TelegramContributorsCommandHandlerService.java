@@ -58,7 +58,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	public static final String COMMAND_DONE = "/done";
 	public static final String COMMAND_SILENT_DONE = "/sdone";
 
-	public static final String COMMAND_GET = "/requests";
+	public static final String COMMAND_REQUESTS = "/requests";
 
 	private static final String FORMAT_CONDITION = "format=";
 	private static final String SOURCE_CONDITION = "source=";

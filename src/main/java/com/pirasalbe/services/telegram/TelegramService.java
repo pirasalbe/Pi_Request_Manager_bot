@@ -261,7 +261,7 @@ public class TelegramService {
 
 		bot.register(Arrays.asList(
 				chatConditionFactory.onChatTypes(Arrays.asList(Type.group, Type.supergroup, Type.Private)),
-				commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_GET),
+				commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_REQUESTS),
 				contributorRoleCondition), contributorsCommandHandlerService.getGroupRequests());
 
 		bot.register(
