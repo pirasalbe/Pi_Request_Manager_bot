@@ -2,6 +2,8 @@ package com.pirasalbe.models;
 
 import java.time.LocalDateTime;
 
+import com.pirasalbe.models.database.Request;
+
 public class LastRequestInfo {
 
 	public enum Type {
@@ -12,13 +14,13 @@ public class LastRequestInfo {
 
 	private LocalDateTime date;
 
-	private String otherTags;
+	private Request request;
 
-	public LastRequestInfo(Type type, LocalDateTime date, String otherTags) {
+	public LastRequestInfo(Type type, LocalDateTime date, Request request) {
 		super();
 		this.type = type;
 		this.date = date;
-		this.otherTags = otherTags;
+		this.request = request;
 	}
 
 	public Type getType() {
@@ -33,8 +35,12 @@ public class LastRequestInfo {
 		return date;
 	}
 
+	public Request getRequest() {
+		return request;
+	}
+
 	public String getOtherTags() {
-		return otherTags;
+		return request.getOtherTags();
 	}
 
 }

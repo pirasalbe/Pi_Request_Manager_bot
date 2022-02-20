@@ -27,6 +27,7 @@ import com.pirasalbe.models.request.Source;
 import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.StringUtils;
+import com.pirasalbe.utils.TelegramUtils;
 
 /**
  * Service that manages the user request table
@@ -100,6 +101,17 @@ public class RequestManagementService {
 		return validation;
 	}
 
+	private String getRequestLink(Request request, String text) {
+		StringBuilder builder = new StringBuilder();
+		builder.append("(").append("<a href='");
+		builder.append(TelegramUtils.getLink(request.getId().getGroupId().toString(),
+				request.getId().getMessageId().toString()));
+		builder.append("'>");
+		builder.append(text).append("</a>").append(")");
+
+		return builder.toString();
+	}
+
 	private Validation isValidAudiobookRequest(Long userId, Integer audiobooksDaysWait,
 			Integer englishAudiobooksDaysWait, Request pendingRequest, Request resolvedRequest) {
 		Validation validation = Validation.valid();
@@ -122,7 +134,7 @@ public class RequestManagementService {
 				stringBuilder.append(requestInfo.getType().name().toLowerCase());
 				stringBuilder.append(" an audiobook in one of our groups on ");
 				stringBuilder.append(DateUtils.formatDate(requestInfo.getDate()));
-				stringBuilder.append(".\n");
+				stringBuilder.append(" ").append(getRequestLink(requestInfo.getRequest(), "link")).append(".\n");
 				stringBuilder.append(RequestUtils.getComeBackAgain(DateUtils.getNow(), nextValidRequest));
 				validation = Validation.invalid(stringBuilder.toString());
 			}
@@ -137,18 +149,14 @@ public class RequestManagementService {
 		if (resolvedRequest != null && pendingRequest != null) {
 			// take the latter
 			if (resolvedRequest.getResolvedDate().isAfter(pendingRequest.getRequestDate())) {
-				requestInfo = new LastRequestInfo(Type.RECEIVED, resolvedRequest.getResolvedDate(),
-						resolvedRequest.getOtherTags());
+				requestInfo = new LastRequestInfo(Type.RECEIVED, resolvedRequest.getResolvedDate(), resolvedRequest);
 			} else {
-				requestInfo = new LastRequestInfo(Type.REQUESTED, pendingRequest.getRequestDate(),
-						pendingRequest.getOtherTags());
+				requestInfo = new LastRequestInfo(Type.REQUESTED, pendingRequest.getRequestDate(), pendingRequest);
 			}
 		} else if (resolvedRequest != null) {
-			requestInfo = new LastRequestInfo(Type.RECEIVED, resolvedRequest.getResolvedDate(),
-					resolvedRequest.getOtherTags());
+			requestInfo = new LastRequestInfo(Type.RECEIVED, resolvedRequest.getResolvedDate(), resolvedRequest);
 		} else if (pendingRequest != null) {
-			requestInfo = new LastRequestInfo(Type.REQUESTED, pendingRequest.getRequestDate(),
-					pendingRequest.getOtherTags());
+			requestInfo = new LastRequestInfo(Type.REQUESTED, pendingRequest.getRequestDate(), pendingRequest);
 		}
 
 		return requestInfo;
@@ -162,14 +170,16 @@ public class RequestManagementService {
 		long requestCount = requests.size();
 		// it's invalid if already reached the limit
 		if (requestCount >= requestLimit) {
-			LocalDateTime lastRequestDate = requests.get(0).getRequestDate();
+			Request lastRequest = requests.get(0);
+			LocalDateTime lastRequestDate = lastRequest.getRequestDate();
 			LOGGER.warn("User {}, new request {}, {} ebook requested since {}", userId, requestTime, requestCount,
 					lastRequestDate);
 
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append("You’re only allowed to request ").append(requestLimit > 1 ? "up to " : "");
 			stringBuilder.append(requestLimit).append(" book").append(StringUtils.getPlural(requestLimit));
-			stringBuilder.append(" every 24 hours.\n");
+			stringBuilder.append(" every 24 hours");
+			stringBuilder.append(" ").append(getRequestLink(lastRequest, "last request")).append(".\n");
 			stringBuilder.append(RequestUtils.getComeBackAgain(requestTime, lastRequestDate.plusHours(24)));
 			validation = Validation.invalid(stringBuilder.toString());
 		}
@@ -255,7 +265,8 @@ public class RequestManagementService {
 			// special tags request
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append("You already requested this title on ");
-			stringBuilder.append(DateUtils.formatDate(previousRequestDate)).append(".\n");
+			stringBuilder.append(DateUtils.formatDate(previousRequestDate));
+			stringBuilder.append(" ").append(getRequestLink(request, "link")).append(".\n");
 			stringBuilder.append("No need to bump requests with special hashtags.");
 			result = new RequestResult(Result.CANNOT_REPEAT_REQUEST, stringBuilder.toString());
 		} else {
@@ -265,7 +276,8 @@ public class RequestManagementService {
 
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append("You already requested this title on ")
-					.append(DateUtils.formatDate(previousRequestDate)).append(".\n");
+					.append(DateUtils.formatDate(previousRequestDate));
+			stringBuilder.append(" ").append(getRequestLink(request, "original request")).append(".\n");
 			stringBuilder.append(RequestUtils.getComeBackAgain(requestDate, minDateForNewRequest)).append("\n");
 			stringBuilder.append(
 					"If you have requested it many times and still haven't received the book, then it's most likely that the book is not available as of now. It's better if you request again after a month or so.");
