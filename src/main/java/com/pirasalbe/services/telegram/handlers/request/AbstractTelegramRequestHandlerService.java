@@ -72,7 +72,8 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		// notify user of the error
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append(TelegramUtils.tagUser(message));
-		stringBuilder.append("Your request is incomplete. Make sure it has all the required elements:\n\n");
+		stringBuilder.append("Your request is incomplete. See pinned messages.\n\n");
+		stringBuilder.append("It should look like this:\n\n");
 		stringBuilder.append("<i>#request (+ other tags if needed)</i>\n");
 		stringBuilder.append("<i>Title</i>\n");
 		stringBuilder.append("<i>Author</i>\n");
