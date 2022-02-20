@@ -168,4 +168,31 @@ public class TelegramUtils {
 		return builder.toString();
 	}
 
+	/**
+	 * Get a link to a message
+	 *
+	 * @param message Message to link
+	 * @return link
+	 */
+	public static String getLink(Message message) {
+		String chatId = message.chat().id().toString();
+		String messageId = message.messageId().toString();
+		return getLink(chatId, messageId);
+	}
+
+	/**
+	 * Get a link to a message
+	 *
+	 * @param chatId    Chat of the message
+	 * @param messageId Message Id
+	 * @return link
+	 */
+	public static String getLink(String chatId, String messageId) {
+		if (chatId.startsWith("-100")) {
+			chatId = chatId.substring(4);
+		}
+
+		return "https://t.me/c/" + chatId + "/" + messageId;
+	}
+
 }

@@ -82,20 +82,6 @@ public class TelegramContributorsCommandHandlerService {
 	@Autowired
 	private SchedulerService schedulerService;
 
-	private String getLink(Message message) {
-		String chatId = message.chat().id().toString();
-		String messageId = message.messageId().toString();
-		return getLink(chatId, messageId);
-	}
-
-	private String getLink(String chatId, String messageId) {
-		if (chatId.startsWith("-100")) {
-			chatId = chatId.substring(4);
-		}
-
-		return "https://t.me/c/" + chatId + "/" + messageId;
-	}
-
 	private void sendMessageAndDelete(TelegramBot bot, Long chatId, SendMessage sendMessage, long timeout,
 			TimeUnit timeUnit) {
 		sendMessageAndDelete(bot, chatId, sendMessage, timeout, timeUnit, true);
@@ -133,7 +119,7 @@ public class TelegramContributorsCommandHandlerService {
 				boolean success = requestManagementService.markPending(message);
 
 				// send a message to notify operation
-				String link = getLink(message);
+				String link = TelegramUtils.getLink(message);
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append(requestStatusMessage(link, success, "marked as pending"));
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
@@ -182,7 +168,7 @@ public class TelegramContributorsCommandHandlerService {
 				boolean success = requestManagementService.markDone(message);
 
 				// send a message to notify operation
-				String link = getLink(message);
+				String link = TelegramUtils.getLink(message);
 				StringBuilder stringBuilder = new StringBuilder();
 				if (reply) {
 					// reply to the user only if reply
@@ -248,7 +234,7 @@ public class TelegramContributorsCommandHandlerService {
 
 				boolean success = requestManagementService.markDone(message);
 
-				String link = getLink(message);
+				String link = TelegramUtils.getLink(message);
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append(requestStatusMessage(link, success, "marked as done"));
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
@@ -281,7 +267,7 @@ public class TelegramContributorsCommandHandlerService {
 				if (messageId != null) {
 					boolean success = requestManagementService.markCancelled(messageId, chatId);
 
-					String link = getLink(chatId.toString(), messageId.toString());
+					String link = TelegramUtils.getLink(chatId.toString(), messageId.toString());
 					StringBuilder builder = new StringBuilder();
 					builder.append(requestStatusMessage(link, success, "marked as cancelled"));
 					message = builder.toString();
@@ -324,7 +310,7 @@ public class TelegramContributorsCommandHandlerService {
 				if (messageId != null) {
 					boolean success = requestManagementService.deleteRequest(messageId, chatId);
 
-					String link = getLink(chatId.toString(), messageId.toString());
+					String link = TelegramUtils.getLink(chatId.toString(), messageId.toString());
 					StringBuilder builder = new StringBuilder();
 					builder.append(requestStatusMessage(link, success, "removed"));
 					message = builder.toString();
@@ -401,7 +387,8 @@ public class TelegramContributorsCommandHandlerService {
 			StringBuilder requestBuilder = new StringBuilder();
 			Long messageId = request.getId().getMessageId();
 			Long groupId = request.getId().getGroupId();
-			requestBuilder.append("<a href='").append(getLink(groupId.toString(), messageId.toString())).append("'>");
+			requestBuilder.append("<a href='").append(TelegramUtils.getLink(groupId.toString(), messageId.toString()))
+					.append("'>");
 
 			requestBuilder.append(getChatName(chatNames, groupId)).append(" ");
 			requestBuilder.append(i + 1).append("</a> ");
