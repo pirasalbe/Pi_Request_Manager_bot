@@ -167,32 +167,46 @@ public class TelegramContributorsCommandHandlerService {
 
 				boolean success = requestManagementService.markDone(message);
 
-				// send a message to notify operation
+				// reply
 				String link = TelegramUtils.getLink(message);
-				StringBuilder stringBuilder = new StringBuilder();
 				if (reply) {
-					// reply to the user only if reply
-					String text = TelegramUtils.removeCommand(update.message().text(), update.message().entities())
-							.trim();
-					stringBuilder.append(TelegramUtils.tagUser(message));
-					stringBuilder.append(" ").append(text).append("\n");
-				}
-				stringBuilder.append(requestStatusMessage(link, success, "marked as done"));
-				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
-				sendMessage.parseMode(ParseMode.HTML);
-				if (reply) {
-					// reply to the request
-					sendMessage.replyToMessageId(message.messageId());
+					markDoneWithMessage(bot, update, chatId, message, success, link);
 				}
 
-				// schedule delete for no reply
-				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.SECONDS, !reply);
+				// send a message to notify operation
+				StringBuilder notificationBuilder = new StringBuilder();
+				notificationBuilder.append(requestStatusMessage(link, success, "marked as done"));
+				SendMessage sendMessageNotification = new SendMessage(chatId, notificationBuilder.toString());
+				sendMessageNotification.parseMode(ParseMode.HTML);
+				sendMessageAndDelete(bot, chatId, sendMessageNotification, 5, TimeUnit.SECONDS, true);
 
 				// delete command
 				DeleteMessage deleteMessage = new DeleteMessage(chatId, update.message().messageId());
 				bot.execute(deleteMessage);
 			}
 		};
+	}
+
+	private void markDoneWithMessage(TelegramBot bot, Update update, Long chatId, Message message, boolean success,
+			String link) {
+		StringBuilder replyBuilder = new StringBuilder();
+
+		String text = TelegramUtils.removeCommand(update.message().text(), update.message().entities()).trim();
+
+		replyBuilder.append(TelegramUtils.tagUser(message));
+		replyBuilder.append(text).append("\n");
+
+		String successMessage = "fulfilled by <code>" + TelegramUtils.getUserName(update.message().from()) + "</code>";
+
+		replyBuilder.append(requestStatusMessage(link, success, successMessage));
+
+		SendMessage sendMessageReply = new SendMessage(chatId, replyBuilder.toString());
+		sendMessageReply.parseMode(ParseMode.HTML);
+
+		// reply to the request
+		sendMessageReply.replyToMessageId(message.messageId());
+
+		bot.execute(sendMessageReply);
 	}
 
 	public TelegramCondition replyToMessageWithFileCondition() {
