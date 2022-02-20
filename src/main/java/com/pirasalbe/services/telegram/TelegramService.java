@@ -277,6 +277,10 @@ public class TelegramService {
 				commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_REMOVE),
 				contributorRoleCondition), contributorsCommandHandlerService.removeRequest());
 
+		bot.register(Arrays.asList(groupChatCondition,
+				contributorsCommandHandlerService.replyToMessageWithFileCondition(), contributorRoleCondition),
+				contributorsCommandHandlerService.markDoneWithFile());
+
 		bot.register(
 				Arrays.asList(groupChatCondition,
 						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_DONE),
@@ -288,10 +292,6 @@ public class TelegramService {
 								.onCommand(TelegramContributorsCommandHandlerService.COMMAND_SILENT_DONE),
 						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
 				contributorsCommandHandlerService.markDoneSilently());
-
-		bot.register(Arrays.asList(groupChatCondition,
-				contributorsCommandHandlerService.replyToMessageWithFileCondition(), contributorRoleCondition),
-				contributorsCommandHandlerService.markDoneWithFile());
 	}
 
 }
