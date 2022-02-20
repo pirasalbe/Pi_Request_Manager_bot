@@ -78,8 +78,8 @@ public class RequestManagementService {
 			} else if (format.equals(Format.AUDIOBOOK)) {
 
 				// check audiobook limit
-				Request pendingRequest = requestService.getLastAudiobookRequestOfUserInGroup(userId);
-				Request resolvedRequest = requestService.getLastAudiobookResolvedOfUserInGroup(userId);
+				Request pendingRequest = requestService.getLastAudiobookRequestOfUser(userId);
+				Request resolvedRequest = requestService.getLastAudiobookResolvedOfUser(userId);
 
 				validation = isValidAudiobookRequest(userId, group.getAudiobooksDaysWait(),
 						group.getEnglishAudiobooksDaysWait(), pendingRequest, resolvedRequest);

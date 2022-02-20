@@ -30,15 +30,19 @@ public interface RequestRepository extends JpaRepository<Request, RequestPK> {
 			+ "ORDER BY r.requestDate asc")
 	List<Request> getUserEbookRequestsOfToday(@Param("userId") long userId, @Param("from") LocalDateTime from);
 
+	@Query("SELECT r " + "FROM Request r " + "WHERE r.userId = :userId AND r.format = 'EBOOK' "
+			+ "ORDER BY r.requestDate DESC")
+	Request getLastEbookRequestOfUser(@Param("userId") long user);
+
 	@Query("SELECT r " + "FROM Request r "
 			+ "WHERE r.userId = :userId AND r.format = 'AUDIOBOOK' AND r.status <> 'RESOLVED' "
 			+ "ORDER BY r.requestDate DESC")
-	Request getLastAudiobookRequestOfUserInGroup(@Param("userId") long user);
+	Request getLastAudiobookRequestOfUser(@Param("userId") long user);
 
 	@Query("SELECT r " + "FROM Request r "
 			+ "WHERE r.userId = :userId AND r.format = 'AUDIOBOOK' AND r.status = 'RESOLVED' "
 			+ "ORDER BY r.resolvedDate DESC")
-	Request getLastAudiobookResolvedOfUserInGroup(@Param("userId") long user);
+	Request getLastAudiobookResolvedOfUser(@Param("userId") long user);
 
 	@Modifying
 	@Query("DELETE FROM Request r WHERE r.id.groupId = :groupId")

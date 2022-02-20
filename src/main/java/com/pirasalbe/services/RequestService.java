@@ -126,12 +126,16 @@ public class RequestService {
 		repository.save(request);
 	}
 
-	public Request getLastAudiobookRequestOfUserInGroup(Long userId) {
-		return repository.getLastAudiobookRequestOfUserInGroup(userId);
+	public Request getLastEbookRequestOfUser(Long userId) {
+		return repository.getLastEbookRequestOfUser(userId);
 	}
 
-	public Request getLastAudiobookResolvedOfUserInGroup(Long userId) {
-		return repository.getLastAudiobookResolvedOfUserInGroup(userId);
+	public Request getLastAudiobookRequestOfUser(Long userId) {
+		return repository.getLastAudiobookRequestOfUser(userId);
+	}
+
+	public Request getLastAudiobookResolvedOfUser(Long userId) {
+		return repository.getLastAudiobookResolvedOfUser(userId);
 	}
 
 	public List<Request> getUserEbookRequestsOfToday(Long userId, LocalDateTime last24Hours) {
