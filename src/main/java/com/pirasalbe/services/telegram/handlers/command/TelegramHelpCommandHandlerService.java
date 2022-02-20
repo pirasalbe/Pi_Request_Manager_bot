@@ -66,10 +66,10 @@ public class TelegramHelpCommandHandlerService implements TelegramHandler {
 	}
 
 	private String getAdminHelp(Type chatType) {
-		StringBuilder message = new StringBuilder("<b>Contributor help:</b>").append("\n");
+		StringBuilder message = new StringBuilder("<b>Admin help:</b>").append("\n");
 
 		if (chatType == Type.Private) {
-			message.append("<a href='https://telegra.ph/PiRequestManager-02-16'>Contributors commands</a>");
+			message.append("<a href='https://telegra.ph/PiRequestManager-02-16'>Admin commands</a>");
 		} else {
 			message.append("Go in PM to see your available commands.");
 		}
@@ -82,7 +82,7 @@ public class TelegramHelpCommandHandlerService implements TelegramHandler {
 	}
 
 	private String getSuperAdminHelp(Type chatType) {
-		StringBuilder message = new StringBuilder("<b>Admin help:</b>").append("\n");
+		StringBuilder message = new StringBuilder("<b>Super Admin help:</b>").append("\n");
 
 		if (chatType == Type.Private) {
 			message.append(TelegramSuperAdminCommandHandlerService.COMMAND).append(" - ")
