@@ -8,7 +8,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.BotCommand;
 import com.pengrad.telegrambot.model.Chat.Type;
+import com.pengrad.telegrambot.model.botcommandscope.BotCommandScopeAllChatAdministrators;
+import com.pengrad.telegrambot.model.botcommandscope.BotCommandScopeAllGroupChats;
+import com.pengrad.telegrambot.model.botcommandscope.BotCommandScopeAllPrivateChats;
+import com.pengrad.telegrambot.model.botcommandscope.BotCommandScopeDefault;
+import com.pengrad.telegrambot.request.SetMyCommands;
 import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 import com.pirasalbe.services.telegram.conditions.TelegramCallbackQueryConditionFactory;
 import com.pirasalbe.services.telegram.conditions.TelegramCallbackQueryConditionFactory.Condition;
@@ -88,6 +95,9 @@ public class TelegramService {
 	@PostConstruct
 	public void initialize() {
 
+		// register commands
+		registerCommands();
+
 		// help
 		bot.register(commandConditionFactory.onCommand(TelegramHelpCommandHandlerService.COMMAND),
 				helpCommandHandlerService);
@@ -113,7 +123,38 @@ public class TelegramService {
 		registerContributorsHandlers();
 
 		bot.launch();
+	}
 
+	private void registerCommands() {
+		TelegramBot telegramBot = bot.getBot();
+
+		// default commands
+		BotCommand start = new BotCommand("start", "Checks if the bot is online");
+		BotCommand alive = new BotCommand("alive", "Checks if the bot is online");
+		BotCommand help = new BotCommand("help", "Shows information on how to use the bot");
+
+		// private, default, admin scopes
+		BotCommandScopeDefault defaultScope = new BotCommandScopeDefault();
+		BotCommandScopeAllPrivateChats privateChatsScope = new BotCommandScopeAllPrivateChats();
+
+		SetMyCommands commands = new SetMyCommands(start, alive, help);
+		commands.scope(defaultScope);
+		telegramBot.execute(commands);
+
+		commands.scope(privateChatsScope);
+		telegramBot.execute(commands);
+
+		BotCommandScopeAllChatAdministrators allChatAdministratorsScope = new BotCommandScopeAllChatAdministrators();
+		commands.scope(allChatAdministratorsScope);
+
+		telegramBot.execute(commands);
+
+		// no commands in groups
+		BotCommandScopeAllGroupChats allGroupChatsScope = new BotCommandScopeAllGroupChats();
+		commands = new SetMyCommands();
+		commands.scope(allGroupChatsScope);
+
+		telegramBot.execute(commands);
 	}
 
 	private void registerSuperAdminHandlers() {
