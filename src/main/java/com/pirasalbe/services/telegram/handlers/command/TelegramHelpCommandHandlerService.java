@@ -68,8 +68,6 @@ public class TelegramHelpCommandHandlerService extends AbstractTelegramHandlerSe
 		StringBuilder message = new StringBuilder("<b>User help:</b>").append("\n");
 
 		message.append(TelegramMeCommandHandlerService.COMMAND).append(" - ").append("Show user's info").append("\n");
-		message.append("<code>Reply to a another user's message with</code> ")
-				.append(TelegramMeCommandHandlerService.COMMAND).append(" - ").append("Show other user's info");
 
 		return message.toString();
 	}
