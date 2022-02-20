@@ -4,10 +4,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.FormatAllowed;
@@ -16,6 +19,7 @@ import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.request.Source;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.GroupService;
+import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramUtils;
 
@@ -26,7 +30,7 @@ import com.pirasalbe.utils.TelegramUtils;
  *
  */
 @Component
-public class TelegramGroupsCommandHandlerService {
+public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandlerService {
 
 	public static final String COMMAND_INFO = "/group_info";
 	public static final String COMMAND_ENABLE = "/enable_group";
@@ -45,6 +49,11 @@ public class TelegramGroupsCommandHandlerService {
 	@Autowired
 	private GroupService groupService;
 
+	private void sendMessage(TelegramBot bot, Update update, SendMessage sendMessage) {
+		sendMessageAndDelete(bot, sendMessage, 15, TimeUnit.SECONDS);
+		deleteMessage(bot, update.message());
+	}
+
 	public TelegramHandler showInfo() {
 		return (bot, update) -> {
 			Long chatId = TelegramUtils.getChatId(update);
@@ -55,7 +64,7 @@ public class TelegramGroupsCommandHandlerService {
 					optional.isPresent() ? optional.get().toString() : ENABLE_THE_GROUP_FIRST);
 			sendMessage.parseMode(ParseMode.HTML);
 
-			bot.execute(sendMessage);
+			sendMessage(bot, update, sendMessage);
 		};
 	}
 
@@ -66,7 +75,7 @@ public class TelegramGroupsCommandHandlerService {
 			groupService.insertIfNotExists(chatId, update.message().chat().title());
 			SendMessage sendMessage = new SendMessage(chatId, "Group enabled");
 
-			bot.execute(sendMessage);
+			sendMessage(bot, update, sendMessage);
 		};
 	}
 
@@ -77,7 +86,7 @@ public class TelegramGroupsCommandHandlerService {
 			groupService.deleteIfExists(chatId);
 			SendMessage sendMessage = new SendMessage(chatId, "Group disabled");
 
-			bot.execute(sendMessage);
+			sendMessage(bot, update, sendMessage);
 		};
 	}
 
@@ -117,7 +126,7 @@ public class TelegramGroupsCommandHandlerService {
 			SendMessage sendMessage = new SendMessage(chatId, message);
 			sendMessage.parseMode(ParseMode.HTML);
 
-			bot.execute(sendMessage);
+			sendMessage(bot, update, sendMessage);
 		};
 	}
 
@@ -145,7 +154,7 @@ public class TelegramGroupsCommandHandlerService {
 			SendMessage sendMessage = new SendMessage(chatId, message);
 			sendMessage.parseMode(ParseMode.HTML);
 
-			bot.execute(sendMessage);
+			sendMessage(bot, update, sendMessage);
 		};
 	}
 
@@ -173,7 +182,7 @@ public class TelegramGroupsCommandHandlerService {
 			SendMessage sendMessage = new SendMessage(chatId, message);
 			sendMessage.parseMode(ParseMode.HTML);
 
-			bot.execute(sendMessage);
+			sendMessage(bot, update, sendMessage);
 		};
 	}
 
@@ -202,7 +211,7 @@ public class TelegramGroupsCommandHandlerService {
 			SendMessage sendMessage = new SendMessage(chatId, message);
 			sendMessage.parseMode(ParseMode.HTML);
 
-			bot.execute(sendMessage);
+			sendMessage(bot, update, sendMessage);
 		};
 	}
 
@@ -233,7 +242,7 @@ public class TelegramGroupsCommandHandlerService {
 			SendMessage sendMessage = new SendMessage(chatId, message);
 			sendMessage.parseMode(ParseMode.HTML);
 
-			bot.execute(sendMessage);
+			sendMessage(bot, update, sendMessage);
 		};
 	}
 

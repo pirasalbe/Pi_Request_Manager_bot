@@ -1,5 +1,7 @@
 package com.pirasalbe.services.telegram.handlers.command;
 
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -11,6 +13,7 @@ import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.AdminService;
+import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
 
 /**
  * Service to manage /help
@@ -19,7 +22,7 @@ import com.pirasalbe.services.AdminService;
  *
  */
 @Component
-public class TelegramHelpCommandHandlerService implements TelegramHandler {
+public class TelegramHelpCommandHandlerService extends AbstractTelegramHandlerService implements TelegramHandler {
 
 	public static final String COMMAND = "/help";
 
@@ -49,10 +52,16 @@ public class TelegramHelpCommandHandlerService implements TelegramHandler {
 
 		SendMessage sendMessage = new SendMessage(update.message().chat().id(), message);
 		sendMessage.parseMode(ParseMode.HTML);
-		sendMessage.replyToMessageId(update.message().messageId());
 		sendMessage.disableWebPagePreview(true);
 
-		bot.execute(sendMessage);
+		// keep message only in private
+		boolean delete = chatType != Type.Private;
+		if (!delete) {
+			sendMessage.replyToMessageId(update.message().messageId());
+		}
+
+		sendMessageAndDelete(bot, sendMessage, 10, TimeUnit.SECONDS, delete);
+		deleteMessage(bot, update.message(), delete);
 	}
 
 	private String getUserHelp(Type chatType) {

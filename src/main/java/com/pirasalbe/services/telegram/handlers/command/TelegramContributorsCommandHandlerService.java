@@ -19,9 +19,7 @@ import com.pengrad.telegrambot.model.Document;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
-import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
-import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.database.Request;
@@ -32,7 +30,7 @@ import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
 import com.pirasalbe.services.RequestService;
-import com.pirasalbe.services.SchedulerService;
+import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
 import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramUtils;
@@ -44,7 +42,7 @@ import com.pirasalbe.utils.TelegramUtils;
  *
  */
 @Component
-public class TelegramContributorsCommandHandlerService {
+public class TelegramContributorsCommandHandlerService extends AbstractTelegramHandlerService {
 
 	private static final List<String> VALID_MIME_TYPES = Arrays.asList("application/zip", "application/vnd.rar",
 			"document/x-m4b", "audio/x-m4b", "audio/mpeg", "application/epub+zip", "application/vnd.amazon.mobi8-ebook",
@@ -79,26 +77,6 @@ public class TelegramContributorsCommandHandlerService {
 	@Autowired
 	private RequestService requestService;
 
-	@Autowired
-	private SchedulerService schedulerService;
-
-	private void sendMessageAndDelete(TelegramBot bot, Long chatId, SendMessage sendMessage, long timeout,
-			TimeUnit timeUnit) {
-		sendMessageAndDelete(bot, chatId, sendMessage, timeout, timeUnit, true);
-	}
-
-	private void sendMessageAndDelete(TelegramBot bot, Long chatId, SendMessage sendMessage, long timeout,
-			TimeUnit timeUnit, boolean delete) {
-
-		SendResponse response = bot.execute(sendMessage);
-
-		// schedule delete
-		if (delete) {
-			schedulerService.schedule((b, r) -> b.execute(new DeleteMessage(chatId, r.message().messageId())), response,
-					timeout, timeUnit);
-		}
-	}
-
 	public TelegramCondition replyToMessageCondition() {
 		return this::replyToMessage;
 	}
@@ -124,11 +102,9 @@ public class TelegramContributorsCommandHandlerService {
 				stringBuilder.append(requestStatusMessage(link, success, "marked as pending"));
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
-				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.SECONDS);
 
-				// delete command
-				DeleteMessage deleteMessage = new DeleteMessage(chatId, update.message().messageId());
-				bot.execute(deleteMessage);
+				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.SECONDS);
+				deleteMessage(bot, update.message());
 			}
 		};
 	}
@@ -170,7 +146,7 @@ public class TelegramContributorsCommandHandlerService {
 				// reply
 				String link = TelegramUtils.getLink(message);
 				if (reply) {
-					markDoneWithMessage(bot, update, chatId, message, success, link);
+					markDoneWithMessage(bot, update, chatId, message, link);
 				}
 
 				// send a message to notify operation
@@ -178,17 +154,14 @@ public class TelegramContributorsCommandHandlerService {
 				notificationBuilder.append(requestStatusMessage(link, success, "marked as done"));
 				SendMessage sendMessageNotification = new SendMessage(chatId, notificationBuilder.toString());
 				sendMessageNotification.parseMode(ParseMode.HTML);
-				sendMessageAndDelete(bot, chatId, sendMessageNotification, 5, TimeUnit.SECONDS, true);
 
-				// delete command
-				DeleteMessage deleteMessage = new DeleteMessage(chatId, update.message().messageId());
-				bot.execute(deleteMessage);
+				sendMessageAndDelete(bot, sendMessageNotification, 5, TimeUnit.SECONDS, true);
+				deleteMessage(bot, update.message());
 			}
 		};
 	}
 
-	private void markDoneWithMessage(TelegramBot bot, Update update, Long chatId, Message message, boolean success,
-			String link) {
+	private void markDoneWithMessage(TelegramBot bot, Update update, Long chatId, Message message, String link) {
 		StringBuilder replyBuilder = new StringBuilder();
 
 		String text = TelegramUtils.removeCommand(update.message().text(), update.message().entities()).trim();
@@ -196,9 +169,8 @@ public class TelegramContributorsCommandHandlerService {
 		replyBuilder.append(TelegramUtils.tagUser(message));
 		replyBuilder.append(text).append("\n");
 
-		String successMessage = "fulfilled by <code>" + TelegramUtils.getUserName(update.message().from()) + "</code>";
-
-		replyBuilder.append(requestStatusMessage(link, success, successMessage));
+		replyBuilder.append("Request fulfilled by <code>").append(TelegramUtils.getUserName(update.message().from()))
+				.append("</code>");
 
 		SendMessage sendMessageReply = new SendMessage(chatId, replyBuilder.toString());
 		sendMessageReply.parseMode(ParseMode.HTML);
@@ -254,7 +226,7 @@ public class TelegramContributorsCommandHandlerService {
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
 
-				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.SECONDS);
+				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.SECONDS);
 			}
 		};
 	}
@@ -296,8 +268,9 @@ public class TelegramContributorsCommandHandlerService {
 
 				SendMessage sendMessage = new SendMessage(chatId, message);
 				sendMessage.parseMode(ParseMode.HTML);
-				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.SECONDS);
-				bot.execute(new DeleteMessage(chatId, update.message().messageId()));
+
+				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.SECONDS);
+				deleteMessage(bot, update.message());
 			}
 		};
 	}
@@ -339,8 +312,9 @@ public class TelegramContributorsCommandHandlerService {
 
 				SendMessage sendMessage = new SendMessage(chatId, message);
 				sendMessage.parseMode(ParseMode.HTML);
-				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.SECONDS);
-				bot.execute(new DeleteMessage(chatId, update.message().messageId()));
+
+				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.SECONDS);
+				deleteMessage(bot, update.message());
 			}
 		};
 	}
@@ -361,7 +335,7 @@ public class TelegramContributorsCommandHandlerService {
 
 			// check if the context is valid, either enabled group or PM
 			if (groupService.existsById(chatId) || isPrivate) {
-				bot.execute(new DeleteMessage(chatId, update.message().messageId()));
+				deleteMessage(bot, update.message(), !isPrivate);
 				String text = update.message().text();
 
 				Optional<Format> format = getFormat(text);
@@ -376,7 +350,7 @@ public class TelegramContributorsCommandHandlerService {
 				if (requests.isEmpty()) {
 					SendMessage sendMessage = new SendMessage(chatId, title + "No requests found");
 					sendMessage.parseMode(ParseMode.HTML);
-					sendMessageAndDelete(bot, chatId, sendMessage, 30, TimeUnit.SECONDS, group.isPresent());
+					sendMessageAndDelete(bot, sendMessage, 30, TimeUnit.SECONDS, group.isPresent());
 				} else {
 					sendRequestList(bot, chatId, group, title, requests);
 				}
@@ -416,7 +390,7 @@ public class TelegramContributorsCommandHandlerService {
 			if (builder.length() + requestText.length() > 4096) {
 				SendMessage sendMessage = new SendMessage(chatId, builder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
-				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.MINUTES, deleteMessages);
+				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.MINUTES, deleteMessages);
 				builder = new StringBuilder(title);
 			}
 			builder.append(requestText);
@@ -424,7 +398,7 @@ public class TelegramContributorsCommandHandlerService {
 			if (i == requests.size() - 1) {
 				SendMessage sendMessage = new SendMessage(chatId, builder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
-				sendMessageAndDelete(bot, chatId, sendMessage, 5, TimeUnit.MINUTES, deleteMessages);
+				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.MINUTES, deleteMessages);
 			}
 		}
 	}

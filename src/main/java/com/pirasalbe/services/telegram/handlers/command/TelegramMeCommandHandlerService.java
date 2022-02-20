@@ -1,14 +1,18 @@
 package com.pirasalbe.services.telegram.handlers.command;
 
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.Chat.Type;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.AdminService;
+import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
 
 /**
  * Service to manage /me
@@ -17,7 +21,7 @@ import com.pirasalbe.services.AdminService;
  *
  */
 @Component
-public class TelegramMeCommandHandlerService implements TelegramHandler {
+public class TelegramMeCommandHandlerService extends AbstractTelegramHandlerService implements TelegramHandler {
 
 	public static final String COMMAND = "/me";
 
@@ -39,10 +43,13 @@ public class TelegramMeCommandHandlerService implements TelegramHandler {
 		stringBuilder.append("Id: <code>").append(userId).append("</code>\n");
 		stringBuilder.append("Role: <code>").append(adminService.getAuthority(userId)).append("</code>");
 		SendMessage sendMessage = new SendMessage(update.message().chat().id(), stringBuilder.toString());
-		sendMessage.replyToMessageId(update.message().messageId());
+		sendMessage.replyToMessageId(messageId);
 		sendMessage.parseMode(ParseMode.HTML);
 
-		bot.execute(sendMessage);
+		boolean delete = update.message().chat().type() != Type.Private;
+
+		sendMessageAndDelete(bot, sendMessage, 10, TimeUnit.SECONDS, delete);
+		deleteMessage(bot, update.message(), delete);
 	}
 
 }
