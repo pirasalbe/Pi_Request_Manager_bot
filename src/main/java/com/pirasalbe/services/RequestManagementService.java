@@ -45,7 +45,7 @@ public class RequestManagementService {
 	@Autowired
 	private RequestService requestService;
 
-	@Scheduled(cron = "0 0 0 1 * ?")
+	@Scheduled(cron = "0 0 0 1-3 * ?")
 	public void deleteOldRequests() {
 		LOGGER.info("Start scheduled cleaning");
 		try {
