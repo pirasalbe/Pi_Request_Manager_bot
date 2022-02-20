@@ -28,8 +28,10 @@ public class TelegramMeCommandHandlerService implements TelegramHandler {
 	public void handle(TelegramBot bot, Update update) {
 		// get sender id
 		Long userId = update.message().from().id();
+		Integer messageId = update.message().messageId();
 		if (update.message().replyToMessage() != null) {
 			userId = update.message().replyToMessage().from().id();
+			messageId = update.message().replyToMessage().messageId();
 		}
 
 		StringBuilder stringBuilder = new StringBuilder();
