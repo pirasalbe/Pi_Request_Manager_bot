@@ -100,6 +100,11 @@ public class RequestService {
 				request.setRequestDate(requestDate);
 			}
 
+			// set as new if not resolved
+			if (request.getStatus() != RequestStatus.RESOLVED) {
+				request.setStatus(RequestStatus.NEW);
+			}
+
 			repository.save(request);
 		}
 	}
