@@ -4,6 +4,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -33,6 +36,9 @@ public class RequestService {
 	@Autowired
 	private RequestRepository repository;
 
+	@PersistenceContext
+	private EntityManager entityManager;
+
 	public Request findByUniqueKey(Long groupId, Long userId, String link) {
 		return repository.findByUniqueKey(groupId, userId, link);
 	}
@@ -51,6 +57,10 @@ public class RequestService {
 		}
 
 		return deleted;
+	}
+
+	public void flushChanges() {
+		entityManager.flush();
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
@@ -99,11 +109,6 @@ public class RequestService {
 
 			if (requestDate != null) {
 				request.setRequestDate(requestDate);
-			}
-
-			// set as new if not resolved
-			if (request.getStatus() != RequestStatus.RESOLVED) {
-				request.setStatus(RequestStatus.NEW);
 			}
 
 			repository.save(request);

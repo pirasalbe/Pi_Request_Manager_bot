@@ -21,6 +21,7 @@ import com.pirasalbe.models.UpdateRequestAction;
 import com.pirasalbe.models.Validation;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.database.Request;
+import com.pirasalbe.models.database.RequestPK;
 import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.request.RequestStatus;
 import com.pirasalbe.models.request.Source;
@@ -239,18 +240,18 @@ public class RequestManagementService {
 			result = new RequestResult(Result.NEW);
 		} else {
 			// request exists, repeat it
-			result = repeatRequest(userId, group, request, link, content, format, source, otherTags, requestDate);
+			result = repeatRequest(request, group, messageId, userId, link, content, format, source, otherTags,
+					requestDate);
 		}
 
 		return result;
 	}
 
-	private RequestResult repeatRequest(Long userId, Group group, Request request, String link, String content,
-			Format format, Source source, String otherTags, LocalDateTime requestDate) {
+	private RequestResult repeatRequest(Request request, Group group, Long newMessageId, Long userId, String link,
+			String content, Format format, Source source, String otherTags, LocalDateTime requestDate) {
 		RequestResult result = null;
 
 		// request exists
-		Long messageId = request.getId().getMessageId();
 		LocalDateTime previousRequestDate = request.getRequestDate();
 
 		// new request date should be after a cooldown period
@@ -259,7 +260,7 @@ public class RequestManagementService {
 		boolean specialTags = hasSpecialTags(group, request.getSource());
 		if (!specialTags && minDateForNewRequest.isBefore(requestDate)) {
 			// no special tags and the request was after 48 hours
-			requestService.update(messageId, group.getId(), link, content, format, source, otherTags, requestDate);
+			updateOrDeleteInsertRequest(request, newMessageId, link, content, format, source, otherTags, requestDate);
 			result = new RequestResult(Result.REPEATED_REQUEST);
 		} else if (specialTags) {
 			// special tags request
@@ -285,6 +286,23 @@ public class RequestManagementService {
 		}
 
 		return result;
+	}
+
+	private void updateOrDeleteInsertRequest(Request request, Long newMessageId, String link, String content,
+			Format format, Source source, String otherTags, LocalDateTime requestDate) {
+		RequestPK id = request.getId();
+
+		if (request.getStatus() == RequestStatus.CANCELLED) {
+			// if request has been canceled, delete and insert again
+			deleteRequest(id.getMessageId(), id.getGroupId());
+			requestService.flushChanges();
+			requestService.insert(newMessageId, id.getGroupId(), link, content, format, source, otherTags,
+					request.getUserId(), requestDate);
+		} else {
+			// update request
+			requestService.update(id.getMessageId(), id.getGroupId(), link, content, format, source, otherTags,
+					requestDate);
+		}
 	}
 
 	private boolean hasSpecialTags(Group group, Source source) {
