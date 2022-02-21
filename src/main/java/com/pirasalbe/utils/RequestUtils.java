@@ -68,6 +68,98 @@ public class RequestUtils {
 		return link;
 	}
 
+	/**
+	 * Extract content from message
+	 *
+	 * @param text     Text content
+	 * @param entities Entities
+	 * @return
+	 */
+	public static String getContent(String text, MessageEntity[] entities) {
+		StringBuilder contentBuilder = new StringBuilder(text);
+
+		if (entities != null && entities.length > 0) {
+			int offset = 0;
+
+			// add all parts
+			for (MessageEntity entity : entities) {
+				// remove the entity part
+				int begin = offset + entity.offset();
+				int end = begin + entity.length();
+				contentBuilder.delete(begin, end);
+
+				// add formatted text
+				String value = getEntityValue(text, entity);
+				contentBuilder.insert(begin, value);
+
+				// update offset
+				offset += value.length() - (end - begin);
+			}
+		}
+
+		return contentBuilder.toString();
+	}
+
+	private static String getEntityValue(String text, MessageEntity entity) {
+		StringBuilder value = new StringBuilder();
+
+		switch (entity.type()) {
+		case bold:
+			value.append("<b>");
+			value.append(text.substring(entity.offset(), entity.offset() + entity.length()));
+			value.append("</b>");
+			break;
+		case code:
+			value.append("<code>");
+			value.append(text.substring(entity.offset(), entity.offset() + entity.length()));
+			value.append("</code>");
+			break;
+		case italic:
+			value.append("<i>");
+			value.append(text.substring(entity.offset(), entity.offset() + entity.length()));
+			value.append("</i>");
+			break;
+		case pre:
+			value.append("<pre>");
+			value.append(text.substring(entity.offset(), entity.offset() + entity.length()));
+			value.append("</pre>");
+			break;
+		case spoiler:
+			value.append("<tg-spoiler>");
+			value.append(text.substring(entity.offset(), entity.offset() + entity.length()));
+			value.append("</tg-spoiler>");
+			break;
+		case strikethrough:
+			value.append("<s>");
+			value.append(text.substring(entity.offset(), entity.offset() + entity.length()));
+			value.append("</s>");
+			break;
+		case text_link:
+			value.append("<a href='").append(entity.url()).append("'>");
+			value.append(text.substring(entity.offset(), entity.offset() + entity.length()));
+			value.append("</a>");
+			break;
+		case underline:
+			value.append("<u>");
+			value.append(text.substring(entity.offset(), entity.offset() + entity.length()));
+			value.append("</u>");
+			break;
+		case bot_command:
+		case cashtag:
+		case hashtag:
+		case url:
+		case email:
+		case mention:
+		case phone_number:
+		case text_mention:
+		default:
+			value.append(text.substring(entity.offset(), entity.offset() + entity.length()));
+			break;
+		}
+
+		return value.toString();
+	}
+
 	public static String getTimeBetweenDates(LocalDateTime from, LocalDateTime to) {
 		StringBuilder stringBuilder = new StringBuilder();
 

@@ -254,15 +254,20 @@ public class TelegramService {
 	}
 
 	private void registerContributorsHandlers() {
+		TelegramCondition groupAndPrivateChatCondition = chatConditionFactory
+				.onChatTypes(Arrays.asList(Type.group, Type.supergroup, Type.Private));
 		TelegramCondition groupChatCondition = chatConditionFactory
 				.onChatTypes(Arrays.asList(Type.group, Type.supergroup));
 		TelegramCondition contributorRoleCondition = roleConditionFactory
 				.onRole(TelegramContributorsCommandHandlerService.ROLE);
 
-		bot.register(Arrays.asList(
-				chatConditionFactory.onChatTypes(Arrays.asList(Type.group, Type.supergroup, Type.Private)),
+		bot.register(Arrays.asList(groupAndPrivateChatCondition,
 				commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_REQUESTS),
 				contributorRoleCondition), contributorsCommandHandlerService.getGroupRequests());
+
+		bot.register(Arrays.asList(groupChatCondition,
+				commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_SHOW),
+				contributorRoleCondition), contributorsCommandHandlerService.showRequest());
 
 		bot.register(
 				Arrays.asList(groupChatCondition,

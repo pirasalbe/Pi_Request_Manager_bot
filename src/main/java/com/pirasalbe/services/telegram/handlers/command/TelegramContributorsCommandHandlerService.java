@@ -19,7 +19,9 @@ import com.pengrad.telegrambot.model.Document;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
+import com.pengrad.telegrambot.request.GetChatMember;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.response.GetChatMemberResponse;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.database.Request;
@@ -52,6 +54,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			".azw3", ".azw", ".txt", ".doc", ".docx", ".rtf", ".cbz", ".cbr", ".djvu", ".chm", ".fb2", ".mp3", ".m4b",
 			".opus");
 
+	public static final String COMMAND_SHOW = "/show";
 	public static final String COMMAND_PENDING = "/pending";
 	public static final String COMMAND_CANCEL = "/cancel";
 	public static final String COMMAND_REMOVE = "/remove";
@@ -84,6 +87,83 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	private boolean replyToMessage(Update update) {
 		return update.message() != null && update.message().replyToMessage() != null;
+	}
+
+	public TelegramHandler showRequest() {
+		return (bot, update) -> {
+			Long chatId = TelegramUtils.getChatId(update);
+			String text = update.message().text();
+
+			Optional<Group> optional = groupService.findById(chatId);
+			if (optional.isPresent()) {
+				String message = null;
+
+				// get message id
+				Long messageId = null;
+				if (update.message().replyToMessage() != null) {
+					messageId = update.message().replyToMessage().messageId().longValue();
+				} else {
+					String messageText = TelegramUtils.removeCommand(text, update.message().entities()).trim();
+					messageId = messageText.isEmpty() ? null : Long.parseLong(messageText);
+				}
+
+				// delete message
+				if (messageId != null) {
+					message = getRequestInfo(bot, optional.get(), messageId);
+				} else {
+					message = getErrorMessage(COMMAND_SHOW);
+				}
+
+				SendMessage sendMessage = new SendMessage(chatId, message);
+				sendMessage.parseMode(ParseMode.HTML);
+
+				sendMessageAndDelete(bot, sendMessage, 60, TimeUnit.SECONDS);
+				deleteMessage(bot, update.message());
+			}
+		};
+	}
+
+	private String getRequestInfo(TelegramBot bot, Group group, Long messageId) {
+		StringBuilder messageBuilder = new StringBuilder();
+
+		Optional<Request> requestOptional = requestService.findById(messageId, group.getId());
+		if (requestOptional.isPresent()) {
+			Request request = requestOptional.get();
+
+			messageBuilder.append(request.getContent());
+			messageBuilder.append("\n\n[");
+			messageBuilder.append("Request by ").append(getUser(bot, request)).append("in ");
+			messageBuilder.append("#").append(group.getName().replace(' ', '_'));
+			messageBuilder.append("]");
+		} else {
+			messageBuilder.append("Request not found");
+		}
+
+		return messageBuilder.toString();
+	}
+
+	private String getUser(TelegramBot bot, Request request) {
+		GetChatMember getChatMember = new GetChatMember(request.getId().getGroupId(), request.getUserId());
+		GetChatMemberResponse member = bot.execute(getChatMember);
+
+		String user = null;
+		if (member.isOk()) {
+			user = TelegramUtils.tagUser(member.chatMember().user());
+		} else {
+			user = TelegramUtils.tagUser(request.getUserId());
+		}
+
+		return user.replace(".", "");
+	}
+
+	private String getErrorMessage(String command) {
+		StringBuilder builder = new StringBuilder();
+
+		builder.append("The right format is: <code>");
+		builder.append(command);
+		builder.append("</code> [message id]");
+
+		return builder.toString();
 	}
 
 	public TelegramHandler markPending() {
@@ -147,7 +227,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				// reply
 				String link = TelegramUtils.getLink(message);
 				if (reply) {
-					markDoneWithMessage(bot, update, chatId, message, link);
+					markDoneWithMessage(bot, update, chatId, message);
 				}
 
 				// send a message to notify operation
@@ -162,7 +242,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		};
 	}
 
-	private void markDoneWithMessage(TelegramBot bot, Update update, Long chatId, Message message, String link) {
+	private void markDoneWithMessage(TelegramBot bot, Update update, Long chatId, Message message) {
 		StringBuilder replyBuilder = new StringBuilder();
 
 		String text = TelegramUtils.removeCommand(update.message().text(), update.message().entities()).trim();
@@ -259,12 +339,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 					builder.append(requestStatusMessage(link, success, "marked as cancelled"));
 					message = builder.toString();
 				} else {
-					StringBuilder builder = new StringBuilder();
-
-					builder.append("The right format is: <code>");
-					builder.append(COMMAND_CANCEL);
-					builder.append("</code> [message id]");
-					message = builder.toString();
+					message = getErrorMessage(COMMAND_CANCEL);
 				}
 
 				SendMessage sendMessage = new SendMessage(chatId, message);
@@ -303,12 +378,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 					builder.append(requestStatusMessage(link, success, "removed"));
 					message = builder.toString();
 				} else {
-					StringBuilder builder = new StringBuilder();
-
-					builder.append("The right format is: <code>");
-					builder.append(COMMAND_REMOVE);
-					builder.append("</code> [message id]");
-					message = builder.toString();
+					message = getErrorMessage(COMMAND_REMOVE);
 				}
 
 				SendMessage sendMessage = new SendMessage(chatId, message);
