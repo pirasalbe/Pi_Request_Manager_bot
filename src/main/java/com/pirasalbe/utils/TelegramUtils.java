@@ -37,7 +37,7 @@ public class TelegramUtils {
 	 * @return String
 	 */
 	public static String tagUser(User user) {
-		return "<a href=\"tg://user?id=" + user.id() + "\">" + TelegramUtils.getUserName(user) + "</a>. ";
+		return tagUser(user.id(), TelegramUtils.getUserName(user));
 	}
 
 	/**
@@ -47,7 +47,18 @@ public class TelegramUtils {
 	 * @return String
 	 */
 	public static String tagUser(Long userId) {
-		return "<a href=\"tg://user?id=" + userId + "\">" + userId + "</a>. ";
+		return tagUser(userId, userId.toString());
+	}
+
+	/**
+	 * Get an HTML string that tags the user
+	 *
+	 * @param userId User id
+	 * @param text   Text to show
+	 * @return String
+	 */
+	private static String tagUser(Long userId, String text) {
+		return "<a href=\"tg://user?id=" + userId + "\">" + text + "</a>. ";
 	}
 
 	/**
