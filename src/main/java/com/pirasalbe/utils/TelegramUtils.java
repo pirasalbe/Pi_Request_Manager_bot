@@ -61,6 +61,10 @@ public class TelegramUtils {
 		return "<a href=\"tg://user?id=" + userId + "\">" + text + "</a>. ";
 	}
 
+	public static String getStartLink(String username, String payload) {
+		return "https://t.me/" + username + "?start=" + payload;
+	}
+
 	/**
 	 * Get chat id from message
 	 *
@@ -218,12 +222,23 @@ public class TelegramUtils {
 	 * @param messageId Message Id
 	 * @return link
 	 */
-	public static String getLink(String chatId, String messageId) {
-		if (chatId.startsWith("-100")) {
-			chatId = chatId.substring(4);
+	public static String getLink(Long groupId, Long messageId) {
+		return getLink(groupId.toString(), messageId.toString());
+	}
+
+	/**
+	 * Get a link to a message
+	 *
+	 * @param groupId   Chat of the message
+	 * @param messageId Message Id
+	 * @return link
+	 */
+	public static String getLink(String groupId, String messageId) {
+		if (groupId.startsWith("-100")) {
+			groupId = groupId.substring(4);
 		}
 
-		return "https://t.me/c/" + chatId + "/" + messageId;
+		return "https://t.me/c/" + groupId + "/" + messageId;
 	}
 
 }

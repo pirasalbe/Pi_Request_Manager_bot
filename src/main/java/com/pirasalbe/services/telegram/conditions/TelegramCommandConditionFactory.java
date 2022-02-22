@@ -37,12 +37,36 @@ public class TelegramCommandConditionFactory {
 	}
 
 	/**
+	 * Generates a condition on the specified command
+	 *
+	 * @param command   Command for the condition
+	 * @param allowText If false, checks that there is no text other than the
+	 *                  command
+	 * @return TelegramCondition
+	 */
+	public TelegramCondition onCommand(String command, boolean allowText) {
+		return onCommands(Arrays.asList(command), allowText);
+	}
+
+	/**
 	 * Generates a condition on the specified commands
 	 *
 	 * @param command Command for the condition
 	 * @return TelegramCondition
 	 */
 	public TelegramCondition onCommands(Collection<String> commands) {
+		return onCommands(commands, true);
+	}
+
+	/**
+	 * Generates a condition on the specified commands
+	 *
+	 * @param command   Command for the condition
+	 * @param allowText If false, checks that there is no text other than the
+	 *                  command
+	 * @return TelegramCondition
+	 */
+	public TelegramCondition onCommands(Collection<String> commands, boolean allowText) {
 		return update -> {
 			boolean asserted = false;
 
@@ -51,6 +75,11 @@ public class TelegramCommandConditionFactory {
 			if (message != null) {
 				String messageCommand = getCommand(message.text(), message.entities());
 				asserted = messageCommand != null && commands.contains(messageCommand);
+
+				if (asserted && !allowText) {
+					// checks that the command is the whole word
+					asserted = messageCommand.equals(message.text().trim());
+				}
 			}
 
 			return asserted;

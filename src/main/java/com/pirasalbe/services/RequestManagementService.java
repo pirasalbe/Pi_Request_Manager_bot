@@ -354,13 +354,18 @@ public class RequestManagementService {
 		if (link != null) {
 			Request request = requestService.findByUniqueKey(message.chat().id(), message.from().id(), link);
 			if (request != null) {
-				// mark request as done
-				requestService.updateStatus(request, status);
+				// update status
+				updateStatus(request, status);
 				success = true;
 			}
 		}
 
 		return success;
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void updateStatus(Request request, RequestStatus status) {
+		requestService.updateStatus(request, status);
 	}
 
 }
