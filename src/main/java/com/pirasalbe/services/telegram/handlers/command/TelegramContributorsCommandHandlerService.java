@@ -22,6 +22,7 @@ import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
+import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.GetChatMember;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.GetChatMemberResponse;
@@ -60,12 +61,21 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			".azw3", ".azw", ".txt", ".doc", ".docx", ".rtf", ".cbz", ".cbr", ".djvu", ".chm", ".fb2", ".mp3", ".m4b",
 			".opus");
 
+	private static final String MESSAGE_CONDITION = "message=";
+	private static final String GROUP_CONDITION = "group=";
+	private static final String ACTION_CONDITION = "action=";
+	private static final String FORMAT_CONDITION = "format=";
+	private static final String SOURCE_CONDITION = "source=";
+	private static final String ORDER_CONDITION = "order=";
+	private static final String REFRESH_SHOW_CONDITION = "refresh_show=";
+
 	private static final String START_PAYLOAD_SHOW = "^\\/start show_message=[0-9]+_group=[+-]?[0-9]+$";
-	private static final String MESSAGE_INFO_CALLBACK = "message=[0-9]+ group=[+-]?[0-9]+";
+	private static final String MESSAGE_INFO_CALLBACK = MESSAGE_CONDITION + "[0-9]+ " + GROUP_CONDITION + "[+-]?[0-9]+";
 	private static final String CONFIRM_CALLBACK = "^" + ContributorAction.CONFIRM + " " + MESSAGE_INFO_CALLBACK
 			+ " action=[a-zA-Z]+$";
 	private static final String CHANGE_STATUS_CALLBACK = "^(" + ContributorAction.PENDING + "|" + ContributorAction.DONE
-			+ "|" + ContributorAction.CANCEL + "|" + ContributorAction.REMOVE + ") " + MESSAGE_INFO_CALLBACK + "$";
+			+ "|" + ContributorAction.CANCEL + "|" + ContributorAction.REMOVE + ") " + MESSAGE_INFO_CALLBACK + " "
+			+ REFRESH_SHOW_CONDITION + "[0-9]+" + "$";
 
 	public static final String COMMAND_SHOW = "/show";
 	public static final String COMMAND_PENDING = "/pending";
@@ -76,12 +86,6 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public static final String COMMAND_REQUESTS = "/requests";
 
-	private static final String MESSAGE_CONDITION = "message=";
-	private static final String GROUP_CONDITION = "group=";
-	private static final String ACTION_CONDITION = "action=";
-	private static final String FORMAT_CONDITION = "format=";
-	private static final String SOURCE_CONDITION = "source=";
-	private static final String ORDER_CONDITION = "order=";
 	private static final String ORDER_CONDITION_OLD = "OLD";
 	private static final String ORDER_CONDITION_NEW = "NEW";
 
@@ -177,6 +181,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 			Optional<Long> optionalGroupId = getGroupId(text);
 			Optional<Long> optionalMessageId = getMessageId(text);
+			Optional<Integer> optionalShowMessageId = getRefreshShow(text);
 
 			String actionString = text.substring(0, text.indexOf(' '));
 			ContributorAction action = ContributorAction.valueOf(actionString);
@@ -188,14 +193,32 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 				result = performAction(action, messageId, groupId);
 
+				if (optionalShowMessageId.isPresent()) {
+					// delete original messsage and send it again
+					DeleteMessage deleteMessage = new DeleteMessage(update.callbackQuery().from().id(),
+							optionalShowMessageId.get());
+					bot.execute(deleteMessage);
+
+					sendRequestWithAction(bot, update.callbackQuery().from().id(), groupId, messageId);
+				}
+
 			} else {
 				result = "Request id not found";
 			}
 
+			// callback response
 			AnswerCallbackQuery answerCallbackQuery = new AnswerCallbackQuery(update.callbackQuery().id());
 			answerCallbackQuery.text(result);
 
 			bot.execute(answerCallbackQuery);
+
+			// delete confirmation button
+			if (update.callbackQuery().message() != null) {
+				DeleteMessage deleteMessage = new DeleteMessage(update.callbackQuery().from().id(),
+						update.callbackQuery().message().messageId());
+				bot.execute(deleteMessage);
+			}
+
 		};
 	}
 
@@ -585,45 +608,52 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				Long groupId = optionalGroupId.get();
 				Long messageId = optionalMessageId.get();
 
-				Optional<Group> optional = groupService.findById(groupId);
-				if (optional.isPresent()) {
-
-					Optional<Request> requestOptional = requestService.findById(messageId, optional.get().getId());
-					if (requestOptional.isPresent()) {
-						RequestStatus status = requestOptional.get().getStatus();
-
-						String message = getRequestInfo(bot, optional.get(), requestOptional, messageId);
-						SendMessage sendMessage = new SendMessage(chatId, message);
-						sendMessage.parseMode(ParseMode.HTML);
-
-						String callbackMessage = MESSAGE_CONDITION + messageId + " " + GROUP_CONDITION + groupId;
-						String callbackBegin = ContributorAction.CONFIRM + " " + callbackMessage + " action=";
-
-						InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
-						InlineKeyboardButton requestButton = new InlineKeyboardButton("📚 Request")
-								.url(TelegramUtils.getLink(groupId, messageId));
-						InlineKeyboardButton doneButton = new InlineKeyboardButton("✅ Done")
-								.callbackData(callbackBegin + ContributorAction.DONE);
-						InlineKeyboardButton pendingButton = new InlineKeyboardButton("⏳ Pending")
-								.callbackData(callbackBegin + ContributorAction.PENDING);
-						InlineKeyboardButton cancelButton = new InlineKeyboardButton("✖️ Cancel")
-								.callbackData(callbackBegin + ContributorAction.CANCEL);
-						InlineKeyboardButton removeButton = new InlineKeyboardButton("🗑 Remove")
-								.callbackData(callbackBegin + ContributorAction.REMOVE);
-
-						inlineKeyboard.addRow(requestButton,
-								status == RequestStatus.RESOLVED ? pendingButton : doneButton);
-						inlineKeyboard.addRow(status == RequestStatus.CANCELLED ? pendingButton : cancelButton,
-								removeButton);
-
-						sendMessage.replyMarkup(inlineKeyboard);
-
-						bot.execute(sendMessage);
-						deleteMessage(bot, update.message());
-					}
-				}
+				sendRequestWithAction(bot, chatId, groupId, messageId);
+				deleteMessage(bot, update.message());
 			}
 		};
+	}
+
+	private void sendRequestWithAction(TelegramBot bot, Long chatId, Long groupId, Long messageId) {
+		Optional<Group> optional = groupService.findById(groupId);
+		if (optional.isPresent()) {
+
+			Optional<Request> requestOptional = requestService.findById(messageId, optional.get().getId());
+			if (requestOptional.isPresent()) {
+				RequestStatus status = requestOptional.get().getStatus();
+
+				String message = getRequestInfo(bot, optional.get(), requestOptional, messageId);
+				SendMessage sendMessage = new SendMessage(chatId, message);
+				sendMessage.parseMode(ParseMode.HTML);
+
+				InlineKeyboardMarkup inlineKeyboard = getRequestKeyboard(groupId, messageId, status);
+
+				sendMessage.replyMarkup(inlineKeyboard);
+
+				bot.execute(sendMessage);
+			}
+		}
+	}
+
+	private InlineKeyboardMarkup getRequestKeyboard(Long groupId, Long messageId, RequestStatus status) {
+		String callbackMessage = MESSAGE_CONDITION + messageId + " " + GROUP_CONDITION + groupId;
+		String callbackBegin = ContributorAction.CONFIRM + " " + callbackMessage + " action=";
+
+		InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
+		InlineKeyboardButton requestButton = new InlineKeyboardButton("📚 Request")
+				.url(TelegramUtils.getLink(groupId, messageId));
+		InlineKeyboardButton doneButton = new InlineKeyboardButton("✅ Done")
+				.callbackData(callbackBegin + ContributorAction.DONE);
+		InlineKeyboardButton pendingButton = new InlineKeyboardButton("⏳ Pending")
+				.callbackData(callbackBegin + ContributorAction.PENDING);
+		InlineKeyboardButton cancelButton = new InlineKeyboardButton("✖️ Cancel")
+				.callbackData(callbackBegin + ContributorAction.CANCEL);
+		InlineKeyboardButton removeButton = new InlineKeyboardButton("🗑 Remove")
+				.callbackData(callbackBegin + ContributorAction.REMOVE);
+
+		inlineKeyboard.addRow(requestButton, status == RequestStatus.RESOLVED ? pendingButton : doneButton);
+		inlineKeyboard.addRow(status == RequestStatus.CANCELLED ? pendingButton : cancelButton, removeButton);
+		return inlineKeyboard;
 	}
 
 	private String getRequestInfo(TelegramBot bot, Group group, Optional<Request> requestOptional, Long messageId) {
@@ -690,8 +720,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				String callbackData = text.substring("confirm ".length(), text.indexOf(ACTION_CONDITION) - 1);
 
 				InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
-				InlineKeyboardButton yesButton = new InlineKeyboardButton("✔️ Yes")
-						.callbackData(action + " " + callbackData);
+				InlineKeyboardButton yesButton = new InlineKeyboardButton("✔️ Yes").callbackData(action + " "
+						+ callbackData + " " + REFRESH_SHOW_CONDITION + update.callbackQuery().message().messageId());
 
 				inlineKeyboard.addRow(yesButton);
 
@@ -730,6 +760,10 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	private Optional<ContributorAction> getAction(String text) {
 		return getCondition(text, ACTION_CONDITION, ContributorAction::valueOf);
+	}
+
+	private Optional<Integer> getRefreshShow(String text) {
+		return getCondition(text, REFRESH_SHOW_CONDITION, Integer::parseInt);
 	}
 
 	private Optional<Format> getFormat(String text) {
