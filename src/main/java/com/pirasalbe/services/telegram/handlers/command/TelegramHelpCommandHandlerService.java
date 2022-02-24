@@ -93,7 +93,11 @@ public class TelegramHelpCommandHandlerService extends AbstractTelegramHandlerSe
 
 		if (chatType == Type.Private) {
 			message.append(TelegramSuperAdminCommandHandlerService.COMMAND).append(" - ")
-					.append("Show commands to manage admins");
+					.append("Show commands to manage admins\n\n");
+			message.append(TelegramSuperAdminCommandHandlerService.COMMAND_ADD).append(" [id name <code>")
+					.append(UserRole.getRoles()).append("</code>]").append(" - ").append("Add admin\n");
+			message.append(TelegramSuperAdminCommandHandlerService.COMMAND_REMOVE).append(" [id]").append(" - ")
+					.append("Remove admin");
 		} else {
 			message.append("Go in PM to see your available commands.");
 		}
