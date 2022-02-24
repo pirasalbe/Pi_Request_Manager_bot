@@ -625,7 +625,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				String message = getRequestInfo(bot, optional.get(), requestOptional, messageId);
 				SendMessage sendMessage = new SendMessage(chatId, message);
 				sendMessage.parseMode(ParseMode.HTML);
-
+				sendMessage.disableWebPagePreview(true);
 				InlineKeyboardMarkup inlineKeyboard = getRequestKeyboard(groupId, messageId, status);
 
 				sendMessage.replyMarkup(inlineKeyboard);
