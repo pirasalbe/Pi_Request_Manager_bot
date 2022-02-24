@@ -64,6 +64,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	private static final String MESSAGE_CONDITION = "message=";
 	private static final String GROUP_CONDITION = "group=";
 	private static final String ACTION_CONDITION = "action=";
+	private static final String STATUS_CONDITION = "status=";
 	private static final String FORMAT_CONDITION = "format=";
 	private static final String SOURCE_CONDITION = "source=";
 	private static final String ORDER_CONDITION = "order=";
@@ -73,12 +74,13 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	private static final String MESSAGE_INFO_CALLBACK = MESSAGE_CONDITION + "[0-9]+ " + GROUP_CONDITION + "[+-]?[0-9]+";
 	private static final String CONFIRM_CALLBACK = "^" + ContributorAction.CONFIRM + " " + MESSAGE_INFO_CALLBACK
 			+ " action=[a-zA-Z]+$";
-	private static final String CHANGE_STATUS_CALLBACK = "^(" + ContributorAction.PENDING + "|" + ContributorAction.DONE
-			+ "|" + ContributorAction.CANCEL + "|" + ContributorAction.REMOVE + ") " + MESSAGE_INFO_CALLBACK + " "
-			+ REFRESH_SHOW_CONDITION + "[0-9]+" + "$";
+	private static final String CHANGE_STATUS_CALLBACK = "^(" + ContributorAction.PENDING + "|"
+			+ ContributorAction.OUTSTANDING + "|" + ContributorAction.DONE + "|" + ContributorAction.CANCEL + "|"
+			+ ContributorAction.REMOVE + ") " + MESSAGE_INFO_CALLBACK + " " + REFRESH_SHOW_CONDITION + "[0-9]+" + "$";
 
 	public static final String COMMAND_SHOW = "/show";
 	public static final String COMMAND_PENDING = "/pending";
+	public static final String COMMAND_OUTSTANDING = "/outstanding";
 	public static final String COMMAND_CANCEL = "/cancel";
 	public static final String COMMAND_REMOVE = "/remove";
 	public static final String COMMAND_DONE = "/done";
@@ -138,6 +140,30 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				String link = TelegramUtils.getLink(message);
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append(requestStatusMessage(link, success, "marked as pending"));
+				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+				sendMessage.parseMode(ParseMode.HTML);
+
+				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.SECONDS);
+				deleteMessage(bot, update.message());
+			}
+		};
+	}
+
+	public TelegramHandler markOutstanding() {
+		return (bot, update) -> {
+			Long chatId = TelegramUtils.getChatId(update);
+
+			Optional<Group> optional = groupService.findById(chatId);
+
+			if (optional.isPresent()) {
+				Message message = update.message().replyToMessage();
+
+				boolean success = requestManagementService.markOutstanding(message);
+
+				// send a message to notify operation
+				String link = TelegramUtils.getLink(message);
+				StringBuilder stringBuilder = new StringBuilder();
+				stringBuilder.append(requestStatusMessage(link, success, "marked as outstanding"));
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
 
@@ -230,7 +256,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			result = deleteRequest ? "Request removed" : REQUEST_NOT_FOUND;
 
 		} else if (action == ContributorAction.CANCEL || action == ContributorAction.DONE
-				|| action == ContributorAction.PENDING) {
+				|| action == ContributorAction.OUTSTANDING || action == ContributorAction.PENDING) {
 
 			result = changeRequestStatus(action, messageId, groupId);
 
@@ -251,9 +277,12 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		case DONE:
 			newStatus = RequestStatus.RESOLVED;
 			break;
+		case OUTSTANDING:
+			newStatus = RequestStatus.OUTSTANDING;
+			break;
 		case PENDING:
 		default:
-			newStatus = RequestStatus.NEW;
+			newStatus = RequestStatus.PENDING;
 			break;
 		}
 
@@ -457,14 +486,16 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (groupService.existsById(chatId) || isPrivate) {
 				deleteMessage(bot, update.message(), !isPrivate);
 
+				Optional<RequestStatus> status = getStatus(text);
 				Optional<Format> format = getFormat(text);
 				Optional<Source> source = getSource(text);
 				Optional<Boolean> optionalDescendent = getDescendent(text);
 
 				boolean descendent = optionalDescendent.isPresent() && optionalDescendent.get();
-				List<Request> requests = requestService.findRequests(group, source, format, descendent);
+				RequestStatus requestStatus = status.orElse(RequestStatus.PENDING);
+				List<Request> requests = requestService.findRequests(group, requestStatus, source, format, descendent);
 
-				String title = getTitle(format, source, descendent);
+				String title = getTitle(requestStatus, format, source, descendent);
 
 				if (requests.isEmpty()) {
 					SendMessage sendMessage = new SendMessage(chatId, title + "No requests found");
@@ -578,7 +609,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				// get message info
 				if (messageId != null) {
 					Optional<Request> requestOptional = requestService.findById(messageId, optional.get().getId());
-					message = getRequestInfo(bot, optional.get(), requestOptional, messageId);
+					message = getRequestInfo(bot, optional.get(), requestOptional);
 				} else {
 					message = getErrorMessage(COMMAND_SHOW);
 				}
@@ -622,7 +653,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (requestOptional.isPresent()) {
 				RequestStatus status = requestOptional.get().getStatus();
 
-				String message = getRequestInfo(bot, optional.get(), requestOptional, messageId);
+				String message = getRequestInfo(bot, optional.get(), requestOptional);
 				SendMessage sendMessage = new SendMessage(chatId, message);
 				sendMessage.parseMode(ParseMode.HTML);
 				sendMessage.disableWebPagePreview(true);
@@ -646,17 +677,35 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				.callbackData(callbackBegin + ContributorAction.DONE);
 		InlineKeyboardButton pendingButton = new InlineKeyboardButton("⏳ Pending")
 				.callbackData(callbackBegin + ContributorAction.PENDING);
+		InlineKeyboardButton outstandingButton = new InlineKeyboardButton("⏸ Outstanding")
+				.callbackData(callbackBegin + ContributorAction.OUTSTANDING);
 		InlineKeyboardButton cancelButton = new InlineKeyboardButton("✖️ Cancel")
 				.callbackData(callbackBegin + ContributorAction.CANCEL);
 		InlineKeyboardButton removeButton = new InlineKeyboardButton("🗑 Remove")
 				.callbackData(callbackBegin + ContributorAction.REMOVE);
 
-		inlineKeyboard.addRow(requestButton, status == RequestStatus.RESOLVED ? pendingButton : doneButton);
-		inlineKeyboard.addRow(status == RequestStatus.CANCELLED ? pendingButton : cancelButton, removeButton);
+		inlineKeyboard.addRow(requestButton, getButton(status, RequestStatus.RESOLVED, doneButton, pendingButton));
+		inlineKeyboard.addRow(getButton(status, RequestStatus.CANCELLED, cancelButton, pendingButton),
+				getButton(status, RequestStatus.OUTSTANDING, outstandingButton, pendingButton), removeButton);
 		return inlineKeyboard;
 	}
 
-	private String getRequestInfo(TelegramBot bot, Group group, Optional<Request> requestOptional, Long messageId) {
+	/**
+	 * Get the right button. Pending if status == otherButtonStatus, otherwise
+	 * otherButton
+	 *
+	 * @param status            Status of the request
+	 * @param otherButtonStatus Status of the button
+	 * @param otherButton       Button
+	 * @param pendingButton     Pending button
+	 * @return Button
+	 */
+	private InlineKeyboardButton getButton(RequestStatus status, RequestStatus otherButtonStatus,
+			InlineKeyboardButton otherButton, InlineKeyboardButton pendingButton) {
+		return status == otherButtonStatus ? pendingButton : otherButton;
+	}
+
+	private String getRequestInfo(TelegramBot bot, Group group, Optional<Request> requestOptional) {
 		StringBuilder messageBuilder = new StringBuilder();
 
 		if (requestOptional.isPresent()) {
@@ -766,6 +815,10 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		return getCondition(text, REFRESH_SHOW_CONDITION, Integer::parseInt);
 	}
 
+	private Optional<RequestStatus> getStatus(String text) {
+		return getCondition(text, STATUS_CONDITION, RequestStatus::valueOf);
+	}
+
 	private Optional<Format> getFormat(String text) {
 		return getCondition(text, FORMAT_CONDITION, Format::valueOf);
 	}
@@ -778,9 +831,10 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		return getCondition(text, ORDER_CONDITION, s -> s.equals(ORDER_CONDITION_NEW));
 	}
 
-	private String getTitle(Optional<Format> format, Optional<Source> source, boolean descendent) {
+	private String getTitle(RequestStatus requestStatus, Optional<Format> format, Optional<Source> source,
+			boolean descendent) {
 		StringBuilder title = new StringBuilder();
-		title.append("<b>Requests</b>");
+		title.append("<b>Requests ").append(requestStatus.getDescription()).append("</b>");
 		if (format.isPresent()) {
 			title.append("\nFormat [").append(format.get()).append("]");
 		}

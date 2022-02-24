@@ -77,7 +77,7 @@ public class RequestService {
 
 		request.setId(new RequestPK(messageId, groupId));
 		request.setLink(link);
-		request.setStatus(RequestStatus.NEW);
+		request.setStatus(RequestStatus.PENDING);
 		request.setContent(content);
 		request.setFormat(format);
 		request.setSource(source);
@@ -169,28 +169,28 @@ public class RequestService {
 		return repository.getUserEbookRequestsOfToday(userId, last24Hours);
 	}
 
-	public List<Request> findRequests(Optional<Long> groupId, Optional<Source> source, Optional<Format> format,
-			boolean descendent) {
+	public List<Request> findRequests(Optional<Long> groupId, RequestStatus status, Optional<Source> source,
+			Optional<Format> format, boolean descendent) {
 		List<Request> requests = null;
 		Direction direction = descendent ? Direction.DESC : Direction.ASC;
 		Sort sort = Sort.by(direction, "requestDate");
 
 		if (groupId.isPresent() && source.isPresent() && format.isPresent()) {
-			requests = repository.findByFilters(groupId.get(), source.get(), format.get(), sort);
+			requests = repository.findByFilters(groupId.get(), status, source.get(), format.get(), sort);
 		} else if (groupId.isPresent() && source.isPresent()) {
-			requests = repository.findByFilters(groupId.get(), source.get(), sort);
+			requests = repository.findByFilters(groupId.get(), status, source.get(), sort);
 		} else if (groupId.isPresent() && format.isPresent()) {
-			requests = repository.findByFilters(groupId.get(), format.get(), sort);
+			requests = repository.findByFilters(groupId.get(), status, format.get(), sort);
 		} else if (groupId.isPresent()) {
-			requests = repository.findByFilters(groupId.get(), sort);
+			requests = repository.findByFilters(groupId.get(), status, sort);
 		} else if (source.isPresent() && format.isPresent()) {
-			requests = repository.findByFilters(source.get(), format.get(), sort);
+			requests = repository.findByFilters(status, source.get(), format.get(), sort);
 		} else if (source.isPresent()) {
-			requests = repository.findByFilters(source.get(), sort);
+			requests = repository.findByFilters(status, source.get(), sort);
 		} else if (format.isPresent()) {
-			requests = repository.findByFilters(format.get(), sort);
+			requests = repository.findByFilters(status, format.get(), sort);
 		} else {
-			requests = repository.findByFilters(sort);
+			requests = repository.findByFilters(status, sort);
 		}
 
 		return requests;

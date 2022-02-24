@@ -1,7 +1,7 @@
 package com.pirasalbe.models.request;
 
 public enum RequestStatus {
-	NEW("pending"), RESOLVED("fulfilled"), CANCELLED("cancelled");
+	PENDING("pending"), OUTSTANDING("outstanding"), RESOLVED("fulfilled"), CANCELLED("cancelled");
 
 	private String description;
 

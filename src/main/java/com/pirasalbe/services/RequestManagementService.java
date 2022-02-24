@@ -323,7 +323,12 @@ public class RequestManagementService {
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public boolean markPending(Message message) {
-		return updateStatus(message, RequestStatus.NEW);
+		return updateStatus(message, RequestStatus.PENDING);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public boolean markOutstanding(Message message) {
+		return updateStatus(message, RequestStatus.OUTSTANDING);
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
