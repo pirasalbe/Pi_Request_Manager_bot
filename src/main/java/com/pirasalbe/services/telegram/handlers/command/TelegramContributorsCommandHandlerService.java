@@ -197,7 +197,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	}
 
 	public TelegramCondition changeStatusCallbackCondition() {
-		return update -> update.callbackQuery() != null
+		return update -> update.callbackQuery() != null && update.callbackQuery().data() != null
 				&& update.callbackQuery().data().matches(CHANGE_STATUS_CALLBACK);
 	}
 
@@ -624,7 +624,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	}
 
 	public TelegramCondition showRequestWithActionCondition() {
-		return update -> update.message() != null && update.message().text().matches(START_PAYLOAD_SHOW);
+		return update -> update.message() != null && update.message().text() != null
+				&& update.message().text().matches(START_PAYLOAD_SHOW);
 	}
 
 	public TelegramHandler showRequestWithAction() {
@@ -741,7 +742,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	}
 
 	public TelegramCondition confirmActionCondition() {
-		return update -> update.callbackQuery() != null && update.callbackQuery().data().matches(CONFIRM_CALLBACK);
+		return update -> update.callbackQuery() != null && update.callbackQuery().data() != null
+				&& update.callbackQuery().data().matches(CONFIRM_CALLBACK);
 	}
 
 	public TelegramHandler confirmAction() {

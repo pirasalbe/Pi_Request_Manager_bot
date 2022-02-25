@@ -269,6 +269,23 @@ public class TelegramService {
 		TelegramCondition contributorRoleCondition = roleConditionFactory
 				.onRole(TelegramContributorsCommandHandlerService.ROLE);
 
+		// done
+		bot.register(Arrays.asList(groupChatCondition,
+				contributorsCommandHandlerService.replyToMessageWithFileCondition(), contributorRoleCondition),
+				contributorsCommandHandlerService.markDoneWithFile());
+
+		bot.register(
+				Arrays.asList(groupChatCondition,
+						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_DONE),
+						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
+				contributorsCommandHandlerService.markDone());
+		bot.register(
+				Arrays.asList(groupChatCondition,
+						commandConditionFactory
+								.onCommand(TelegramContributorsCommandHandlerService.COMMAND_SILENT_DONE),
+						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
+				contributorsCommandHandlerService.markDoneSilently());
+
 		// requests
 		bot.register(Arrays.asList(groupAndPrivateChatCondition,
 				commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_REQUESTS),
@@ -315,23 +332,6 @@ public class TelegramService {
 		bot.register(Arrays.asList(groupChatCondition,
 				commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_REMOVE),
 				contributorRoleCondition), contributorsCommandHandlerService.removeRequest());
-
-		// done
-		bot.register(Arrays.asList(groupChatCondition,
-				contributorsCommandHandlerService.replyToMessageWithFileCondition(), contributorRoleCondition),
-				contributorsCommandHandlerService.markDoneWithFile());
-
-		bot.register(
-				Arrays.asList(groupChatCondition,
-						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_DONE),
-						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
-				contributorsCommandHandlerService.markDone());
-		bot.register(
-				Arrays.asList(groupChatCondition,
-						commandConditionFactory
-								.onCommand(TelegramContributorsCommandHandlerService.COMMAND_SILENT_DONE),
-						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
-				contributorsCommandHandlerService.markDoneSilently());
 	}
 
 }
