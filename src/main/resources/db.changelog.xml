@@ -151,4 +151,11 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 		<dropTable cascadeConstraints="true" tableName="USER_REQUESTS"/>
 	</changeSet>
 
+	<changeSet id="15 - Update REQUESTS.STATUS=NEW to PENDING" author="pirasalbe">
+		<update tableName="REQUESTS">
+			<column name="STATUS" value="PENDING"/>
+			<where>STATUS='NEW'</where>
+		</update>
+	</changeSet>
+
 </databaseChangeLog>

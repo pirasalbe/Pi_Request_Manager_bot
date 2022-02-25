@@ -58,8 +58,8 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 	}
 
 	protected void newRequest(TelegramBot bot, Message message, Long chatId, LocalDateTime requestTime, Group group) {
-		String content = message.text();
-		String link = RequestUtils.getLink(content, message.entities());
+		String content = RequestUtils.getContent(message.text(), message.entities());
+		String link = RequestUtils.getLink(message.text(), message.entities());
 
 		if (link != null) {
 			newRequest(bot, message, chatId, requestTime, group, content, link);
@@ -72,7 +72,8 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		// notify user of the error
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append(TelegramUtils.tagUser(message));
-		stringBuilder.append("Your request is incomplete. Make sure it has all the required elements:\n\n");
+		stringBuilder.append("Your request is incomplete. See pinned messages.\n\n");
+		stringBuilder.append("It should look like this:\n\n");
 		stringBuilder.append("<i>#request (+ other tags if needed)</i>\n");
 		stringBuilder.append("<i>Title</i>\n");
 		stringBuilder.append("<i>Author</i>\n");

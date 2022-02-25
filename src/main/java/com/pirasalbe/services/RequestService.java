@@ -4,7 +4,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Component;
@@ -32,6 +36,9 @@ public class RequestService {
 	@Autowired
 	private RequestRepository repository;
 
+	@PersistenceContext
+	private EntityManager entityManager;
+
 	public Request findByUniqueKey(Long groupId, Long userId, String link) {
 		return repository.findByUniqueKey(groupId, userId, link);
 	}
@@ -52,6 +59,10 @@ public class RequestService {
 		return deleted;
 	}
 
+	public void flushChanges() {
+		entityManager.flush();
+	}
+
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void deleteOldRequests() {
 		LocalDateTime twoMonths = DateUtils.getNow().minusMonths(2);
@@ -66,7 +77,7 @@ public class RequestService {
 
 		request.setId(new RequestPK(messageId, groupId));
 		request.setLink(link);
-		request.setStatus(RequestStatus.NEW);
+		request.setStatus(RequestStatus.PENDING);
 		request.setContent(content);
 		request.setFormat(format);
 		request.setSource(source);
@@ -91,6 +102,7 @@ public class RequestService {
 		if (optional.isPresent()) {
 			Request request = optional.get();
 			request.setLink(link);
+			request.setStatus(RequestStatus.PENDING);
 			request.setContent(content);
 			request.setFormat(format);
 			request.setSource(source);
@@ -121,40 +133,65 @@ public class RequestService {
 		repository.save(request);
 	}
 
-	public Request getLastAudiobookRequestOfUserInGroup(Long userId) {
-		return repository.getLastAudiobookRequestOfUserInGroup(userId);
+	public Request getLastEbookRequestOfUser(Long userId) {
+		Request request = null;
+
+		List<Request> requests = repository.getLastEbookRequestOfUser(userId, PageRequest.of(0, 1));
+		if (!requests.isEmpty()) {
+			request = requests.get(0);
+		}
+
+		return request;
 	}
 
-	public Request getLastAudiobookResolvedOfUserInGroup(Long userId) {
-		return repository.getLastAudiobookResolvedOfUserInGroup(userId);
+	public Request getLastAudiobookRequestOfUser(Long userId) {
+		Request request = null;
+
+		List<Request> requests = repository.getLastAudiobookRequestOfUser(userId, PageRequest.of(0, 1));
+		if (!requests.isEmpty()) {
+			request = requests.get(0);
+		}
+
+		return request;
+	}
+
+	public Request getLastAudiobookResolvedOfUser(Long userId) {
+		Request request = null;
+
+		List<Request> requests = repository.getLastAudiobookResolvedOfUser(userId, PageRequest.of(0, 1));
+		if (!requests.isEmpty()) {
+			request = requests.get(0);
+		}
+
+		return request;
 	}
 
 	public List<Request> getUserEbookRequestsOfToday(Long userId, LocalDateTime last24Hours) {
 		return repository.getUserEbookRequestsOfToday(userId, last24Hours);
 	}
 
-	public List<Request> findRequests(Optional<Long> groupId, Optional<Source> source, Optional<Format> format,
-			boolean descendent) {
+	public List<Request> findRequests(Optional<Long> groupId, RequestStatus status, Optional<Source> source,
+			Optional<Format> format, boolean descendent) {
 		List<Request> requests = null;
 		Direction direction = descendent ? Direction.DESC : Direction.ASC;
 		Sort sort = Sort.by(direction, "requestDate");
 
 		if (groupId.isPresent() && source.isPresent() && format.isPresent()) {
-			requests = repository.findByFilters(groupId.get(), source.get(), format.get(), sort);
+			requests = repository.findByFilters(groupId.get(), status, source.get(), format.get(), sort);
 		} else if (groupId.isPresent() && source.isPresent()) {
-			requests = repository.findByFilters(groupId.get(), source.get(), sort);
+			requests = repository.findByFilters(groupId.get(), status, source.get(), sort);
 		} else if (groupId.isPresent() && format.isPresent()) {
-			requests = repository.findByFilters(groupId.get(), format.get(), sort);
+			requests = repository.findByFilters(groupId.get(), status, format.get(), sort);
 		} else if (groupId.isPresent()) {
-			requests = repository.findByFilters(groupId.get(), sort);
+			requests = repository.findByFilters(groupId.get(), status, sort);
 		} else if (source.isPresent() && format.isPresent()) {
-			requests = repository.findByFilters(source.get(), format.get(), sort);
+			requests = repository.findByFilters(status, source.get(), format.get(), sort);
 		} else if (source.isPresent()) {
-			requests = repository.findByFilters(source.get(), sort);
+			requests = repository.findByFilters(status, source.get(), sort);
 		} else if (format.isPresent()) {
-			requests = repository.findByFilters(format.get(), sort);
+			requests = repository.findByFilters(status, format.get(), sort);
 		} else {
-			requests = repository.findByFilters(sort);
+			requests = repository.findByFilters(status, sort);
 		}
 
 		return requests;

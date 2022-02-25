@@ -27,7 +27,42 @@ public class TelegramUtils {
 	public static String tagUser(Message message) {
 		User user = message.from();
 
-		return "<a href=\"tg://user?id=" + user.id() + "\">" + TelegramUtils.getUserName(user) + "</a>. ";
+		return tagUser(user);
+	}
+
+	/**
+	 * Get an HTML string that tags the user
+	 *
+	 * @param user User
+	 * @return String
+	 */
+	public static String tagUser(User user) {
+		return tagUser(user.id(), TelegramUtils.getUserName(user));
+	}
+
+	/**
+	 * Get an HTML string that tags the user
+	 *
+	 * @param userId User id
+	 * @return String
+	 */
+	public static String tagUser(Long userId) {
+		return tagUser(userId, userId.toString());
+	}
+
+	/**
+	 * Get an HTML string that tags the user
+	 *
+	 * @param userId User id
+	 * @param text   Text to show
+	 * @return String
+	 */
+	private static String tagUser(Long userId, String text) {
+		return "<a href=\"tg://user?id=" + userId + "\">" + text + "</a>. ";
+	}
+
+	public static String getStartLink(String username, String payload) {
+		return "https://t.me/" + username + "?start=" + payload;
 	}
 
 	/**
@@ -166,6 +201,44 @@ public class TelegramUtils {
 		}
 
 		return builder.toString();
+	}
+
+	/**
+	 * Get a link to a message
+	 *
+	 * @param message Message to link
+	 * @return link
+	 */
+	public static String getLink(Message message) {
+		String chatId = message.chat().id().toString();
+		String messageId = message.messageId().toString();
+		return getLink(chatId, messageId);
+	}
+
+	/**
+	 * Get a link to a message
+	 *
+	 * @param chatId    Chat of the message
+	 * @param messageId Message Id
+	 * @return link
+	 */
+	public static String getLink(Long groupId, Long messageId) {
+		return getLink(groupId.toString(), messageId.toString());
+	}
+
+	/**
+	 * Get a link to a message
+	 *
+	 * @param groupId   Chat of the message
+	 * @param messageId Message Id
+	 * @return link
+	 */
+	public static String getLink(String groupId, String messageId) {
+		if (groupId.startsWith("-100")) {
+			groupId = groupId.substring(4);
+		}
+
+		return "https://t.me/c/" + groupId + "/" + messageId;
 	}
 
 }

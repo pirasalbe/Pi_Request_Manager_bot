@@ -40,8 +40,8 @@ public class TelegramUpdateRequestHandlerService extends AbstractTelegramRequest
 		if (optional.isPresent()) {
 
 			Long userId = message.from().id();
-			String content = message.text();
-			String link = RequestUtils.getLink(content, message.entities());
+			String content = RequestUtils.getContent(message.text(), message.entities());
+			String link = RequestUtils.getLink(message.text(), message.entities());
 
 			if (link != null) {
 				Group group = optional.get();

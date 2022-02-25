@@ -12,9 +12,6 @@ Being an open-source repo, you can download and use the bot however you like, bu
 
 ## Commands
 
-Only admins can execute commands.
-
-- `/start` and `/alive`: replies if the bot is alive.
 - `/help`: shows available commands.
 
 # Features
