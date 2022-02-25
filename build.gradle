@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'com.pirasalbe'
-version = '2.2.0-SNAPSHOT'
+version = '2.3.0-SNAPSHOT'
 sourceCompatibility = '11'
 
 repositories {
