@@ -102,6 +102,7 @@ public class RequestService {
 		if (optional.isPresent()) {
 			Request request = optional.get();
 			request.setLink(link);
+			request.setStatus(RequestStatus.PENDING);
 			request.setContent(content);
 			request.setFormat(format);
 			request.setSource(source);
