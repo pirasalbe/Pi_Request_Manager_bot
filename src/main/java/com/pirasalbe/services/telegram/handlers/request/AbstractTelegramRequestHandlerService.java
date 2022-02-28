@@ -12,6 +12,7 @@ import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pirasalbe.configurations.ErrorConfiguration;
 import com.pirasalbe.models.RequestResult;
 import com.pirasalbe.models.Validation;
 import com.pirasalbe.models.database.Group;
@@ -44,6 +45,9 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 			ARCHIVE_TAG, STORYTEL_TAG, SCRIBD_TAG);
 
 	@Autowired
+	protected ErrorConfiguration errorConfiguration;
+
+	@Autowired
 	protected RequestManagementService requestManagementService;
 
 	@Autowired
@@ -72,13 +76,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		// notify user of the error
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append(TelegramUtils.tagUser(message));
-		stringBuilder.append("Your request is incomplete. See pinned messages.\n\n");
-		stringBuilder.append("It should look like this:\n\n");
-		stringBuilder.append("<i>#request (+ other tags if needed)</i>\n");
-		stringBuilder.append("<i>Title</i>\n");
-		stringBuilder.append("<i>Author</i>\n");
-		stringBuilder.append("<i>Publisher (or Self-published when publisher isn't specified)</i>\n");
-		stringBuilder.append("<i>Link</i>\n\n");
+		stringBuilder.append(errorConfiguration.getIncompleteRequest());
 		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 		sendMessage.replyToMessageId(message.messageId());
 		sendMessage.parseMode(ParseMode.HTML);
