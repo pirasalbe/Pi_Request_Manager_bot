@@ -258,8 +258,10 @@ public class RequestManagementService {
 		LocalDateTime minDateForNewRequest = previousRequestDate.plusHours(HOURS_BEFORE_REPEATING_REQUEST);
 
 		boolean specialTags = hasSpecialTags(group, request.getSource());
-		if (!specialTags && minDateForNewRequest.isBefore(requestDate)) {
-			// no special tags and the request was after 48 hours
+		boolean isCancelled = request.getStatus() == RequestStatus.CANCELLED;
+		if (isCancelled || (!specialTags && minDateForNewRequest.isBefore(requestDate))) {
+			// allow repeating cancelled requests
+			// allow repeating no special tags after 48 hours
 			updateOrDeleteInsertRequest(request, newMessageId, link, content, format, source, otherTags, requestDate);
 			result = new RequestResult(Result.REPEATED_REQUEST);
 		} else if (specialTags) {
