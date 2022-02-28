@@ -158,4 +158,29 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 		</update>
 	</changeSet>
 
+	<changeSet id="16 - Create Channels" author="pirasalbe">
+		<createTable tableName="CHANNELS">
+			<column name="ID" type="bigint">
+				<constraints primaryKey="true" primaryKeyName="CHANNELS_PK" />
+			</column>
+			<column name="NAME" type="varchar(512)">
+				<constraints nullable="false" />
+			</column>
+		</createTable>
+	</changeSet>
+
+	<changeSet id="17 - Create Channels rules" author="pirasalbe">
+		<createTable tableName="CHANNEL_RULES">
+			<column name="CHANNEL_ID" type="bigint">
+				<constraints primaryKey="true" primaryKeyName="CHANNEL_RULES_PK" foreignKeyName="CHANNEL_RULES_CHANNELS_FK" references="CHANNELS(ID)" />
+			</column>
+			<column name="TYPE" type="varchar(128)">
+				<constraints primaryKey="true" primaryKeyName="CHANNEL_RULES_PK" />
+			</column>
+			<column name="VALUE" type="varchar(128)">
+				<constraints primaryKey="true" primaryKeyName="CHANNEL_RULES_PK" />
+			</column>
+		</createTable>
+	</changeSet>
+
 </databaseChangeLog>
