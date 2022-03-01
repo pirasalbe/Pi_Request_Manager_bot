@@ -72,9 +72,9 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	private static final String START_PAYLOAD_SHOW = "^\\/start show_message=[0-9]+_group=[+-]?[0-9]+$";
 	private static final String MESSAGE_INFO_CALLBACK = MESSAGE_CONDITION + "[0-9]+ " + GROUP_CONDITION + "[+-]?[0-9]+";
-	private static final String CONFIRM_CALLBACK = "^" + ContributorAction.CONFIRM + " " + MESSAGE_INFO_CALLBACK
+	public static final String CONFIRM_CALLBACK = "^" + ContributorAction.CONFIRM + " " + MESSAGE_INFO_CALLBACK
 			+ " action=[a-zA-Z]+$";
-	private static final String CHANGE_STATUS_CALLBACK = "^(" + ContributorAction.PENDING + "|"
+	public static final String CHANGE_STATUS_CALLBACK = "^(" + ContributorAction.PENDING + "|"
 			+ ContributorAction.OUTSTANDING + "|" + ContributorAction.DONE + "|" + ContributorAction.CANCEL + "|"
 			+ ContributorAction.REMOVE + ") " + MESSAGE_INFO_CALLBACK + " " + REFRESH_SHOW_CONDITION + "[0-9]+" + "$";
 
@@ -194,11 +194,6 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler markDoneSilently() {
 		return markDone(false);
-	}
-
-	public TelegramCondition changeStatusCallbackCondition() {
-		return update -> update.callbackQuery() != null && update.callbackQuery().data() != null
-				&& update.callbackQuery().data().matches(CHANGE_STATUS_CALLBACK);
 	}
 
 	public TelegramHandler changeStatusWithCallback() {
@@ -739,11 +734,6 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		}
 
 		return user.replace(".", "");
-	}
-
-	public TelegramCondition confirmActionCondition() {
-		return update -> update.callbackQuery() != null && update.callbackQuery().data() != null
-				&& update.callbackQuery().data().matches(CONFIRM_CALLBACK);
 	}
 
 	public TelegramHandler confirmAction() {

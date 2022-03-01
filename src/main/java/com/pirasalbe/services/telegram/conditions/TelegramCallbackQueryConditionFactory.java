@@ -19,7 +19,9 @@ public class TelegramCallbackQueryConditionFactory {
 	public enum Condition {
 		EQUALS((callbackQuery, data) -> callbackQuery.equals(data)),
 
-		STARTS_WITH((callbackQuery, data) -> data.startsWith(callbackQuery));
+		STARTS_WITH((callbackQuery, data) -> data.startsWith(callbackQuery)),
+
+		MATCHES((callbackQuery, data) -> data.matches(callbackQuery));
 
 		private BiFunction<String, String, Boolean> function;
 
@@ -45,7 +47,7 @@ public class TelegramCallbackQueryConditionFactory {
 
 			// commands only handles messages
 			CallbackQuery message = update.callbackQuery();
-			if (message != null) {
+			if (message != null && message.data() != null) {
 				String data = message.data();
 				asserted = condition.assertCondition(callbackQuery, data);
 			}
