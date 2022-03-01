@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.model.Chat.Type;
 import com.pengrad.telegrambot.model.Message;
+import com.pengrad.telegrambot.model.Update;
 import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 
 /**
@@ -41,13 +42,24 @@ public class TelegramChatConditionFactory {
 			boolean asserted = false;
 
 			// commands only handles messages
-			Message message = update.message();
+			Message message = getMessage(update);
 			if (message != null) {
 				asserted = types.contains(message.chat().type());
 			}
 
 			return asserted;
 		};
+	}
+
+	private Message getMessage(Update update) {
+		Message message = null;
+		if (update.message() != null) {
+			message = update.message();
+		} else if (update.callbackQuery() != null) {
+			message = update.callbackQuery().message();
+		}
+
+		return message;
 	}
 
 }

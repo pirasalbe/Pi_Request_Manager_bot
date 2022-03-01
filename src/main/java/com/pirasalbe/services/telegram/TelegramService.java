@@ -276,6 +276,11 @@ public class TelegramService {
 				commandConditionFactory.onCommand(TelegramChannelCommandHandlerService.COMMAND_CONFIGURE),
 				channelRoleCondition), channelCommandHandlerService.startConfiguration());
 
+		bot.register(Arrays.asList(
+				channelChatCondition, callbackQueryConditionFactory
+						.onCallbackQuery(TelegramChannelCommandHandlerService.COMMAND_CONFIGURE, Condition.STARTS_WITH),
+				channelRoleCondition), channelCommandHandlerService.configuration());
+
 		// TODO
 	}
 
