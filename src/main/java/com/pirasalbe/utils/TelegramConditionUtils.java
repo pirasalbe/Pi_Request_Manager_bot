@@ -33,17 +33,23 @@ public class TelegramConditionUtils {
 	}
 
 	private static <T> Optional<T> getCondition(String text, String condition, Function<String, T> function) {
+		return getCondition(text, condition, function, false);
+	}
+
+	private static <T> Optional<T> getCondition(String text, String condition, Function<String, T> function,
+			boolean allowEmpty) {
 		T result = null;
 
 		int indexOf = text.toLowerCase().indexOf(condition);
+		int begin = indexOf + condition.length();
 		int end = text.indexOf(' ', indexOf);
 
 		if (end < indexOf) {
 			end = text.length();
 		}
 
-		if (indexOf > -1) {
-			String conditionString = text.toUpperCase().substring(indexOf + condition.length(), end);
+		if (indexOf > -1 && (allowEmpty || end > begin)) {
+			String conditionString = text.toUpperCase().substring(begin, end);
 			result = function.apply(conditionString);
 		}
 
@@ -79,7 +85,7 @@ public class TelegramConditionUtils {
 	}
 
 	public static Optional<Boolean> getDescendent(String text) {
-		return getCondition(text, ORDER_CONDITION, s -> s.equals(ORDER_CONDITION_NEW));
+		return getCondition(text, ORDER_CONDITION, s -> s.equals(ORDER_CONDITION_NEW), true);
 	}
 
 }

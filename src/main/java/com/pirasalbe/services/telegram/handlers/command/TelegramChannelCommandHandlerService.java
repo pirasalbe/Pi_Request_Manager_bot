@@ -1,8 +1,11 @@
 package com.pirasalbe.services.telegram.handlers.command;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -18,10 +21,12 @@ import com.pirasalbe.models.ChannelRuleType;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.ChannelRule;
 import com.pirasalbe.models.database.Group;
+import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.ChannelManagementService;
 import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
+import com.pirasalbe.utils.TelegramConditionUtils;
 import com.pirasalbe.utils.TelegramUtils;
 
 /**
@@ -33,13 +38,10 @@ import com.pirasalbe.utils.TelegramUtils;
 @Component
 public class TelegramChannelCommandHandlerService extends AbstractTelegramHandlerService {
 
-	private static final String GROUP_CONDITION = "group=";
-	private static final String STATUS_CONDITION = "status=";
-	private static final String FORMAT_CONDITION = "format=";
-	private static final String SOURCE_CONDITION = "source=";
-
 	public static final String COMMAND_CONFIGURE = "/configure_channel";
 	public static final String COMMAND_DISABLE = "/disable_channel";
+
+	private static final String CALLBACK_DATA_BASE = COMMAND_CONFIGURE + " ";
 
 	public static final UserRole ROLE = UserRole.CONTRIBUTOR;
 
@@ -77,55 +79,6 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 		};
 	}
 
-	private void sendGroupConfiguration(TelegramBot bot, Long chatId) {
-		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.append("Select the groups from which you want receive requests.\n");
-		stringBuilder.append("<b>Leave empty to receive from all groups.</b>");
-		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
-		sendMessage.parseMode(ParseMode.HTML);
-
-		// prepare keyboard
-		InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
-
-		String callbackDataBase = COMMAND_CONFIGURE + " ";
-		List<InlineKeyboardButton> buttons = new LinkedList<>();
-
-		// get groups and rules
-		List<Group> groups = groupService.findAll();
-		List<ChannelRule> rules = channelManagementService.getChannelRulesByType(chatId, ChannelRuleType.GROUP);
-
-		// prepare buttons
-		for (int i = 0; i < groups.size(); i++) {
-			Group group = groups.get(i);
-
-			// check if there is a rule for the group
-			boolean isSelected = rules.stream().anyMatch(c -> c.getId().getValue().equals(group.getId().toString()));
-
-			StringBuilder groupName = new StringBuilder();
-			if (isSelected) {
-				groupName.append("✅ ");
-			}
-			groupName.append(group.getName());
-			InlineKeyboardButton button = new InlineKeyboardButton(groupName.toString());
-			button.callbackData(callbackDataBase + GROUP_CONDITION + group.getId());
-			buttons.add(button);
-
-			if ((i > 1 && (i + 1) % 3 == 0) || i == groups.size() - 1) {
-				// every 3 groups or on the last one
-				inlineKeyboard.addRow(buttons.toArray(new InlineKeyboardButton[0]));
-				buttons = new LinkedList<>();
-			}
-		}
-
-		InlineKeyboardButton format = new InlineKeyboardButton("🔎 Format");
-		format.callbackData(callbackDataBase + GROUP_CONDITION + group.getId());
-		inlineKeyboard.addRow(format);
-
-		sendMessage.replyMarkup(inlineKeyboard);
-
-		bot.execute(sendMessage);
-	}
-
 	private void answerCallbackQueryEmpty(TelegramBot bot, Update update) {
 		AnswerCallbackQuery answerCallbackQuery = new AnswerCallbackQuery(update.callbackQuery().id());
 		bot.execute(answerCallbackQuery);
@@ -137,9 +90,130 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 			deleteMessage(bot, update.callbackQuery().message());
 
 			Long chatId = update.callbackQuery().message().chat().id();
+			String text = update.callbackQuery().data();
 
-			sendGroupConfiguration(bot, chatId);
+			if (text.contains(TelegramConditionUtils.GROUP_CONDITION)) {
+				manageGroupCondition(chatId, text);
+
+				sendGroupConfiguration(bot, chatId);
+			} else if (text.contains(TelegramConditionUtils.FORMAT_CONDITION)) {
+				manageFormatCondition(chatId, text);
+
+				sendFormatConfiguration(bot, chatId);
+			}
 		};
+	}
+
+	private <T> void sendConfiguration(TelegramBot bot, Long chatId, String messageText, ChannelRuleType type,
+			String condition, List<T> possibleValues, Function<T, String> valueFunction,
+			Function<T, String> buttonNameFunction, InlineKeyboardButton previousButton,
+			InlineKeyboardButton nextButton) {
+		SendMessage sendMessage = new SendMessage(chatId, messageText);
+		sendMessage.parseMode(ParseMode.HTML);
+
+		// prepare keyboard
+		InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
+
+		String callbackDataBase = COMMAND_CONFIGURE + " ";
+		List<InlineKeyboardButton> buttons = new LinkedList<>();
+
+		// get rules
+		List<ChannelRule> rules = channelManagementService.getChannelRulesByType(chatId, type);
+
+		// prepare buttons
+		for (int i = 0; i < possibleValues.size(); i++) {
+			T possibleValue = possibleValues.get(i);
+
+			String name = buttonNameFunction.apply(possibleValue);
+			String value = valueFunction.apply(possibleValue);
+
+			// check if there is a rule for the value
+			boolean isSelected = rules.stream().anyMatch(c -> c.getId().getValue().equals(value));
+
+			StringBuilder formatName = new StringBuilder();
+			if (isSelected) {
+				formatName.append("✅ ");
+			}
+			formatName.append(name);
+			InlineKeyboardButton button = new InlineKeyboardButton(formatName.toString());
+			button.callbackData(callbackDataBase + condition + value);
+			buttons.add(button);
+
+			if ((i > 1 && (i + 1) % 3 == 0) || i == possibleValues.size() - 1) {
+				// every 3 groups or on the last one
+				inlineKeyboard.addRow(buttons.toArray(new InlineKeyboardButton[0]));
+				buttons = new LinkedList<>();
+			}
+		}
+
+		if (previousButton != null) {
+			inlineKeyboard.addRow(previousButton, nextButton);
+		} else {
+			inlineKeyboard.addRow(nextButton);
+		}
+
+		sendMessage.replyMarkup(inlineKeyboard);
+
+		bot.execute(sendMessage);
+	}
+
+	private InlineKeyboardButton getGroupsButton() {
+		InlineKeyboardButton format = new InlineKeyboardButton("👥 Groups");
+		format.callbackData(CALLBACK_DATA_BASE + TelegramConditionUtils.GROUP_CONDITION);
+		return format;
+	}
+
+	private InlineKeyboardButton getFormatsButton() {
+		InlineKeyboardButton format = new InlineKeyboardButton("🔎 Formats");
+		format.callbackData(CALLBACK_DATA_BASE + TelegramConditionUtils.FORMAT_CONDITION);
+		return format;
+	}
+
+	private InlineKeyboardButton getSourcesButton() {
+		InlineKeyboardButton source = new InlineKeyboardButton("🌐 Sources");
+		source.callbackData(CALLBACK_DATA_BASE + TelegramConditionUtils.SOURCE_CONDITION);
+		return source;
+	}
+
+	private void sendGroupConfiguration(TelegramBot bot, Long chatId) {
+
+		StringBuilder messageTextBuilder = new StringBuilder();
+		messageTextBuilder.append("Select the groups from which you want receive requests.\n");
+		messageTextBuilder.append("<b>Leave empty to receive from all groups.</b>");
+
+		List<Group> groups = groupService.findAll();
+
+		sendConfiguration(bot, chatId, messageTextBuilder.toString(), ChannelRuleType.GROUP,
+				TelegramConditionUtils.GROUP_CONDITION, groups, g -> g.getId().toString(), Group::getName, null,
+				getFormatsButton());
+	}
+
+	private void sendFormatConfiguration(TelegramBot bot, Long chatId) {
+		StringBuilder messageTextBuilder = new StringBuilder();
+		messageTextBuilder.append("Select the format of the requests you want to receive.\n");
+		messageTextBuilder.append("<b>Leave empty to receive all.</b>");
+
+		List<Format> formats = Arrays.asList(Format.values());
+
+		sendConfiguration(bot, chatId, messageTextBuilder.toString(), ChannelRuleType.FORMAT,
+				TelegramConditionUtils.FORMAT_CONDITION, formats, Format::name, Format::name, getGroupsButton(),
+				getSourcesButton());
+	}
+
+	private <T> void manageCondition(Long channelId, ChannelRuleType type, Optional<T> optional) {
+		if (optional.isPresent()) {
+			channelManagementService.toggleRule(channelId, type, optional.get().toString());
+		}
+	}
+
+	private void manageGroupCondition(Long channelId, String text) {
+		Optional<Long> optional = TelegramConditionUtils.getGroupId(text);
+		manageCondition(channelId, ChannelRuleType.GROUP, optional);
+	}
+
+	private void manageFormatCondition(Long channelId, String text) {
+		Optional<Format> optional = TelegramConditionUtils.getFormat(text);
+		manageCondition(channelId, ChannelRuleType.FORMAT, optional);
 	}
 
 }

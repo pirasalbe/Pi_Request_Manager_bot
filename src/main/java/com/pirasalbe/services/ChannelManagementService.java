@@ -32,9 +32,9 @@ public class ChannelManagementService {
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void insertIfNotExists(Long id, String name) {
-		// insert
 		if (!channelService.existsById(id)) {
 			channelService.insert(id, name);
+			LOGGER.info("New channel: [{}]", id);
 		}
 	}
 
@@ -43,11 +43,26 @@ public class ChannelManagementService {
 		if (channelService.existsById(id)) {
 			channelRuleService.deleteByChannelId(id);
 			channelService.delete(id);
+			LOGGER.info("Deleted channel: [{}]", id);
 		}
 	}
 
 	public List<ChannelRule> getChannelRulesByType(Long channelId, ChannelRuleType type) {
 		return channelRuleService.getByChannelIdAndType(channelId, type);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void toggleRule(Long channelId, ChannelRuleType type, String value) {
+		if (channelService.existsById(channelId)) {
+
+			if (channelRuleService.existsById(channelId, type, value)) {
+				channelRuleService.delete(channelId, type, value);
+				LOGGER.info("Deleted channel rule: [{}], [{}]", channelId, type);
+			} else {
+				channelRuleService.insert(channelId, type, value);
+				LOGGER.info("Added channel rule: [{}], [{}]", channelId, type);
+			}
+		}
 	}
 
 }
