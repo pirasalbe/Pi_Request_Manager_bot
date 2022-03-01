@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -42,6 +41,7 @@ import com.pirasalbe.services.RequestService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
 import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.RequestUtils;
+import com.pirasalbe.utils.TelegramConditionUtils;
 import com.pirasalbe.utils.TelegramUtils;
 
 /**
@@ -61,22 +61,15 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			".azw3", ".azw", ".txt", ".doc", ".docx", ".rtf", ".cbz", ".cbr", ".djvu", ".chm", ".fb2", ".mp3", ".m4b",
 			".opus");
 
-	private static final String MESSAGE_CONDITION = "message=";
-	private static final String GROUP_CONDITION = "group=";
-	private static final String ACTION_CONDITION = "action=";
-	private static final String STATUS_CONDITION = "status=";
-	private static final String FORMAT_CONDITION = "format=";
-	private static final String SOURCE_CONDITION = "source=";
-	private static final String ORDER_CONDITION = "order=";
-	private static final String REFRESH_SHOW_CONDITION = "refresh_show=";
-
 	private static final String START_PAYLOAD_SHOW = "^\\/start show_message=[0-9]+_group=[+-]?[0-9]+$";
-	private static final String MESSAGE_INFO_CALLBACK = MESSAGE_CONDITION + "[0-9]+ " + GROUP_CONDITION + "[+-]?[0-9]+";
+	private static final String MESSAGE_INFO_CALLBACK = TelegramConditionUtils.MESSAGE_CONDITION + "[0-9]+ "
+			+ TelegramConditionUtils.GROUP_CONDITION + "[+-]?[0-9]+";
 	public static final String CONFIRM_CALLBACK = "^" + ContributorAction.CONFIRM + " " + MESSAGE_INFO_CALLBACK
 			+ " action=[a-zA-Z]+$";
 	public static final String CHANGE_STATUS_CALLBACK = "^(" + ContributorAction.PENDING + "|"
 			+ ContributorAction.OUTSTANDING + "|" + ContributorAction.DONE + "|" + ContributorAction.CANCEL + "|"
-			+ ContributorAction.REMOVE + ") " + MESSAGE_INFO_CALLBACK + " " + REFRESH_SHOW_CONDITION + "[0-9]+" + "$";
+			+ ContributorAction.REMOVE + ") " + MESSAGE_INFO_CALLBACK + " "
+			+ TelegramConditionUtils.REFRESH_SHOW_CONDITION + "[0-9]+" + "$";
 
 	public static final String COMMAND_SHOW = "/show";
 	public static final String COMMAND_PENDING = "/pending";
@@ -87,9 +80,6 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	public static final String COMMAND_SILENT_DONE = "/sdone";
 
 	public static final String COMMAND_REQUESTS = "/requests";
-
-	private static final String ORDER_CONDITION_OLD = "OLD";
-	private static final String ORDER_CONDITION_NEW = "NEW";
 
 	private static final String REQUEST_NOT_FOUND = "Request not found";
 
@@ -200,9 +190,9 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		return (bot, update) -> {
 			String text = update.callbackQuery().data();
 
-			Optional<Long> optionalGroupId = getGroupId(text);
-			Optional<Long> optionalMessageId = getMessageId(text);
-			Optional<Integer> optionalShowMessageId = getRefreshShow(text);
+			Optional<Long> optionalGroupId = TelegramConditionUtils.getGroupId(text);
+			Optional<Long> optionalMessageId = TelegramConditionUtils.getMessageId(text);
+			Optional<Integer> optionalShowMessageId = TelegramConditionUtils.getRefreshShow(text);
 
 			String actionString = text.substring(0, text.indexOf(' '));
 			ContributorAction action = ContributorAction.valueOf(actionString);
@@ -481,10 +471,10 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (groupService.existsById(chatId) || isPrivate) {
 				deleteMessage(bot, update.message(), !isPrivate);
 
-				Optional<RequestStatus> status = getStatus(text);
-				Optional<Format> format = getFormat(text);
-				Optional<Source> source = getSource(text);
-				Optional<Boolean> optionalDescendent = getDescendent(text);
+				Optional<RequestStatus> status = TelegramConditionUtils.getStatus(text);
+				Optional<Format> format = TelegramConditionUtils.getFormat(text);
+				Optional<Source> source = TelegramConditionUtils.getSource(text);
+				Optional<Boolean> optionalDescendent = TelegramConditionUtils.getDescendent(text);
 
 				boolean descendent = optionalDescendent.isPresent() && optionalDescendent.get();
 				RequestStatus requestStatus = status.orElse(RequestStatus.PENDING);
@@ -508,7 +498,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 		if (isPrivate) {
 			// get requests in PM
-			group = getGroupId(text);
+			group = TelegramConditionUtils.getGroupId(text);
 		} else {
 			// get requests of the group
 			group = Optional.of(chatId);
@@ -628,8 +618,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			Long chatId = TelegramUtils.getChatId(update);
 			String text = update.message().text().replace('_', ' ');
 
-			Optional<Long> optionalGroupId = getGroupId(text);
-			Optional<Long> optionalMessageId = getMessageId(text);
+			Optional<Long> optionalGroupId = TelegramConditionUtils.getGroupId(text);
+			Optional<Long> optionalMessageId = TelegramConditionUtils.getMessageId(text);
 
 			if (optionalGroupId.isPresent() && optionalMessageId.isPresent()) {
 				Long groupId = optionalGroupId.get();
@@ -663,7 +653,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	}
 
 	private InlineKeyboardMarkup getRequestKeyboard(Long groupId, Long messageId, RequestStatus status) {
-		String callbackMessage = MESSAGE_CONDITION + messageId + " " + GROUP_CONDITION + groupId;
+		String callbackMessage = TelegramConditionUtils.MESSAGE_CONDITION + messageId + " "
+				+ TelegramConditionUtils.GROUP_CONDITION + groupId;
 		String callbackBegin = ContributorAction.CONFIRM + " " + callbackMessage + " action=";
 
 		InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
@@ -740,7 +731,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		return (bot, update) -> {
 			String text = update.callbackQuery().data();
 
-			Optional<ContributorAction> actionOptional = getAction(text);
+			Optional<ContributorAction> actionOptional = TelegramConditionUtils.getAction(text);
 			if (actionOptional.isPresent()) {
 				ContributorAction action = actionOptional.get();
 
@@ -758,11 +749,13 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				SendMessage sendMessage = new SendMessage(update.callbackQuery().from().id(), stringBuilder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
 
-				String callbackData = text.substring("confirm ".length(), text.indexOf(ACTION_CONDITION) - 1);
+				String callbackData = text.substring("confirm ".length(),
+						text.indexOf(TelegramConditionUtils.ACTION_CONDITION) - 1);
 
 				InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
-				InlineKeyboardButton yesButton = new InlineKeyboardButton("✔️ Yes").callbackData(action + " "
-						+ callbackData + " " + REFRESH_SHOW_CONDITION + update.callbackQuery().message().messageId());
+				InlineKeyboardButton yesButton = new InlineKeyboardButton("✔️ Yes")
+						.callbackData(action + " " + callbackData + " " + TelegramConditionUtils.REFRESH_SHOW_CONDITION
+								+ update.callbackQuery().message().messageId());
 
 				inlineKeyboard.addRow(yesButton);
 
@@ -771,56 +764,6 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				sendMessageAndDelete(bot, sendMessage, 1, TimeUnit.MINUTES);
 			}
 		};
-	}
-
-	private <T> Optional<T> getCondition(String text, String condition, Function<String, T> function) {
-		T result = null;
-
-		int indexOf = text.toLowerCase().indexOf(condition);
-		int end = text.indexOf(' ', indexOf);
-
-		if (end < indexOf) {
-			end = text.length();
-		}
-
-		if (indexOf > -1) {
-			String conditionString = text.toUpperCase().substring(indexOf + condition.length(), end);
-			result = function.apply(conditionString);
-		}
-
-		return Optional.ofNullable(result);
-	}
-
-	private Optional<Long> getMessageId(String text) {
-		return getCondition(text, MESSAGE_CONDITION, Long::parseLong);
-	}
-
-	private Optional<Long> getGroupId(String text) {
-		return getCondition(text, GROUP_CONDITION, Long::parseLong);
-	}
-
-	private Optional<ContributorAction> getAction(String text) {
-		return getCondition(text, ACTION_CONDITION, ContributorAction::valueOf);
-	}
-
-	private Optional<Integer> getRefreshShow(String text) {
-		return getCondition(text, REFRESH_SHOW_CONDITION, Integer::parseInt);
-	}
-
-	private Optional<RequestStatus> getStatus(String text) {
-		return getCondition(text, STATUS_CONDITION, RequestStatus::valueOf);
-	}
-
-	private Optional<Format> getFormat(String text) {
-		return getCondition(text, FORMAT_CONDITION, Format::valueOf);
-	}
-
-	private Optional<Source> getSource(String text) {
-		return getCondition(text, SOURCE_CONDITION, Source::valueOf);
-	}
-
-	private Optional<Boolean> getDescendent(String text) {
-		return getCondition(text, ORDER_CONDITION, s -> s.equals(ORDER_CONDITION_NEW));
 	}
 
 	private String getTitle(RequestStatus requestStatus, Optional<Format> format, Optional<Source> source,
@@ -833,8 +776,9 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		if (source.isPresent()) {
 			title.append("\nSource [").append(source.get()).append("]");
 		}
-		title.append("\nShow ").append(descendent ? ORDER_CONDITION_NEW : ORDER_CONDITION_OLD).append(" first.")
-				.append("\n\n");
+		title.append("\nShow ").append(
+				descendent ? TelegramConditionUtils.ORDER_CONDITION_NEW : TelegramConditionUtils.ORDER_CONDITION_OLD)
+				.append(" first.").append("\n\n");
 
 		return title.toString();
 	}
