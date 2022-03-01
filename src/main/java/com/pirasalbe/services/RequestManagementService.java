@@ -31,7 +31,7 @@ import com.pirasalbe.utils.StringUtils;
 import com.pirasalbe.utils.TelegramUtils;
 
 /**
- * Service that manages the user request table
+ * Service that manages the requests
  *
  * @author pirasalbe
  *

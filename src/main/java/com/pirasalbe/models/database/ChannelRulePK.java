@@ -5,6 +5,10 @@ import java.util.Objects;
 
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+
+import com.pirasalbe.models.ChannelRuleType;
 
 /**
  * User Request Primary Key
@@ -20,7 +24,8 @@ public class ChannelRulePK implements Serializable {
 	@Column(name = "CHANNEL_ID")
 	private Long channelId;
 
-	private String type;
+	@Enumerated(EnumType.STRING)
+	private ChannelRuleType type;
 
 	private String value;
 
@@ -28,7 +33,7 @@ public class ChannelRulePK implements Serializable {
 		super();
 	}
 
-	public ChannelRulePK(Long channelId, String type, String value) {
+	public ChannelRulePK(Long channelId, ChannelRuleType type, String value) {
 		super();
 		this.channelId = channelId;
 		this.type = type;
@@ -43,11 +48,11 @@ public class ChannelRulePK implements Serializable {
 		this.channelId = channelId;
 	}
 
-	public String getType() {
+	public ChannelRuleType getType() {
 		return type;
 	}
 
-	public void setType(String type) {
+	public void setType(ChannelRuleType type) {
 		this.type = type;
 	}
 
