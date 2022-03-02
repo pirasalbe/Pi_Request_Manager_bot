@@ -51,12 +51,20 @@ public class TelegramChatConditionFactory {
 		};
 	}
 
+	/**
+	 * Get message from update
+	 *
+	 * @param update Update
+	 * @return Message
+	 */
 	private Message getMessage(Update update) {
 		Message message = null;
 		if (update.message() != null) {
 			message = update.message();
 		} else if (update.callbackQuery() != null) {
 			message = update.callbackQuery().message();
+		} else if (update.channelPost() != null) {
+			message = update.channelPost();
 		}
 
 		return message;

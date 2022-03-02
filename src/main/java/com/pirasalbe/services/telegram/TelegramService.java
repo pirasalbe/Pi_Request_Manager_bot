@@ -264,20 +264,26 @@ public class TelegramService {
 	}
 
 	private void registerChannelHandlers() {
+		TelegramCondition privateChatCondition = chatConditionFactory.onChatTypes(Arrays.asList(Type.Private));
 		TelegramCondition channelChatCondition = chatConditionFactory
 				.onChatTypes(Arrays.asList(Type.group, Type.supergroup, Type.channel));
 		TelegramCondition channelRoleCondition = roleConditionFactory.onRole(TelegramChannelCommandHandlerService.ROLE);
 
-		bot.register(Arrays.asList(channelChatCondition,
+		bot.register(
+				Arrays.asList(channelChatCondition,
+						commandConditionFactory.onCommand(TelegramChannelCommandHandlerService.COMMAND_CHANNEL_ID)),
+				channelCommandHandlerService.getId());
+
+		bot.register(Arrays.asList(privateChatCondition,
 				commandConditionFactory.onCommand(TelegramChannelCommandHandlerService.COMMAND_DISABLE),
 				channelRoleCondition), channelCommandHandlerService.disableChannel());
 
-		bot.register(Arrays.asList(channelChatCondition,
+		bot.register(Arrays.asList(privateChatCondition,
 				commandConditionFactory.onCommand(TelegramChannelCommandHandlerService.COMMAND_CONFIGURE),
 				channelRoleCondition), channelCommandHandlerService.startConfiguration());
 
 		bot.register(Arrays.asList(
-				channelChatCondition, callbackQueryConditionFactory
+				privateChatCondition, callbackQueryConditionFactory
 						.onCallbackQuery(TelegramChannelCommandHandlerService.COMMAND_CONFIGURE, Condition.STARTS_WITH),
 				channelRoleCondition), channelCommandHandlerService.configuration());
 

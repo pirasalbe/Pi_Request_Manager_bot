@@ -80,6 +80,9 @@ public class TelegramUtils {
 		} else if (update.callbackQuery() != null) {
 			// get the text from keyboard response
 			result = update.callbackQuery().from().id();
+		} else if (update.channelPost() != null) {
+			// get the text from keyboard response
+			result = update.channelPost().chat().id();
 		}
 
 		return result;
@@ -103,6 +106,9 @@ public class TelegramUtils {
 		} else if (update.callbackQuery() != null) {
 			// get the text from keyboard response
 			result = update.callbackQuery().from();
+		} else if (update.channelPost() != null) {
+			// get the text from channel post
+			result = update.channelPost().from();
 		}
 
 		return result;
@@ -239,6 +245,25 @@ public class TelegramUtils {
 		}
 
 		return "https://t.me/c/" + groupId + "/" + messageId;
+	}
+
+	/**
+	 * Get message from update
+	 *
+	 * @param update Update
+	 * @return Message
+	 */
+	public static Message getMessage(Update update) {
+		Message message = null;
+		if (update.message() != null) {
+			message = update.message();
+		} else if (update.channelPost() != null) {
+			message = update.channelPost();
+		} else if (update.callbackQuery() != null) {
+			message = update.callbackQuery().message();
+		}
+
+		return message;
 	}
 
 }

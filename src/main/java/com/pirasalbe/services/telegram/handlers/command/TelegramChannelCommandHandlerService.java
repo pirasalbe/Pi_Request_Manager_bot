@@ -11,17 +11,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
+import com.pengrad.telegrambot.request.GetChat;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.response.GetChatResponse;
 import com.pirasalbe.models.ChannelRuleType;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.ChannelRule;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.request.Format;
+import com.pirasalbe.models.request.RequestStatus;
+import com.pirasalbe.models.request.Source;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.ChannelManagementService;
 import com.pirasalbe.services.GroupService;
@@ -38,12 +43,16 @@ import com.pirasalbe.utils.TelegramUtils;
 @Component
 public class TelegramChannelCommandHandlerService extends AbstractTelegramHandlerService {
 
+	public static final String COMMAND_CHANNEL_ID = "/channel_id";
 	public static final String COMMAND_CONFIGURE = "/configure_channel";
 	public static final String COMMAND_DISABLE = "/disable_channel";
+	public static final String COMMAND_REFRESH = "/refresh_channel";
 
 	private static final String CALLBACK_DATA_BASE = COMMAND_CONFIGURE + " ";
 
 	public static final UserRole ROLE = UserRole.CONTRIBUTOR;
+
+	private static final String LEAVE_EMPTY_TO_RECEIVE_ALL = "<b>Leave empty to receive all.</b>";
 
 	@Autowired
 	private ChannelManagementService channelManagementService;
@@ -51,31 +60,57 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 	@Autowired
 	private GroupService groupService;
 
-	private void sendMessage(TelegramBot bot, Update update, SendMessage sendMessage) {
-		sendMessageAndDelete(bot, sendMessage, 30, TimeUnit.SECONDS);
-		deleteMessage(bot, update.message());
+	public TelegramHandler getId() {
+		return (bot, update) -> {
+			Long chatId = TelegramUtils.getChatId(update);
+
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append("Channel id: ");
+			stringBuilder.append("<code>").append(chatId).append("</code>");
+			SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+			sendMessage.parseMode(ParseMode.HTML);
+
+			sendMessageAndDelete(bot, sendMessage, 30, TimeUnit.SECONDS);
+			deleteMessage(bot, TelegramUtils.getMessage(update));
+		};
+	}
+
+	private long getChannelIdFromText(Update update) {
+		Message message = update.message();
+
+		String messageText = TelegramUtils.removeCommand(message.text(), update.message().entities());
+
+		return Long.parseLong(messageText.trim());
 	}
 
 	public TelegramHandler disableChannel() {
 		return (bot, update) -> {
+			Long channelId = getChannelIdFromText(update);
 			Long chatId = TelegramUtils.getChatId(update);
 
-			channelManagementService.deleteIfExists(chatId);
+			channelManagementService.deleteIfExists(channelId);
 			SendMessage sendMessage = new SendMessage(chatId, "Channel disabled");
 
-			sendMessage(bot, update, sendMessage);
+			bot.execute(sendMessage);
 		};
 	}
 
 	public TelegramHandler startConfiguration() {
 		return (bot, update) -> {
-			deleteMessage(bot, update.message());
-
+			Long channelId = getChannelIdFromText(update);
 			Long chatId = TelegramUtils.getChatId(update);
 
-			channelManagementService.insertIfNotExists(chatId, update.message().chat().title());
+			GetChat getChat = new GetChat(channelId);
+			GetChatResponse getChatResponse = bot.execute(getChat);
 
-			sendGroupConfiguration(bot, chatId);
+			if (getChatResponse.isOk()) {
+				channelManagementService.insertIfNotExists(channelId, getChatResponse.chat().title());
+
+				sendGroupConfiguration(bot, chatId, channelId);
+			} else {
+				SendMessage sendMessage = new SendMessage(chatId, "Add me first to the channel");
+				bot.execute(sendMessage);
+			}
 		};
 	}
 
@@ -92,20 +127,57 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 			Long chatId = update.callbackQuery().message().chat().id();
 			String text = update.callbackQuery().data();
 
-			if (text.contains(TelegramConditionUtils.GROUP_CONDITION)) {
-				manageGroupCondition(chatId, text);
+			Optional<Long> channelIdOptional = TelegramConditionUtils.getChannelId(text);
 
-				sendGroupConfiguration(bot, chatId);
-			} else if (text.contains(TelegramConditionUtils.FORMAT_CONDITION)) {
-				manageFormatCondition(chatId, text);
+			if (channelIdOptional.isPresent()) {
+				Long channelId = channelIdOptional.get();
 
-				sendFormatConfiguration(bot, chatId);
+				if (text.contains(TelegramConditionUtils.GROUP_CONDITION)) {
+					manageGroupCondition(channelId, text);
+
+					sendGroupConfiguration(bot, chatId, channelId);
+				} else if (text.contains(TelegramConditionUtils.FORMAT_CONDITION)) {
+					manageFormatCondition(channelId, text);
+
+					sendFormatConfiguration(bot, chatId, channelId);
+				} else if (text.contains(TelegramConditionUtils.SOURCE_CONDITION)) {
+					manageSourceCondition(channelId, text);
+
+					sendSourceConfiguration(bot, chatId, channelId);
+				} else if (text.contains(TelegramConditionUtils.STATUS_CONDITION)) {
+					manageStatusCondition(channelId, text);
+
+					sendStatusConfiguration(bot, chatId, channelId);
+				} else {
+					StringBuilder stringBuilder = new StringBuilder();
+					stringBuilder.append("Configurations saved.\n");
+					stringBuilder.append("Send <code>").append(COMMAND_REFRESH)
+							.append(" [channel id]</code> to reload the requests.");
+					SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+					sendMessage.parseMode(ParseMode.HTML);
+					bot.execute(sendMessage);
+				}
 			}
 		};
 	}
 
-	private <T> void sendConfiguration(TelegramBot bot, Long chatId, String messageText, ChannelRuleType type,
-			String condition, List<T> possibleValues, Function<T, String> valueFunction,
+	private String getCallback(Long channelId, String condition) {
+		return getCallback(channelId, condition, null);
+	}
+
+	private String getCallback(Long channelId, String condition, Object value) {
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.append(CALLBACK_DATA_BASE);
+		stringBuilder.append(TelegramConditionUtils.CHANNEL_CONDITION).append(channelId).append(" ");
+		stringBuilder.append(condition);
+		if (value != null) {
+			stringBuilder.append(value);
+		}
+		return stringBuilder.toString();
+	}
+
+	private <T> void sendConfiguration(TelegramBot bot, Long chatId, Long channelId, String messageText,
+			ChannelRuleType type, String condition, List<T> possibleValues, Function<T, String> valueFunction,
 			Function<T, String> buttonNameFunction, InlineKeyboardButton previousButton,
 			InlineKeyboardButton nextButton) {
 		SendMessage sendMessage = new SendMessage(chatId, messageText);
@@ -114,11 +186,10 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 		// prepare keyboard
 		InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
 
-		String callbackDataBase = COMMAND_CONFIGURE + " ";
 		List<InlineKeyboardButton> buttons = new LinkedList<>();
 
 		// get rules
-		List<ChannelRule> rules = channelManagementService.getChannelRulesByType(chatId, type);
+		List<ChannelRule> rules = channelManagementService.getChannelRulesByType(channelId, type);
 
 		// prepare buttons
 		for (int i = 0; i < possibleValues.size(); i++) {
@@ -136,7 +207,7 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 			}
 			formatName.append(name);
 			InlineKeyboardButton button = new InlineKeyboardButton(formatName.toString());
-			button.callbackData(callbackDataBase + condition + value);
+			button.callbackData(getCallback(channelId, condition, value));
 			buttons.add(button);
 
 			if ((i > 1 && (i + 1) % 3 == 0) || i == possibleValues.size() - 1) {
@@ -157,25 +228,37 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 		bot.execute(sendMessage);
 	}
 
-	private InlineKeyboardButton getGroupsButton() {
+	private InlineKeyboardButton getGroupsButton(Long channelId) {
 		InlineKeyboardButton format = new InlineKeyboardButton("👥 Groups");
-		format.callbackData(CALLBACK_DATA_BASE + TelegramConditionUtils.GROUP_CONDITION);
+		format.callbackData(getCallback(channelId, TelegramConditionUtils.GROUP_CONDITION));
 		return format;
 	}
 
-	private InlineKeyboardButton getFormatsButton() {
+	private InlineKeyboardButton getFormatsButton(Long channelId) {
 		InlineKeyboardButton format = new InlineKeyboardButton("🔎 Formats");
-		format.callbackData(CALLBACK_DATA_BASE + TelegramConditionUtils.FORMAT_CONDITION);
+		format.callbackData(getCallback(channelId, TelegramConditionUtils.FORMAT_CONDITION));
 		return format;
 	}
 
-	private InlineKeyboardButton getSourcesButton() {
+	private InlineKeyboardButton getSourcesButton(Long channelId) {
 		InlineKeyboardButton source = new InlineKeyboardButton("🌐 Sources");
-		source.callbackData(CALLBACK_DATA_BASE + TelegramConditionUtils.SOURCE_CONDITION);
+		source.callbackData(getCallback(channelId, TelegramConditionUtils.SOURCE_CONDITION));
 		return source;
 	}
 
-	private void sendGroupConfiguration(TelegramBot bot, Long chatId) {
+	private InlineKeyboardButton getStatusesButton(Long channelId) {
+		InlineKeyboardButton source = new InlineKeyboardButton("💭 Statuses");
+		source.callbackData(getCallback(channelId, TelegramConditionUtils.STATUS_CONDITION));
+		return source;
+	}
+
+	private InlineKeyboardButton getFinishButton(Long channelId) {
+		InlineKeyboardButton source = new InlineKeyboardButton("👌 End configuration");
+		source.callbackData(getCallback(channelId, "end"));
+		return source;
+	}
+
+	private void sendGroupConfiguration(TelegramBot bot, Long chatId, Long channelId) {
 
 		StringBuilder messageTextBuilder = new StringBuilder();
 		messageTextBuilder.append("Select the groups from which you want receive requests.\n");
@@ -183,21 +266,45 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 
 		List<Group> groups = groupService.findAll();
 
-		sendConfiguration(bot, chatId, messageTextBuilder.toString(), ChannelRuleType.GROUP,
+		sendConfiguration(bot, chatId, channelId, messageTextBuilder.toString(), ChannelRuleType.GROUP,
 				TelegramConditionUtils.GROUP_CONDITION, groups, g -> g.getId().toString(), Group::getName, null,
-				getFormatsButton());
+				getFormatsButton(channelId));
 	}
 
-	private void sendFormatConfiguration(TelegramBot bot, Long chatId) {
+	private void sendFormatConfiguration(TelegramBot bot, Long chatId, Long channelId) {
 		StringBuilder messageTextBuilder = new StringBuilder();
 		messageTextBuilder.append("Select the format of the requests you want to receive.\n");
-		messageTextBuilder.append("<b>Leave empty to receive all.</b>");
+		messageTextBuilder.append(LEAVE_EMPTY_TO_RECEIVE_ALL);
 
 		List<Format> formats = Arrays.asList(Format.values());
 
-		sendConfiguration(bot, chatId, messageTextBuilder.toString(), ChannelRuleType.FORMAT,
-				TelegramConditionUtils.FORMAT_CONDITION, formats, Format::name, Format::name, getGroupsButton(),
-				getSourcesButton());
+		sendConfiguration(bot, chatId, channelId, messageTextBuilder.toString(), ChannelRuleType.FORMAT,
+				TelegramConditionUtils.FORMAT_CONDITION, formats, Format::name, Format::name,
+				getGroupsButton(channelId), getSourcesButton(channelId));
+	}
+
+	private void sendSourceConfiguration(TelegramBot bot, Long chatId, Long channelId) {
+		StringBuilder messageTextBuilder = new StringBuilder();
+		messageTextBuilder.append("Select the source of the requests you want to receive.\n");
+		messageTextBuilder.append(LEAVE_EMPTY_TO_RECEIVE_ALL);
+
+		List<Source> sources = Arrays.asList(Source.values());
+
+		sendConfiguration(bot, chatId, channelId, messageTextBuilder.toString(), ChannelRuleType.SOURCE,
+				TelegramConditionUtils.SOURCE_CONDITION, sources, Source::name, Source::name,
+				getFormatsButton(channelId), getStatusesButton(channelId));
+	}
+
+	private void sendStatusConfiguration(TelegramBot bot, Long chatId, Long channelId) {
+		StringBuilder messageTextBuilder = new StringBuilder();
+		messageTextBuilder.append("Select the status of the requests you want to receive.\n");
+		messageTextBuilder.append(LEAVE_EMPTY_TO_RECEIVE_ALL);
+
+		List<RequestStatus> status = Arrays.asList(RequestStatus.values());
+
+		sendConfiguration(bot, chatId, channelId, messageTextBuilder.toString(), ChannelRuleType.STATUS,
+				TelegramConditionUtils.STATUS_CONDITION, status, RequestStatus::name,
+				s -> s.getDescription().toUpperCase(), getSourcesButton(channelId), getFinishButton(channelId));
 	}
 
 	private <T> void manageCondition(Long channelId, ChannelRuleType type, Optional<T> optional) {
@@ -214,6 +321,16 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 	private void manageFormatCondition(Long channelId, String text) {
 		Optional<Format> optional = TelegramConditionUtils.getFormat(text);
 		manageCondition(channelId, ChannelRuleType.FORMAT, optional);
+	}
+
+	private void manageSourceCondition(Long channelId, String text) {
+		Optional<Source> optional = TelegramConditionUtils.getSource(text);
+		manageCondition(channelId, ChannelRuleType.SOURCE, optional);
+	}
+
+	private void manageStatusCondition(Long channelId, String text) {
+		Optional<RequestStatus> optional = TelegramConditionUtils.getStatus(text);
+		manageCondition(channelId, ChannelRuleType.STATUS, optional);
 	}
 
 }

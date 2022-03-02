@@ -18,6 +18,7 @@ public class TelegramConditionUtils {
 
 	public static final String MESSAGE_CONDITION = "message=";
 	public static final String GROUP_CONDITION = "group=";
+	public static final String CHANNEL_CONDITION = "channel=";
 	public static final String ACTION_CONDITION = "action=";
 	public static final String STATUS_CONDITION = "status=";
 	public static final String FORMAT_CONDITION = "format=";
@@ -62,6 +63,10 @@ public class TelegramConditionUtils {
 
 	public static Optional<Long> getGroupId(String text) {
 		return getCondition(text, GROUP_CONDITION, Long::parseLong);
+	}
+
+	public static Optional<Long> getChannelId(String text) {
+		return getCondition(text, CHANNEL_CONDITION, Long::parseLong);
 	}
 
 	public static Optional<ContributorAction> getAction(String text) {
