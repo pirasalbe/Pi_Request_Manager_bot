@@ -1,5 +1,7 @@
 package com.pirasalbe.services;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -20,6 +22,10 @@ public class ChannelService {
 
 	@Autowired
 	private ChannelRepository repository;
+
+	public List<Channel> findAll() {
+		return repository.findAll();
+	}
 
 	public boolean existsById(Long id) {
 		return repository.existsById(id);

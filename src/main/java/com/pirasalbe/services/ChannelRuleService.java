@@ -50,11 +50,11 @@ public class ChannelRuleService {
 		repository.deleteByChannelId(channelId);
 	}
 
-	public List<ChannelRule> getByChannelId(Long channelId) {
+	public List<ChannelRule> findByChannelId(Long channelId) {
 		return repository.getByChannelId(channelId);
 	}
 
-	public List<ChannelRule> getByChannelIdAndType(Long channelId, ChannelRuleType type) {
+	public List<ChannelRule> findByChannelIdAndType(Long channelId, ChannelRuleType type) {
 		return repository.getByChannelIdAndType(channelId, type);
 	}
 

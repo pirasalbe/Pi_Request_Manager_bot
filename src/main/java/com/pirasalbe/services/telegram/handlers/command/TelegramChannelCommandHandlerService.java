@@ -189,7 +189,7 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 		List<InlineKeyboardButton> buttons = new LinkedList<>();
 
 		// get rules
-		List<ChannelRule> rules = channelManagementService.getChannelRulesByType(channelId, type);
+		List<ChannelRule> rules = channelManagementService.findChannelRulesByType(channelId, type);
 
 		// prepare buttons
 		for (int i = 0; i < possibleValues.size(); i++) {
