@@ -22,9 +22,7 @@ import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import com.pengrad.telegrambot.request.DeleteMessage;
-import com.pengrad.telegrambot.request.GetChatMember;
 import com.pengrad.telegrambot.request.SendMessage;
-import com.pengrad.telegrambot.response.GetChatMemberResponse;
 import com.pirasalbe.configurations.TelegramConfiguration;
 import com.pirasalbe.models.ContributorAction;
 import com.pirasalbe.models.UserRole;
@@ -533,27 +531,29 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			requestBuilder.append(RequestUtils.getTimeBetweenDates(request.getRequestDate(), now)).append(" ago ");
 
 			requestBuilder.append("[<a href='")
-					.append(TelegramUtils.getStartLink(configuration.getUsername(),
-							"show_message=" + messageId + "_group=" + groupId))
+					.append(RequestUtils.getActionsLink(configuration.getUsername(), messageId, groupId))
 					.append("'>Actions</a> for <code>").append(messageId).append("</code>]\n");
 
 			String requestText = requestBuilder.toString();
 
 			// if length is > message limit, send current text
 			if (builder.length() + requestText.length() > 4096) {
-				SendMessage sendMessage = new SendMessage(chatId, builder.toString());
-				sendMessage.parseMode(ParseMode.HTML);
-				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.MINUTES, deleteMessages);
+				sendRequestListMessage(bot, chatId, builder.toString(), deleteMessages);
 				builder = new StringBuilder(title);
 			}
 			builder.append(requestText);
 			// send last message
 			if (i == requests.size() - 1) {
-				SendMessage sendMessage = new SendMessage(chatId, builder.toString());
-				sendMessage.parseMode(ParseMode.HTML);
-				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.MINUTES, deleteMessages);
+				sendRequestListMessage(bot, chatId, builder.toString(), deleteMessages);
 			}
 		}
+	}
+
+	private void sendRequestListMessage(TelegramBot bot, Long chatId, String message, boolean deleteMessages) {
+		SendMessage sendMessage = new SendMessage(chatId, message);
+		sendMessage.parseMode(ParseMode.HTML);
+		sendMessage.disableWebPagePreview(true);
+		sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.MINUTES, deleteMessages);
 	}
 
 	private String getChatName(Map<Long, String> chatNames, Long groupId) {
@@ -698,33 +698,13 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		if (requestOptional.isPresent()) {
 			Request request = requestOptional.get();
 
-			messageBuilder.append(request.getContent());
-			messageBuilder.append("\n\n[");
-			messageBuilder.append("Request by ").append(getUser(bot, request)).append("(<code>")
-					.append(request.getUserId()).append("</code>)");
-			messageBuilder.append(" in ").append("#").append(group.getName().replace(' ', '_')).append(".");
-			messageBuilder.append(" Status: <b>").append(request.getStatus().getDescription().toUpperCase())
-					.append("</b>");
-			messageBuilder.append("]");
+			String requestInfo = RequestUtils.getRequestInfo(bot, group.getName(), request);
+			messageBuilder.append(requestInfo);
 		} else {
 			messageBuilder.append(REQUEST_NOT_FOUND);
 		}
 
 		return messageBuilder.toString();
-	}
-
-	private String getUser(TelegramBot bot, Request request) {
-		GetChatMember getChatMember = new GetChatMember(request.getId().getGroupId(), request.getUserId());
-		GetChatMemberResponse member = bot.execute(getChatMember);
-
-		String user = null;
-		if (member.isOk()) {
-			user = TelegramUtils.tagUser(member.chatMember().user());
-		} else {
-			user = TelegramUtils.tagUser(request.getUserId());
-		}
-
-		return user.replace(".", "");
 	}
 
 	public TelegramHandler confirmAction() {

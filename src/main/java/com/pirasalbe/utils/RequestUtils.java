@@ -4,8 +4,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.MessageEntity;
 import com.pengrad.telegrambot.model.MessageEntity.Type;
+import com.pengrad.telegrambot.request.GetChatMember;
+import com.pengrad.telegrambot.response.GetChatMemberResponse;
+import com.pirasalbe.models.database.Request;
 import com.pirasalbe.models.request.Source;
 
 /**
@@ -203,6 +207,45 @@ public class RequestUtils {
 		stringBuilder.append(".");
 
 		return stringBuilder.toString();
+	}
+
+	public static String getActionsLink(String username, Long messageId, Long groupId) {
+		StringBuilder paramBuilder = new StringBuilder();
+		paramBuilder.append("show_message=");
+		paramBuilder.append(messageId);
+		paramBuilder.append("_").append(TelegramConditionUtils.GROUP_CONDITION);
+		paramBuilder.append(groupId);
+		return TelegramUtils.getStartLink(username, paramBuilder.toString());
+	}
+
+	public static String getRequestInfo(TelegramBot bot, String groupName, Request request) {
+		StringBuilder messageBuilder = new StringBuilder();
+
+		messageBuilder.append(request.getContent());
+		messageBuilder.append("\n\n[");
+
+		messageBuilder.append("Request by ").append(getUser(bot, request)).append("(<code>").append(request.getUserId())
+				.append("</code>)");
+		messageBuilder.append(" in ").append("#").append(groupName.replace(' ', '_')).append(".");
+		messageBuilder.append(" Status: <b>").append(request.getStatus().getDescription().toUpperCase()).append("</b>");
+
+		messageBuilder.append("]");
+
+		return messageBuilder.toString();
+	}
+
+	private static String getUser(TelegramBot bot, Request request) {
+		GetChatMember getChatMember = new GetChatMember(request.getId().getGroupId(), request.getUserId());
+		GetChatMemberResponse member = bot.execute(getChatMember);
+
+		String user = null;
+		if (member.isOk()) {
+			user = TelegramUtils.tagUser(member.chatMember().user());
+		} else {
+			user = TelegramUtils.tagUser(request.getUserId());
+		}
+
+		return user.replace(".", "");
 	}
 
 }
