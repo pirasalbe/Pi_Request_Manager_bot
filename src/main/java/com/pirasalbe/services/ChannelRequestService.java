@@ -44,6 +44,10 @@ public class ChannelRequestService {
 		return repository.findByRequest(requestGroupId, requestMessageId);
 	}
 
+	public List<ChannelRequest> findByGroupId(Long requestGroupId) {
+		return repository.findByGroupId(requestGroupId);
+	}
+
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void insert(Long channelId, Long messageId, RequestPK requestId) {
 		// insert
@@ -62,6 +66,11 @@ public class ChannelRequestService {
 		repository.deleteById(id);
 
 		entityManager.flush();
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void deleteByChannelId(Long channelId) {
+		repository.deleteByChannelId(channelId);
 	}
 
 }

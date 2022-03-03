@@ -1,7 +1,6 @@
 package com.pirasalbe.services;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,8 +21,8 @@ import com.pirasalbe.models.ChannelRuleType;
 import com.pirasalbe.models.database.Channel;
 import com.pirasalbe.models.database.ChannelRequest;
 import com.pirasalbe.models.database.ChannelRule;
-import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.database.Request;
+import com.pirasalbe.models.database.RequestPK;
 import com.pirasalbe.services.telegram.TelegramBotService;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramUtils;
@@ -42,9 +41,6 @@ public class ChannelManagementService {
 
 	@Autowired
 	private TelegramConfiguration configuration;
-
-	@Autowired
-	private GroupService groupService;
 
 	@Autowired
 	private ChannelService channelService;
@@ -72,6 +68,7 @@ public class ChannelManagementService {
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void deleteIfExists(Long id) {
 		if (channelService.existsById(id)) {
+			channelRequestService.deleteByChannelId(id);
 			channelRuleService.deleteByChannelId(id);
 			channelService.delete(id);
 			LOGGER.info("Deleted channel: [{}]", id);
@@ -100,10 +97,11 @@ public class ChannelManagementService {
 	 * Send a request to a channel<br>
 	 * <b>It's highly recommended to call this method on a different thread</b>
 	 *
-	 * @param request Request to forward
+	 * @param request   Request to forward
+	 * @param groupName Name of the group of the request
 	 */
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void forwardRequest(Request request) {
+	public void forwardRequest(Request request, String groupName) {
 		List<Channel> channels = channelService.findAll();
 
 		for (Channel channel : channels) {
@@ -121,7 +119,7 @@ public class ChannelManagementService {
 				}
 
 				// forward request
-				Long messageId = forwardRequest(channel.getId(), request);
+				Long messageId = forwardRequest(channel.getId(), request, groupName);
 
 				// update channel request table
 				if (messageId != null) {
@@ -158,27 +156,22 @@ public class ChannelManagementService {
 		return result;
 	}
 
-	private Long forwardRequest(Long channelId, Request request) {
+	private Long forwardRequest(Long channelId, Request request, String groupName) {
+		String message = RequestUtils.getRequestInfo(bot, groupName, request);
+
+		SendMessage sendMessage = new SendMessage(channelId, message);
+		sendMessage.parseMode(ParseMode.HTML);
+		sendMessage.disableWebPagePreview(true);
+
+		InlineKeyboardMarkup inlineKeyboard = getRequestKeyboard(request.getId().getGroupId(),
+				request.getId().getMessageId());
+
+		sendMessage.replyMarkup(inlineKeyboard);
+
 		Long messageId = null;
-
-		Optional<Group> optional = groupService.findById(request.getId().getGroupId());
-
-		if (optional.isPresent()) {
-			String message = RequestUtils.getRequestInfo(bot, optional.get().getName(), request);
-
-			SendMessage sendMessage = new SendMessage(channelId, message);
-			sendMessage.parseMode(ParseMode.HTML);
-			sendMessage.disableWebPagePreview(true);
-
-			InlineKeyboardMarkup inlineKeyboard = getRequestKeyboard(request.getId().getGroupId(),
-					request.getId().getMessageId());
-
-			sendMessage.replyMarkup(inlineKeyboard);
-
-			SendResponse sendResponse = bot.execute(sendMessage);
-			if (sendResponse.isOk()) {
-				messageId = sendResponse.message().messageId().longValue();
-			}
+		SendResponse sendResponse = bot.execute(sendMessage);
+		if (sendResponse.isOk()) {
+			messageId = sendResponse.message().messageId().longValue();
 		}
 
 		return messageId;
@@ -190,7 +183,7 @@ public class ChannelManagementService {
 		InlineKeyboardButton requestButton = new InlineKeyboardButton("📚 Request")
 				.url(TelegramUtils.getLink(groupId, messageId));
 		InlineKeyboardButton actionsButton = new InlineKeyboardButton("⚙️ Actions")
-				.url(RequestUtils.getActionsLink(configuration.getUsername(), groupId, messageId));
+				.url(RequestUtils.getActionsLink(configuration.getUsername(), messageId, groupId));
 
 		inlineKeyboard.addRow(requestButton, actionsButton);
 
@@ -201,15 +194,16 @@ public class ChannelManagementService {
 	 * Send a request updated to a channel<br>
 	 * <b>It's highly recommended to call this method on a different thread</b>
 	 *
-	 * @param request Request to update
+	 * @param request   Request to update
+	 * @param groupName Name of the group of the request
 	 */
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void updateRequest(Request request) {
+	public void updateRequest(Request request, String groupName) {
 		// delete request from all channels
-		deleteRequest(request);
+		deleteRequest(request.getId());
 
 		// forward request again to the right channels
-		forwardRequest(request);
+		forwardRequest(request, groupName);
 	}
 
 	/**
@@ -219,10 +213,10 @@ public class ChannelManagementService {
 	 * @param request Request to delete
 	 */
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void deleteRequest(Request request) {
+	public void deleteRequest(RequestPK requestId) {
 		// find all channels with the request
-		List<ChannelRequest> channelRequests = channelRequestService.findByRequest(request.getId().getGroupId(),
-				request.getId().getMessageId());
+		List<ChannelRequest> channelRequests = channelRequestService.findByRequest(requestId.getGroupId(),
+				requestId.getMessageId());
 
 		for (ChannelRequest channelRequest : channelRequests) {
 			deleteChannelRequest(channelRequest);
@@ -238,6 +232,16 @@ public class ChannelManagementService {
 
 		// delete record
 		channelRequestService.delete(channelId, messageId);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void deleteRequestByGroupId(Long groupId) {
+		// find all channels with the request
+		List<ChannelRequest> channelRequests = channelRequestService.findByGroupId(groupId);
+
+		for (ChannelRequest channelRequest : channelRequests) {
+			deleteChannelRequest(channelRequest);
+		}
 	}
 
 }

@@ -68,7 +68,7 @@ public class TelegramUpdateRequestHandlerService extends AbstractTelegramRequest
 	private void updateRequest(Message message, Group group, String content, String link) {
 		Format format = getFormat(content);
 
-		requestService.update(message.messageId().longValue(), group.getId(), link, content, format,
+		requestManagementService.updateRequest(message.messageId().longValue(), group, link, content, format,
 				getSource(content, format), getOtherTags(content));
 	}
 

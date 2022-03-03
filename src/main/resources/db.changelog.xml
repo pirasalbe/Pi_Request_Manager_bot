@@ -198,7 +198,6 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 				<constraints nullable="false" />
 			</column>
 		</createTable>
-		<addForeignKeyConstraint baseColumnNames="REQUEST_MESSAGE_ID,REQUEST_GROUP_ID" baseTableName="CHANNEL_REQUESTS" constraintName="CHANNEL_REQUESTS_REQUESTS_FK" referencedColumnNames="MESSAGE_ID,GROUP_ID" referencedTableName="REQUESTS" validate="true"/>
 		<addUniqueConstraint constraintName="CHANNEL_REQUESTS_UQ" tableName="CHANNEL_REQUESTS" columnNames="CHANNEL_ID, REQUEST_MESSAGE_ID, REQUEST_GROUP_ID" validate="true" />
 	</changeSet>
 

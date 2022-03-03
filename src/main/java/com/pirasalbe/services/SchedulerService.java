@@ -31,4 +31,10 @@ public class SchedulerService {
 		scheduledExecutorService.shutdown();
 	}
 
+	public void schedule(Runnable runnable, long timeout, TimeUnit timeUnit) {
+		ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+		scheduledExecutorService.schedule(runnable, timeout, timeUnit);
+		scheduledExecutorService.shutdown();
+	}
+
 }

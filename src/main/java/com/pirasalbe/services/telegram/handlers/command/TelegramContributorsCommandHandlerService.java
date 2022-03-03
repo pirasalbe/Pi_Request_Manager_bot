@@ -90,10 +90,10 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	private GroupService groupService;
 
 	@Autowired
-	private RequestManagementService requestManagementService;
+	private RequestService requestService;
 
 	@Autowired
-	private RequestService requestService;
+	private RequestManagementService requestManagementService;
 
 	public TelegramCondition replyToMessageCondition() {
 		return this::replyToMessage;
@@ -122,7 +122,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (optional.isPresent()) {
 				Message message = update.message().replyToMessage();
 
-				boolean success = requestManagementService.markPending(message);
+				boolean success = requestManagementService.markPending(message, optional.get());
 
 				// send a message to notify operation
 				String link = TelegramUtils.getLink(message);
@@ -146,7 +146,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (optional.isPresent()) {
 				Message message = update.message().replyToMessage();
 
-				boolean success = requestManagementService.markOutstanding(message);
+				boolean success = requestManagementService.markOutstanding(message, optional.get());
 
 				// send a message to notify operation
 				String link = TelegramUtils.getLink(message);
@@ -232,7 +232,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	}
 
 	private String performAction(ContributorAction action, Long messageId, Long groupId) {
-		String result;
+		String result = null;
+
 		if (action == ContributorAction.REMOVE) {
 
 			boolean deleteRequest = requestManagementService.deleteRequest(messageId, groupId);
@@ -246,6 +247,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		} else {
 			result = "Nothing to do";
 		}
+
 		return result;
 	}
 
@@ -269,9 +271,10 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			break;
 		}
 
+		Optional<Group> group = groupService.findById(groupId);
 		Optional<Request> optional = requestService.findById(messageId, groupId);
-		if (optional.isPresent()) {
-			requestService.updateStatus(optional.get(), newStatus);
+		if (group.isPresent() && optional.isPresent()) {
+			requestManagementService.updateStatus(optional.get(), group.get(), newStatus);
 			result = "Request marked as " + newStatus.getDescription();
 		} else {
 			result = REQUEST_NOT_FOUND;
@@ -288,7 +291,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (optional.isPresent()) {
 				Message message = update.message().replyToMessage();
 
-				boolean success = requestManagementService.markDone(message);
+				boolean success = requestManagementService.markDone(message, optional.get());
 
 				// reply
 				String link = TelegramUtils.getLink(message);
@@ -366,7 +369,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (optional.isPresent()) {
 				Message message = update.message().replyToMessage();
 
-				boolean success = requestManagementService.markDone(message);
+				boolean success = requestManagementService.markDone(message, optional.get());
 
 				String link = TelegramUtils.getLink(message);
 				StringBuilder stringBuilder = new StringBuilder();
@@ -399,7 +402,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 				// delete message
 				if (messageId != null) {
-					boolean success = requestManagementService.markCancelled(messageId, chatId);
+					boolean success = requestManagementService.markCancelled(messageId, optional.get());
 
 					String link = TelegramUtils.getLink(chatId.toString(), messageId.toString());
 					StringBuilder builder = new StringBuilder();
@@ -420,6 +423,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler removeRequest() {
 		return (bot, update) -> {
+			deleteMessage(bot, update.message());
+
 			Long chatId = TelegramUtils.getChatId(update);
 			String text = update.message().text();
 
@@ -452,7 +457,6 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				sendMessage.parseMode(ParseMode.HTML);
 
 				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.SECONDS);
-				deleteMessage(bot, update.message());
 			}
 		};
 	}

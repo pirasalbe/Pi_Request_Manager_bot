@@ -7,6 +7,7 @@ import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -63,15 +64,28 @@ public class RequestService {
 		entityManager.flush();
 	}
 
-	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void deleteOldRequests() {
-		LocalDateTime twoMonths = DateUtils.getNow().minusMonths(2);
-		repository.deleteOldCancelled(twoMonths);
-		repository.deleteOldResolved(twoMonths);
+	private LocalDateTime getOldLocalDateTime() {
+		return DateUtils.getNow().minusMonths(2);
+	}
+
+	public List<Request> getOldRequests() {
+		LocalDateTime twoMonths = getOldLocalDateTime();
+
+		List<Request> oldRequests = repository.findOldByStatus(twoMonths, RequestStatus.CANCELLED);
+		oldRequests.addAll(repository.findOldByStatus(twoMonths, RequestStatus.RESOLVED));
+
+		return oldRequests;
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void insert(Long messageId, Long groupId, String link, String content, Format format, Source source,
+	public void deleteOldRequests() {
+		LocalDateTime twoMonths = getOldLocalDateTime();
+		repository.deleteOldByStatus(twoMonths, RequestStatus.CANCELLED);
+		repository.deleteOldByStatus(twoMonths, RequestStatus.RESOLVED);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public Request insert(Long messageId, Long groupId, String link, String content, Format format, Source source,
 			String otherTags, Long userId, LocalDateTime requestDate) {
 		Request request = new Request();
 
@@ -85,18 +99,23 @@ public class RequestService {
 		request.setUserId(userId);
 		request.setRequestDate(requestDate);
 
+		return save(request);
+	}
+
+	private Request save(Request request) {
+		Request requestCopy = new Request();
+		BeanUtils.copyProperties(request, requestCopy);
+
 		repository.save(request);
+
+		return requestCopy;
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void update(Long messageId, Long groupId, String link, String content, Format format, Source source,
-			String otherTags) {
-		update(messageId, groupId, link, content, format, source, otherTags, null);
-	}
-
-	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void update(Long messageId, Long groupId, String link, String content, Format format, Source source,
+	public Request update(Long messageId, Long groupId, String link, String content, Format format, Source source,
 			String otherTags, LocalDateTime requestDate) {
+		Request requestCopy = null;
+
 		Optional<Request> optional = findById(messageId, groupId);
 
 		if (optional.isPresent()) {
@@ -112,8 +131,10 @@ public class RequestService {
 				request.setRequestDate(requestDate);
 			}
 
-			repository.save(request);
+			requestCopy = save(request);
 		}
+
+		return requestCopy;
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
@@ -122,7 +143,7 @@ public class RequestService {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void updateStatus(Request request, RequestStatus status) {
+	public Request updateStatus(Request request, RequestStatus status) {
 		request.setStatus(status);
 		if (status == RequestStatus.RESOLVED) {
 			request.setResolvedDate(DateUtils.getNow());
@@ -130,7 +151,7 @@ public class RequestService {
 			request.setResolvedDate(null);
 		}
 
-		repository.save(request);
+		return save(request);
 	}
 
 	public Request getLastEbookRequestOfUser(Long userId) {

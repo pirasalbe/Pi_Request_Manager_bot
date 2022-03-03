@@ -21,7 +21,6 @@ import com.pirasalbe.models.request.Source;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
-import com.pirasalbe.services.RequestService;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramUtils;
 
@@ -49,9 +48,6 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 
 	@Autowired
 	protected RequestManagementService requestManagementService;
-
-	@Autowired
-	protected RequestService requestService;
 
 	@Autowired
 	protected GroupService groupService;
