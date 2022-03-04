@@ -151,8 +151,8 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 				} else {
 					StringBuilder stringBuilder = new StringBuilder();
 					stringBuilder.append("Configurations saved.\n");
-					stringBuilder.append("Send <code>").append(COMMAND_REFRESH)
-							.append(" [channel id]</code> to reload the requests.");
+					stringBuilder.append("Send <code>").append(COMMAND_REFRESH).append(" ").append(channelId)
+							.append("</code> to reload the requests.");
 					SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 					sendMessage.parseMode(ParseMode.HTML);
 					bot.execute(sendMessage);

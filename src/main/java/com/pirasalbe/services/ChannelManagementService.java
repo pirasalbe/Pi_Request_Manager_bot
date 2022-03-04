@@ -15,6 +15,7 @@ import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.response.BaseResponse;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.configurations.TelegramConfiguration;
 import com.pirasalbe.models.ChannelRuleType;
@@ -94,29 +95,35 @@ public class ChannelManagementService {
 	}
 
 	/**
+	 * Send a request updated to a channel<br>
+	 * <b>It's highly recommended to call this method on a different thread</b>
+	 *
+	 * @param request   Request to update
+	 * @param groupName Name of the group of the request
+	 */
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void forwardRequest(Request request, String groupName) {
+		// delete request from all channels
+		deleteRequest(request.getId());
+
+		// forward request again to the right channels
+		sendRequestToChannel(request, groupName);
+	}
+
+	/**
 	 * Send a request to a channel<br>
 	 * <b>It's highly recommended to call this method on a different thread</b>
 	 *
 	 * @param request   Request to forward
 	 * @param groupName Name of the group of the request
 	 */
-	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void forwardRequest(Request request, String groupName) {
+	private void sendRequestToChannel(Request request, String groupName) {
 		List<Channel> channels = channelService.findAll();
 
 		for (Channel channel : channels) {
 
 			// check that the request matches with the channel rules
 			if (requestMatchRules(channel, request)) {
-
-				// check unique key
-				ChannelRequest channelRequest = channelRequestService.findByUniqueKey(channel.getId(),
-						request.getId().getGroupId(), request.getId().getMessageId());
-
-				// delete request if exists
-				if (channelRequest != null) {
-					deleteChannelRequest(channelRequest);
-				}
 
 				// forward request
 				Long messageId = forwardRequest(channel.getId(), request, groupName);
@@ -172,6 +179,13 @@ public class ChannelManagementService {
 		SendResponse sendResponse = bot.execute(sendMessage);
 		if (sendResponse.isOk()) {
 			messageId = sendResponse.message().messageId().longValue();
+
+			LOGGER.debug("Request {} forwarded to channel {} successfully with messageId {}", request.getId(),
+					channelId, messageId);
+		} else {
+			String responseDescription = sendResponse.description();
+			LOGGER.error("Error forwarding request {} to channel {}: {}", request.getId(), channelId,
+					responseDescription);
 		}
 
 		return messageId;
@@ -188,22 +202,6 @@ public class ChannelManagementService {
 		inlineKeyboard.addRow(requestButton, actionsButton);
 
 		return inlineKeyboard;
-	}
-
-	/**
-	 * Send a request updated to a channel<br>
-	 * <b>It's highly recommended to call this method on a different thread</b>
-	 *
-	 * @param request   Request to update
-	 * @param groupName Name of the group of the request
-	 */
-	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void updateRequest(Request request, String groupName) {
-		// delete request from all channels
-		deleteRequest(request.getId());
-
-		// forward request again to the right channels
-		forwardRequest(request, groupName);
 	}
 
 	/**
@@ -228,7 +226,15 @@ public class ChannelManagementService {
 		Long channelId = channelRequest.getId().getChannelId();
 		Long messageId = channelRequest.getId().getMessageId();
 
-		bot.execute(new DeleteMessage(channelId, messageId.intValue()));
+		BaseResponse response = bot.execute(new DeleteMessage(channelId, messageId.intValue()));
+
+		if (response.isOk()) {
+			LOGGER.debug("Request {} deleted successfully", channelRequest.getId());
+		} else {
+			String responseDescription = response.description();
+			LOGGER.error("Error deleting request {} from channel {} with errors {}", messageId, channelId,
+					responseDescription);
+		}
 
 		// delete record
 		channelRequestService.delete(channelId, messageId);

@@ -46,8 +46,7 @@ public class RequestManagementService {
 	private static final long HOURS_BEFORE_REPEATING_REQUEST = 48l;
 
 	private static final int DELETE_CHANNEL_TIMEOUT = 10;
-	private static final int UPDATE_CHANNEL_TIMEOUT = 20;
-	private static final int INSERT_CHANNEL_TIMEOUT = 100;
+	private static final int FORWARD_CHANNEL_TIMEOUT = 10;
 
 	@Autowired
 	private RequestService requestService;
@@ -302,8 +301,8 @@ public class RequestManagementService {
 		Request update = requestService.update(messageId, group.getId(), link, content, format, source, otherTags,
 				requestDate);
 
-		schedulerService.schedule(() -> channelManagementService.updateRequest(update, group.getName()),
-				UPDATE_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
+		schedulerService.schedule(() -> channelManagementService.forwardRequest(update, group.getName()),
+				FORWARD_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
 	}
 
 	private void insertRequest(Long messageId, Group group, String link, String content, Format format, Source source,
@@ -312,7 +311,7 @@ public class RequestManagementService {
 				userId, requestDate);
 
 		schedulerService.schedule(() -> channelManagementService.forwardRequest(insert, group.getName()),
-				INSERT_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
+				FORWARD_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
 	}
 
 	private RequestResult repeatRequest(Request request, Group group, Long newMessageId, Long userId, String link,
@@ -453,8 +452,8 @@ public class RequestManagementService {
 	public void updateStatus(Request request, Group group, RequestStatus status) {
 		Request update = requestService.updateStatus(request, status);
 
-		schedulerService.schedule(() -> channelManagementService.updateRequest(update, group.getName()),
-				UPDATE_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
+		schedulerService.schedule(() -> channelManagementService.forwardRequest(update, group.getName()),
+				FORWARD_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
 	}
 
 }

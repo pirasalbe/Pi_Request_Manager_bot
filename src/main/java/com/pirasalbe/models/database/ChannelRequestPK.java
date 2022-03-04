@@ -64,4 +64,9 @@ public class ChannelRequestPK implements Serializable {
 		return Objects.equals(channelId, other.channelId) && Objects.equals(messageId, other.messageId);
 	}
 
+	@Override
+	public String toString() {
+		return "ChannelRequestPK [channelId=" + channelId + ", messageId=" + messageId + "]";
+	}
+
 }

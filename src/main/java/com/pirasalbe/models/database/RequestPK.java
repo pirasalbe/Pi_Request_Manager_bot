@@ -64,4 +64,9 @@ public class RequestPK implements Serializable {
 		return Objects.equals(groupId, other.groupId) && Objects.equals(messageId, other.messageId);
 	}
 
+	@Override
+	public String toString() {
+		return "RequestPK [messageId=" + messageId + ", groupId=" + groupId + "]";
+	}
+
 }
