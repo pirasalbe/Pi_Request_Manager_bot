@@ -33,6 +33,8 @@ import com.pirasalbe.models.request.Source;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.ChannelManagementService;
 import com.pirasalbe.services.GroupService;
+import com.pirasalbe.services.RequestManagementService;
+import com.pirasalbe.services.telegram.TelegramBotService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
 import com.pirasalbe.utils.TelegramConditionUtils;
 import com.pirasalbe.utils.TelegramUtils;
@@ -62,6 +64,12 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 
 	@Autowired
 	private GroupService groupService;
+
+	@Autowired
+	private RequestManagementService requestManagementService;
+
+	@Autowired
+	private TelegramBotService telegramBotService;
 
 	public TelegramHandler getId() {
 		return (bot, update) -> {
@@ -376,6 +384,34 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 		}
 
 		return values;
+	}
+
+	public TelegramHandler refreshChannel() {
+		return (bot, update) -> {
+			Long channelId = getChannelIdFromText(update);
+			Long chatId = TelegramUtils.getChatId(update);
+
+			SendMessage sendMessage = new SendMessage(chatId, "Refresh in progress");
+			sendMessage.replyToMessageId(update.message().messageId());
+			SendResponse sendResponse = bot.execute(sendMessage);
+
+			List<Group> groups = groupService.findAll();
+			schedulerService.schedule(() -> refreshChannel(chatId, sendResponse, channelId, groups), 10,
+					TimeUnit.MILLISECONDS);
+
+		};
+	}
+
+	private void refreshChannel(Long chatId, SendResponse sendResponse, Long channelId, List<Group> groups) {
+		requestManagementService.refreshChannel(channelId, groups);
+
+		SendMessage sendMessage = new SendMessage(chatId, "Refresh completed");
+		if (sendResponse.isOk()) {
+			sendMessage.replyToMessageId(sendResponse.message().messageId());
+		}
+
+		telegramBotService.getBot().execute(sendMessage);
+
 	}
 
 }

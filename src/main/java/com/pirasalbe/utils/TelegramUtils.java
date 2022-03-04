@@ -1,5 +1,8 @@
 package com.pirasalbe.utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.MessageEntity;
 import com.pengrad.telegrambot.model.MessageEntity.Type;
@@ -13,6 +16,8 @@ import com.pengrad.telegrambot.model.User;
  *
  */
 public class TelegramUtils {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(TelegramUtils.class);
 
 	private TelegramUtils() {
 		super();
@@ -264,6 +269,35 @@ public class TelegramUtils {
 		}
 
 		return message;
+	}
+
+	/**
+	 * Checks the request limit and sleep if needed
+	 *
+	 * @param requestCount Request done till now
+	 * @param newRequest   If the new request was successful
+	 * @return The new request count
+	 */
+	public static int checkRequestLimitSameGroup(int requestCount, boolean newRequest) {
+		int result = requestCount;
+
+		// if tr
+		if (newRequest) {
+			result = requestCount + 1;
+		}
+
+		// if request count greater then the limit, sleep and reset count
+		if (result >= 15) {
+			LOGGER.info("Cooldown due to the Telegram limits");
+			try {
+				Thread.sleep(90000);
+				result = 0;
+			} catch (InterruptedException e) {
+				LOGGER.warn("Could not sleep to prevent request limit", e);
+			}
+		}
+
+		return result;
 	}
 
 }

@@ -48,6 +48,10 @@ public class ChannelRequestService {
 		return repository.findByGroupId(requestGroupId);
 	}
 
+	public List<ChannelRequest> findByChannelId(Long channelId) {
+		return repository.findByChannelId(channelId);
+	}
+
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void insert(Long channelId, Long messageId, RequestPK requestId) {
 		// insert

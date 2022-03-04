@@ -32,4 +32,7 @@ public interface ChannelRequestRepository extends JpaRepository<ChannelRequest, 
 
 	@Query("SELECT r FROM ChannelRequest r WHERE r.requestGroupId = :requestGroupId")
 	List<ChannelRequest> findByGroupId(@Param("requestGroupId") Long requestGroupId);
+
+	@Query("SELECT r FROM ChannelRequest r WHERE r.id.channelId = :channelId")
+	List<ChannelRequest> findByChannelId(@Param("channelId") Long channelId);
 }

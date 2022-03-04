@@ -2,12 +2,15 @@ package com.pirasalbe.services;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -71,7 +74,7 @@ public class RequestManagementService {
 
 		// delete forwarded messages
 		for (Request request : oldRequests) {
-			channelManagementService.deleteRequest(request.getId());
+			channelManagementService.deleteForwardedRequest(request.getId());
 		}
 	}
 
@@ -384,7 +387,7 @@ public class RequestManagementService {
 	public void deleteGroupRequests(Long groupId) {
 		requestService.deleteByGroupId(groupId);
 
-		schedulerService.schedule(() -> channelManagementService.deleteRequestByGroupId(groupId),
+		schedulerService.schedule(() -> channelManagementService.deleteForwardedRequestsByGroupId(groupId),
 				DELETE_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
 	}
 
@@ -394,7 +397,8 @@ public class RequestManagementService {
 
 		if (deleted) {
 			// delete forwarded messages
-			schedulerService.schedule(() -> channelManagementService.deleteRequest(new RequestPK(messageId, groupId)),
+			schedulerService.schedule(
+					() -> channelManagementService.deleteForwardedRequest(new RequestPK(messageId, groupId)),
 					DELETE_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
 		}
 
@@ -454,6 +458,40 @@ public class RequestManagementService {
 
 		schedulerService.schedule(() -> channelManagementService.forwardRequest(update, group.getName()),
 				FORWARD_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void refreshChannel(Long channelId, List<Group> groups) {
+		LOGGER.info("Refresh {} started", channelId);
+
+		int page = 0;
+		int size = 100;
+		boolean keep = true;
+
+		// groups list to map
+		Map<Long, String> groupNames = groups.stream().collect(Collectors.toMap(Group::getId, Group::getName));
+
+		// get all requests paginated
+		while (keep) {
+			LOGGER.info("Refresh {} page {}", channelId, page);
+			Page<Request> requestPage = requestService.findAll(page, size);
+
+			// forward all requests
+			List<Request> requests = requestPage.toList();
+
+			int requestCount = 0;
+			for (Request request : requests) {
+				String groupName = groupNames.get(request.getId().getGroupId());
+				boolean forwardRequest = channelManagementService.forwardRequest(request, groupName, channelId);
+
+				requestCount = TelegramUtils.checkRequestLimitSameGroup(requestCount, forwardRequest);
+			}
+
+			keep = requestPage.hasNext();
+			page++;
+		}
+
+		LOGGER.info("Refresh {} ended", channelId);
 	}
 
 }

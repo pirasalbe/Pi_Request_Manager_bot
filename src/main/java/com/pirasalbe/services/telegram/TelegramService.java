@@ -287,7 +287,9 @@ public class TelegramService {
 						.onCallbackQuery(TelegramChannelCommandHandlerService.COMMAND_CONFIGURE, Condition.STARTS_WITH),
 				channelRoleCondition), channelCommandHandlerService.configuration());
 
-		// TODO
+		bot.register(Arrays.asList(privateChatCondition,
+				commandConditionFactory.onCommand(TelegramChannelCommandHandlerService.COMMAND_REFRESH),
+				channelRoleCondition), channelCommandHandlerService.refreshChannel());
 	}
 
 	private void registerRequestsHandlers() {

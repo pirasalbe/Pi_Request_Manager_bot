@@ -99,7 +99,7 @@ public class ChannelManagementService {
 	}
 
 	/**
-	 * Send a request updated to a channel<br>
+	 * Send a request updated to the channels<br>
 	 * <b>It's highly recommended to call this method on a different thread</b>
 	 *
 	 * @param request   Request to update
@@ -108,10 +108,37 @@ public class ChannelManagementService {
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void forwardRequest(Request request, String groupName) {
 		// delete request from all channels
-		deleteRequest(request.getId());
+		deleteForwardedRequest(request.getId());
 
-		// forward request again to the right channels
-		sendRequestToChannel(request, groupName);
+		// forward request to the right channels
+		forwardRequestToChannels(request, groupName);
+	}
+
+	/**
+	 * Send a request updated to a channel<br>
+	 * <b>It's highly recommended to call this method on a different thread</b>
+	 *
+	 * @param request   Request to update
+	 * @param groupName Name of the group of the request
+	 * @return True if the message was forwarded
+	 */
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public boolean forwardRequest(Request request, String groupName, Long channelId) {
+		// delete request from the channel
+		deleteForwardedRequest(request.getId(), channelId);
+
+		// forward request to the channel
+		return forwardRequestToChannel(request, groupName, channelId);
+	}
+
+	private void deleteForwardedRequest(RequestPK requestId, Long channelId) {
+		// find all channels with the request
+		ChannelRequest channelRequest = channelRequestService.findByUniqueKey(channelId, requestId.getGroupId(),
+				requestId.getMessageId());
+
+		if (channelRequest != null) {
+			deleteChannelRequest(channelRequest);
+		}
 	}
 
 	/**
@@ -121,27 +148,34 @@ public class ChannelManagementService {
 	 * @param request   Request to forward
 	 * @param groupName Name of the group of the request
 	 */
-	private void sendRequestToChannel(Request request, String groupName) {
+	private void forwardRequestToChannels(Request request, String groupName) {
 		List<Channel> channels = channelService.findAll();
 
 		for (Channel channel : channels) {
-
-			// check that the request matches with the channel rules
-			if (requestMatchRules(channel, request)) {
-
-				// forward request
-				Long messageId = forwardRequest(channel.getId(), request, groupName);
-
-				// update channel request table
-				if (messageId != null) {
-					channelRequestService.insert(channel.getId(), messageId, request.getId());
-				}
-			}
+			forwardRequestToChannel(request, groupName, channel.getId());
 		}
 	}
 
-	private boolean requestMatchRules(Channel channel, Request request) {
-		Long channelId = channel.getId();
+	private boolean forwardRequestToChannel(Request request, String groupName, Long channelId) {
+		boolean forwarded = false;
+
+		// check that the request matches with the channel rules
+		if (requestMatchRules(channelId, request)) {
+
+			// forward request
+			Long messageId = forwardRequest(channelId, request, groupName);
+
+			// update channel request table
+			if (messageId != null) {
+				channelRequestService.insert(channelId, messageId, request.getId());
+				forwarded = true;
+			}
+		}
+
+		return forwarded;
+	}
+
+	private boolean requestMatchRules(Long channelId, Request request) {
 
 		// check group
 		return existsRuleWithValue(channelId, ChannelRuleType.GROUP, request.getId().getGroupId()) &&
@@ -215,11 +249,15 @@ public class ChannelManagementService {
 	 * @param request Request to delete
 	 */
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void deleteRequest(RequestPK requestId) {
+	public void deleteForwardedRequest(RequestPK requestId) {
 		// find all channels with the request
 		List<ChannelRequest> channelRequests = channelRequestService.findByRequest(requestId.getGroupId(),
 				requestId.getMessageId());
 
+		deleteChannelRequests(channelRequests);
+	}
+
+	private void deleteChannelRequests(List<ChannelRequest> channelRequests) {
 		for (ChannelRequest channelRequest : channelRequests) {
 			deleteChannelRequest(channelRequest);
 		}
@@ -245,13 +283,19 @@ public class ChannelManagementService {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void deleteRequestByGroupId(Long groupId) {
-		// find all channels with the request
+	public void deleteForwardedRequestsByGroupId(Long groupId) {
+		// find all request of a group
 		List<ChannelRequest> channelRequests = channelRequestService.findByGroupId(groupId);
 
-		for (ChannelRequest channelRequest : channelRequests) {
-			deleteChannelRequest(channelRequest);
-		}
+		deleteChannelRequests(channelRequests);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void deleteForwardedRequestsByChannelId(Long channelId) {
+		// find all channels requests
+		List<ChannelRequest> channelRequests = channelRequestService.findByChannelId(channelId);
+
+		deleteChannelRequests(channelRequests);
 	}
 
 }
