@@ -76,6 +76,10 @@ public class ChannelManagementService {
 		}
 	}
 
+	public List<ChannelRule> findChannelRules(Long channelId) {
+		return channelRuleService.findByChannelId(channelId);
+	}
+
 	public List<ChannelRule> findChannelRulesByType(Long channelId, ChannelRuleType type) {
 		return channelRuleService.findByChannelIdAndType(channelId, type);
 	}

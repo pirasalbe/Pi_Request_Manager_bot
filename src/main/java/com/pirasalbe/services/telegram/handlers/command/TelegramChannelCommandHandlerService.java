@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -149,13 +150,7 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 
 					sendStatusConfiguration(bot, chatId, channelId);
 				} else {
-					StringBuilder stringBuilder = new StringBuilder();
-					stringBuilder.append("Configurations saved.\n");
-					stringBuilder.append("Send <code>").append(COMMAND_REFRESH).append(" ").append(channelId)
-							.append("</code> to reload the requests.");
-					SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
-					sendMessage.parseMode(ParseMode.HTML);
-					bot.execute(sendMessage);
+					sendConfigurationEnd(bot, chatId, channelId);
 				}
 			}
 		};
@@ -331,6 +326,49 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 	private void manageStatusCondition(Long channelId, String text) {
 		Optional<RequestStatus> optional = TelegramConditionUtils.getStatus(text);
 		manageCondition(channelId, ChannelRuleType.STATUS, optional);
+	}
+
+	private void sendConfigurationEnd(TelegramBot bot, Long chatId, Long channelId) {
+		// notify end of configuration to user
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.append("Configurations saved.\n");
+		stringBuilder.append("Send <code>").append(COMMAND_REFRESH).append(" ").append(channelId)
+				.append("</code> to reload the requests.");
+		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+		sendMessage.parseMode(ParseMode.HTML);
+		bot.execute(sendMessage);
+
+		// send configuration to the channel
+		List<ChannelRule> channelRules = channelManagementService.findChannelRules(channelId);
+
+		StringBuilder configurationBuilder = new StringBuilder();
+		configurationBuilder.append("<b>Forwarding configurations</b>\n\n");
+		configurationBuilder.append("Groups: <i>").append(getRulesByType(channelRules, ChannelRuleType.GROUP))
+				.append("</i>\n");
+		configurationBuilder.append("Formats: <i>").append(getRulesByType(channelRules, ChannelRuleType.FORMAT))
+				.append("</i>\n");
+		configurationBuilder.append("Sources: <i>").append(getRulesByType(channelRules, ChannelRuleType.SOURCE))
+				.append("</i>\n");
+		configurationBuilder.append("Statuses: <i>").append(getRulesByType(channelRules, ChannelRuleType.STATUS))
+				.append("</i>");
+		SendMessage sendConfigurationMessage = new SendMessage(channelId, configurationBuilder.toString());
+		sendConfigurationMessage.parseMode(ParseMode.HTML);
+		bot.execute(sendConfigurationMessage);
+	}
+
+	private String getRulesByType(List<ChannelRule> channelRules, ChannelRuleType type) {
+		List<String> filteredRuleValues = channelRules.stream().filter(r -> r.getId().getType().equals(type))
+				.map(r -> r.getId().getValue()).collect(Collectors.toList());
+
+		String values = null;
+
+		if (filteredRuleValues.isEmpty()) {
+			values = "all";
+		} else {
+			values = String.join(", ", filteredRuleValues);
+		}
+
+		return values;
 	}
 
 }
