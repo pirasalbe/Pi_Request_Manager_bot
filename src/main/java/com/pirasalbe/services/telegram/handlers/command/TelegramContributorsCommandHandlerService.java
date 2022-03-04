@@ -482,7 +482,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				RequestStatus requestStatus = status.orElse(RequestStatus.PENDING);
 				List<Request> requests = requestService.findRequests(group, requestStatus, source, format, descendent);
 
-				String title = getTitle(requestStatus, format, source, descendent);
+				String title = getTitle(requestStatus, group, format, source, descendent);
 
 				if (requests.isEmpty()) {
 					SendMessage sendMessage = new SendMessage(chatId, title + "No requests found");
@@ -750,10 +750,19 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		};
 	}
 
-	private String getTitle(RequestStatus requestStatus, Optional<Format> format, Optional<Source> source,
-			boolean descendent) {
+	private String getTitle(RequestStatus requestStatus, Optional<Long> group, Optional<Format> format,
+			Optional<Source> source, boolean descendent) {
 		StringBuilder title = new StringBuilder();
 		title.append("<b>Requests ").append(requestStatus.getDescription()).append("</b>");
+		if (group.isPresent()) {
+			Long groupId = group.get();
+			Optional<Group> groupOptional = groupService.findById(groupId);
+			title.append("\nGroup [").append(groupOptional.orElseThrow().getName()).append(" (<code>").append(groupId)
+					.append("</code>)]");
+		}
+		if (format.isPresent()) {
+			title.append("\nFormat [").append(format.get()).append("]");
+		}
 		if (format.isPresent()) {
 			title.append("\nFormat [").append(format.get()).append("]");
 		}
