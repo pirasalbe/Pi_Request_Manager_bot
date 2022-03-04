@@ -664,6 +664,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
 		InlineKeyboardButton requestButton = new InlineKeyboardButton("📚 Request")
 				.url(TelegramUtils.getLink(groupId, messageId));
+		InlineKeyboardButton refreshButton = new InlineKeyboardButton("📝 Refresh")
+				.url(RequestUtils.getActionsLink(configuration.getUsername(), messageId, groupId));
 		InlineKeyboardButton doneButton = new InlineKeyboardButton("✅ Done")
 				.callbackData(callbackBegin + ContributorAction.DONE);
 		InlineKeyboardButton pendingButton = new InlineKeyboardButton("⏳ Pending")
@@ -675,9 +677,11 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		InlineKeyboardButton removeButton = new InlineKeyboardButton("🗑 Remove")
 				.callbackData(callbackBegin + ContributorAction.REMOVE);
 
-		inlineKeyboard.addRow(requestButton, getButton(status, RequestStatus.RESOLVED, doneButton, pendingButton));
-		inlineKeyboard.addRow(getButton(status, RequestStatus.CANCELLED, cancelButton, pendingButton),
-				getButton(status, RequestStatus.OUTSTANDING, outstandingButton, pendingButton), removeButton);
+		inlineKeyboard.addRow(requestButton, refreshButton);
+		inlineKeyboard.addRow(getButton(status, RequestStatus.OUTSTANDING, outstandingButton, pendingButton),
+				getButton(status, RequestStatus.RESOLVED, doneButton, pendingButton));
+		inlineKeyboard.addRow(getButton(status, RequestStatus.CANCELLED, cancelButton, pendingButton), removeButton);
+
 		return inlineKeyboard;
 	}
 
