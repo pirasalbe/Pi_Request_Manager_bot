@@ -465,6 +465,7 @@ public class RequestManagementService {
 
 		int page = 0;
 		int size = 100;
+		int requestCount = 0;
 		boolean keep = true;
 
 		// groups list to map
@@ -478,7 +479,6 @@ public class RequestManagementService {
 			// forward all requests
 			List<Request> requests = requestPage.toList();
 
-			int requestCount = 0;
 			for (Request request : requests) {
 				String groupName = groupNames.get(request.getId().getGroupId());
 				boolean forwardRequest = channelManagementService.syncRequest(request, groupName, channelId);
