@@ -289,13 +289,17 @@ public class ChannelManagementService {
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public boolean syncRequest(Request request, String groupName, Long channelId) {
 		// delete request from the channel
-		deleteRequestIfNotMatching(request, channelId);
+		boolean delete = deleteRequestIfNotMatching(request, channelId);
 
 		// forward request to the channel
-		return forwardRequestToChannel(request, groupName, channelId);
+		boolean forward = forwardRequestToChannel(request, groupName, channelId);
+
+		return delete || forward;
 	}
 
-	private void deleteRequestIfNotMatching(Request request, Long channelId) {
+	private boolean deleteRequestIfNotMatching(Request request, Long channelId) {
+		boolean result = false;
+
 		if (!requestMatchRules(channelId, request)) {
 			RequestPK requestId = request.getId();
 			ChannelRequest channelRequest = channelRequestService.findByUniqueKey(channelId, requestId.getGroupId(),
@@ -303,8 +307,11 @@ public class ChannelManagementService {
 
 			if (channelRequest != null) {
 				deleteChannelRequest(channelRequest);
+				result = true;
 			}
 		}
+
+		return result;
 	}
 
 }

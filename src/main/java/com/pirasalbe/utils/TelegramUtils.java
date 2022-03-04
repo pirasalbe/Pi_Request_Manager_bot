@@ -287,7 +287,7 @@ public class TelegramUtils {
 		}
 
 		// if request count greater then the limit, sleep and reset count
-		if (result >= 15) {
+		if (result >= 10) {
 			LOGGER.info("Cooldown due to the Telegram limits");
 			try {
 				Thread.sleep(120000);
