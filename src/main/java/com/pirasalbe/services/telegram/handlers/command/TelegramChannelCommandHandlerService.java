@@ -19,8 +19,10 @@ import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import com.pengrad.telegrambot.request.GetChat;
+import com.pengrad.telegrambot.request.PinChatMessage;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.GetChatResponse;
+import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.models.ChannelRuleType;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.ChannelRule;
@@ -353,7 +355,12 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 				.append("</i>");
 		SendMessage sendConfigurationMessage = new SendMessage(channelId, configurationBuilder.toString());
 		sendConfigurationMessage.parseMode(ParseMode.HTML);
-		bot.execute(sendConfigurationMessage);
+		SendResponse sendResponse = bot.execute(sendConfigurationMessage);
+
+		if (sendResponse.isOk()) {
+			PinChatMessage pinChatMessage = new PinChatMessage(channelId, sendResponse.message().messageId());
+			bot.execute(pinChatMessage);
+		}
 	}
 
 	private String getRulesByType(List<ChannelRule> channelRules, ChannelRuleType type) {
