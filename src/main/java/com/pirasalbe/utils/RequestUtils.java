@@ -69,6 +69,11 @@ public class RequestUtils {
 			}
 		}
 
+		if (link != null) {
+			// remove params
+			link = link.split("\\?")[0];
+		}
+
 		return link;
 	}
 
