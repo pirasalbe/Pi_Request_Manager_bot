@@ -460,7 +460,6 @@ public class RequestManagementService {
 				FORWARD_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
 	}
 
-	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void refreshChannel(Long channelId, List<Group> groups) {
 		LOGGER.info("Refresh {} started", channelId);
 
@@ -482,7 +481,7 @@ public class RequestManagementService {
 			int requestCount = 0;
 			for (Request request : requests) {
 				String groupName = groupNames.get(request.getId().getGroupId());
-				boolean forwardRequest = channelManagementService.forwardRequest(request, groupName, channelId);
+				boolean forwardRequest = channelManagementService.syncRequest(request, groupName, channelId);
 
 				requestCount = TelegramUtils.checkRequestLimitSameGroup(requestCount, forwardRequest);
 			}

@@ -115,33 +115,6 @@ public class ChannelManagementService {
 	}
 
 	/**
-	 * Send a request updated to a channel<br>
-	 * <b>It's highly recommended to call this method on a different thread</b>
-	 *
-	 * @param request   Request to update
-	 * @param groupName Name of the group of the request
-	 * @return True if the message was forwarded
-	 */
-	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public boolean forwardRequest(Request request, String groupName, Long channelId) {
-		// delete request from the channel
-		deleteForwardedRequest(request.getId(), channelId);
-
-		// forward request to the channel
-		return forwardRequestToChannel(request, groupName, channelId);
-	}
-
-	private void deleteForwardedRequest(RequestPK requestId, Long channelId) {
-		// find all channels with the request
-		ChannelRequest channelRequest = channelRequestService.findByUniqueKey(channelId, requestId.getGroupId(),
-				requestId.getMessageId());
-
-		if (channelRequest != null) {
-			deleteChannelRequest(channelRequest);
-		}
-	}
-
-	/**
 	 * Send a request to a channel<br>
 	 * <b>It's highly recommended to call this method on a different thread</b>
 	 *
@@ -162,13 +135,20 @@ public class ChannelManagementService {
 		// check that the request matches with the channel rules
 		if (requestMatchRules(channelId, request)) {
 
-			// forward request
-			Long messageId = forwardRequest(channelId, request, groupName);
+			// check unique key
+			ChannelRequest channelRequest = channelRequestService.findByUniqueKey(channelId,
+					request.getId().getGroupId(), request.getId().getMessageId());
 
-			// update channel request table
-			if (messageId != null) {
-				channelRequestService.insert(channelId, messageId, request.getId());
-				forwarded = true;
+			// send request if doesn't exists
+			if (channelRequest == null) {
+				// forward request
+				Long messageId = forwardRequest(channelId, request, groupName);
+
+				// update channel request table
+				if (messageId != null) {
+					channelRequestService.insert(channelId, messageId, request.getId());
+					forwarded = true;
+				}
 			}
 		}
 
@@ -296,6 +276,35 @@ public class ChannelManagementService {
 		List<ChannelRequest> channelRequests = channelRequestService.findByChannelId(channelId);
 
 		deleteChannelRequests(channelRequests);
+	}
+
+	/**
+	 * Send a request updated to a channel<br>
+	 * <b>It's highly recommended to call this method on a different thread</b>
+	 *
+	 * @param request   Request to update
+	 * @param groupName Name of the group of the request
+	 * @return True if the message was forwarded
+	 */
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public boolean syncRequest(Request request, String groupName, Long channelId) {
+		// delete request from the channel
+		deleteRequestIfNotMatching(request, channelId);
+
+		// forward request to the channel
+		return forwardRequestToChannel(request, groupName, channelId);
+	}
+
+	private void deleteRequestIfNotMatching(Request request, Long channelId) {
+		if (!requestMatchRules(channelId, request)) {
+			RequestPK requestId = request.getId();
+			ChannelRequest channelRequest = channelRequestService.findByUniqueKey(channelId, requestId.getGroupId(),
+					requestId.getMessageId());
+
+			if (channelRequest != null) {
+				deleteChannelRequest(channelRequest);
+			}
+		}
 	}
 
 }
