@@ -64,14 +64,13 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			+ TelegramConditionUtils.GROUP_CONDITION + "[+-]?[0-9]+";
 	public static final String CONFIRM_CALLBACK = "^" + ContributorAction.CONFIRM + " " + MESSAGE_INFO_CALLBACK
 			+ " action=[a-zA-Z]+$";
-	public static final String CHANGE_STATUS_CALLBACK = "^(" + ContributorAction.PENDING + "|"
-			+ ContributorAction.OUTSTANDING + "|" + ContributorAction.DONE + "|" + ContributorAction.CANCEL + "|"
-			+ ContributorAction.REMOVE + ") " + MESSAGE_INFO_CALLBACK + " "
-			+ TelegramConditionUtils.REFRESH_SHOW_CONDITION + "[0-9]+" + "$";
+	public static final String CHANGE_STATUS_CALLBACK = "^(" + ContributorAction.PENDING + "|" + ContributorAction.PAUSE
+			+ "|" + ContributorAction.DONE + "|" + ContributorAction.CANCEL + "|" + ContributorAction.REMOVE + ") "
+			+ MESSAGE_INFO_CALLBACK + " " + TelegramConditionUtils.REFRESH_SHOW_CONDITION + "[0-9]+" + "$";
 
 	public static final String COMMAND_SHOW = "/show";
 	public static final String COMMAND_PENDING = "/pending";
-	public static final String COMMAND_OUTSTANDING = "/outstanding";
+	public static final String COMMAND_PAUSE = "/pause";
 	public static final String COMMAND_CANCEL = "/cancel";
 	public static final String COMMAND_REMOVE = "/remove";
 	public static final String COMMAND_DONE = "/done";
@@ -137,7 +136,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		};
 	}
 
-	public TelegramHandler markOutstanding() {
+	public TelegramHandler markPaused() {
 		return (bot, update) -> {
 			Long chatId = TelegramUtils.getChatId(update);
 
@@ -146,12 +145,12 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (optional.isPresent()) {
 				Message message = update.message().replyToMessage();
 
-				boolean success = requestManagementService.markOutstanding(message, optional.get());
+				boolean success = requestManagementService.markPaused(message, optional.get());
 
 				// send a message to notify operation
 				String link = TelegramUtils.getLink(message);
 				StringBuilder stringBuilder = new StringBuilder();
-				stringBuilder.append(requestStatusMessage(link, success, "marked as outstanding"));
+				stringBuilder.append(requestStatusMessage(link, success, "marked as paused"));
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
 
@@ -240,7 +239,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			result = deleteRequest ? "Request removed" : REQUEST_NOT_FOUND;
 
 		} else if (action == ContributorAction.CANCEL || action == ContributorAction.DONE
-				|| action == ContributorAction.OUTSTANDING || action == ContributorAction.PENDING) {
+				|| action == ContributorAction.PAUSE || action == ContributorAction.PENDING) {
 
 			result = changeRequestStatus(action, messageId, groupId);
 
@@ -262,8 +261,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		case DONE:
 			newStatus = RequestStatus.RESOLVED;
 			break;
-		case OUTSTANDING:
-			newStatus = RequestStatus.OUTSTANDING;
+		case PAUSE:
+			newStatus = RequestStatus.PAUSED;
 			break;
 		case PENDING:
 		default:
@@ -670,15 +669,15 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				.callbackData(callbackBegin + ContributorAction.DONE);
 		InlineKeyboardButton pendingButton = new InlineKeyboardButton("⏳ Pending")
 				.callbackData(callbackBegin + ContributorAction.PENDING);
-		InlineKeyboardButton outstandingButton = new InlineKeyboardButton("⏸ Outstanding")
-				.callbackData(callbackBegin + ContributorAction.OUTSTANDING);
+		InlineKeyboardButton pauseButton = new InlineKeyboardButton("⏸ Pause")
+				.callbackData(callbackBegin + ContributorAction.PAUSE);
 		InlineKeyboardButton cancelButton = new InlineKeyboardButton("✖️ Cancel")
 				.callbackData(callbackBegin + ContributorAction.CANCEL);
 		InlineKeyboardButton removeButton = new InlineKeyboardButton("🗑 Remove")
 				.callbackData(callbackBegin + ContributorAction.REMOVE);
 
 		inlineKeyboard.addRow(requestButton, refreshButton);
-		inlineKeyboard.addRow(getButton(status, RequestStatus.OUTSTANDING, outstandingButton, pendingButton),
+		inlineKeyboard.addRow(getButton(status, RequestStatus.PAUSED, pauseButton, pendingButton),
 				getButton(status, RequestStatus.RESOLVED, doneButton, pendingButton));
 		inlineKeyboard.addRow(getButton(status, RequestStatus.CANCELLED, cancelButton, pendingButton), removeButton);
 

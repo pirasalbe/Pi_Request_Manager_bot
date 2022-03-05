@@ -355,13 +355,12 @@ public class TelegramService {
 						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
 				contributorsCommandHandlerService.markPending());
 
-		// outstanding
+		// pause
 		bot.register(
 				Arrays.asList(groupChatCondition,
-						commandConditionFactory
-								.onCommand(TelegramContributorsCommandHandlerService.COMMAND_OUTSTANDING),
+						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_PAUSE),
 						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
-				contributorsCommandHandlerService.markOutstanding());
+				contributorsCommandHandlerService.markPaused());
 
 		// cancel
 		bot.register(Arrays.asList(groupChatCondition,

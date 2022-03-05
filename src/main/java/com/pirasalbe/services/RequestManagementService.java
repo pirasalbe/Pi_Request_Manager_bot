@@ -411,8 +411,8 @@ public class RequestManagementService {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public boolean markOutstanding(Message message, Group group) {
-		return updateStatus(message, group, RequestStatus.OUTSTANDING);
+	public boolean markPaused(Message message, Group group) {
+		return updateStatus(message, group, RequestStatus.PAUSED);
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
