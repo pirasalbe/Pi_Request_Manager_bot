@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -353,8 +354,8 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 
 		StringBuilder configurationBuilder = new StringBuilder();
 		configurationBuilder.append("<b>Forwarding configurations</b>\n\n");
-		configurationBuilder.append("Groups: <i>").append(getRulesByType(channelRules, ChannelRuleType.GROUP))
-				.append("</i>\n");
+		configurationBuilder.append("Groups: <i>").append(getRulesByType(channelRules, ChannelRuleType.GROUP,
+				s -> groupService.findById(Long.parseLong(s)).orElseThrow().getName())).append("</i>\n");
 		configurationBuilder.append("Formats: <i>").append(getRulesByType(channelRules, ChannelRuleType.FORMAT))
 				.append("</i>\n");
 		configurationBuilder.append("Sources: <i>").append(getRulesByType(channelRules, ChannelRuleType.SOURCE))
@@ -372,8 +373,13 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 	}
 
 	private String getRulesByType(List<ChannelRule> channelRules, ChannelRuleType type) {
+		return getRulesByType(channelRules, type, s -> s);
+	}
+
+	private String getRulesByType(List<ChannelRule> channelRules, ChannelRuleType type,
+			UnaryOperator<String> valueMapper) {
 		List<String> filteredRuleValues = channelRules.stream().filter(r -> r.getId().getType().equals(type))
-				.map(r -> r.getId().getValue()).collect(Collectors.toList());
+				.map(r -> valueMapper.apply(r.getId().getValue())).collect(Collectors.toList());
 
 		String values = null;
 
