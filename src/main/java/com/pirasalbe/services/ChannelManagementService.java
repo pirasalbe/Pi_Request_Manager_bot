@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pengrad.telegrambot.TelegramBot;
-import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.DeleteMessage;
@@ -26,7 +25,6 @@ import com.pirasalbe.models.database.Request;
 import com.pirasalbe.models.database.RequestPK;
 import com.pirasalbe.services.telegram.TelegramBotService;
 import com.pirasalbe.utils.RequestUtils;
-import com.pirasalbe.utils.TelegramUtils;
 
 /**
  * Service that manages the channels
@@ -188,8 +186,8 @@ public class ChannelManagementService {
 		sendMessage.parseMode(ParseMode.HTML);
 		sendMessage.disableWebPagePreview(true);
 
-		InlineKeyboardMarkup inlineKeyboard = getRequestKeyboard(request.getId().getGroupId(),
-				request.getId().getMessageId());
+		InlineKeyboardMarkup inlineKeyboard = RequestUtils.getRequestKeyboard(configuration.getUsername(),
+				request.getId().getGroupId(), request.getId().getMessageId(), request.getStatus(), "⚙️ Actions in PM");
 
 		sendMessage.replyMarkup(inlineKeyboard);
 
@@ -207,19 +205,6 @@ public class ChannelManagementService {
 		}
 
 		return messageId;
-	}
-
-	private InlineKeyboardMarkup getRequestKeyboard(Long groupId, Long messageId) {
-		InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
-
-		InlineKeyboardButton requestButton = new InlineKeyboardButton("📚 Request")
-				.url(TelegramUtils.getLink(groupId, messageId));
-		InlineKeyboardButton actionsButton = new InlineKeyboardButton("⚙️ Actions")
-				.url(RequestUtils.getActionsLink(configuration.getUsername(), messageId, groupId));
-
-		inlineKeyboard.addRow(requestButton, actionsButton);
-
-		return inlineKeyboard;
 	}
 
 	/**

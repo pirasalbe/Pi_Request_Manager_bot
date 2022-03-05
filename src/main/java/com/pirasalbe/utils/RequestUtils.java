@@ -3,13 +3,18 @@ package com.pirasalbe.utils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.MessageEntity;
 import com.pengrad.telegrambot.model.MessageEntity.Type;
+import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
+import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.request.GetChatMember;
 import com.pengrad.telegrambot.response.GetChatMemberResponse;
+import com.pirasalbe.models.ContributorAction;
 import com.pirasalbe.models.database.Request;
+import com.pirasalbe.models.request.RequestStatus;
 import com.pirasalbe.models.request.Source;
 
 /**
@@ -251,6 +256,95 @@ public class RequestUtils {
 		}
 
 		return user.replace(".", "");
+	}
+
+	public static InlineKeyboardMarkup getRequestKeyboard(String username, Long groupId, Long messageId,
+			RequestStatus status, String refreshButtonText) {
+		InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
+
+		InlineKeyboardButton requestButton = new InlineKeyboardButton("📚 Request")
+				.url(TelegramUtils.getLink(groupId, messageId));
+		InlineKeyboardButton refreshButton = new InlineKeyboardButton(refreshButtonText)
+				.url(RequestUtils.getActionsLink(username, messageId, groupId));
+
+		inlineKeyboard.addRow(requestButton, refreshButton);
+
+		InlineKeyboardButton pendingButton = new InlineKeyboardButton("⏳ Pending")
+				.callbackData(RequestUtils.getActionCallback(messageId, groupId, ContributorAction.PENDING));
+
+		InlineKeyboardButton doneButton = new InlineKeyboardButton("✅ Done")
+				.callbackData(RequestUtils.getActionCallback(messageId, groupId, ContributorAction.DONE));
+		InlineKeyboardButton pauseButton = new InlineKeyboardButton("⏸ Pause")
+				.callbackData(RequestUtils.getActionCallback(messageId, groupId, ContributorAction.PAUSE));
+
+		inlineKeyboard.addRow(getButton(status, RequestStatus.PAUSED, pauseButton, pendingButton),
+				getButton(status, RequestStatus.RESOLVED, doneButton, pendingButton));
+
+		InlineKeyboardButton cancelButton = new InlineKeyboardButton("✖️ Cancel")
+				.callbackData(RequestUtils.getActionCallback(messageId, groupId, ContributorAction.CANCEL));
+		InlineKeyboardButton removeButton = new InlineKeyboardButton("🗑 Remove")
+				.callbackData(RequestUtils.getConfirmActionCallback(messageId, groupId, ContributorAction.REMOVE));
+
+		inlineKeyboard.addRow(getButton(status, RequestStatus.CANCELLED, cancelButton, pendingButton), removeButton);
+
+		return inlineKeyboard;
+	}
+
+	/**
+	 * Get the right button. Pending if status == otherButtonStatus, otherwise
+	 * otherButton
+	 *
+	 * @param status            Status of the request
+	 * @param otherButtonStatus Status of the button
+	 * @param otherButton       Button
+	 * @param pendingButton     Pending button
+	 * @return Button
+	 */
+	private static InlineKeyboardButton getButton(RequestStatus status, RequestStatus otherButtonStatus,
+			InlineKeyboardButton otherButton, InlineKeyboardButton pendingButton) {
+		return status == otherButtonStatus ? pendingButton : otherButton;
+	}
+
+	private static String getConfirmActionCallback(Long messageId, Long groupId, ContributorAction action) {
+		StringBuilder callbackBuilder = new StringBuilder();
+
+		callbackBuilder.append(ContributorAction.CONFIRM);
+		callbackBuilder.append(" ");
+		callbackBuilder.append(getCallbackRequestData(messageId, groupId));
+		callbackBuilder.append(" ");
+		callbackBuilder.append(TelegramConditionUtils.ACTION_CONDITION).append(action);
+
+		return callbackBuilder.toString();
+	}
+
+	private static String getActionCallback(Long messageId, Long groupId, ContributorAction action) {
+		return getActionCallback(messageId, groupId, action, Optional.empty());
+	}
+
+	public static String getActionCallback(Long messageId, Long groupId, ContributorAction action,
+			Optional<Long> refreshMessage) {
+		StringBuilder callbackBuilder = new StringBuilder();
+
+		callbackBuilder.append(action);
+		callbackBuilder.append(" ");
+		callbackBuilder.append(getCallbackRequestData(messageId, groupId));
+
+		if (refreshMessage.isPresent()) {
+			callbackBuilder.append(" ");
+			callbackBuilder.append(TelegramConditionUtils.REFRESH_SHOW_CONDITION).append(refreshMessage.get());
+		}
+
+		return callbackBuilder.toString();
+	}
+
+	private static String getCallbackRequestData(Long messageId, Long groupId) {
+		StringBuilder callbackReequestDataBuilder = new StringBuilder();
+
+		callbackReequestDataBuilder.append(TelegramConditionUtils.MESSAGE_CONDITION).append(messageId);
+		callbackReequestDataBuilder.append(" ");
+		callbackReequestDataBuilder.append(TelegramConditionUtils.GROUP_CONDITION).append(groupId);
+
+		return callbackReequestDataBuilder.toString();
 	}
 
 }
