@@ -30,6 +30,7 @@ import com.pirasalbe.services.telegram.handlers.command.TelegramGroupsCommandHan
 import com.pirasalbe.services.telegram.handlers.command.TelegramHelpCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramMeCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramSuperAdminCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.request.TelegramBumpRequestHandlerService;
 import com.pirasalbe.services.telegram.handlers.request.TelegramNewRequestHandlerService;
 import com.pirasalbe.services.telegram.handlers.request.TelegramUpdateRequestHandlerService;
 
@@ -92,6 +93,9 @@ public class TelegramService {
 
 	@Autowired
 	private TelegramUpdateRequestHandlerService updateRequestHandlerService;
+
+	@Autowired
+	private TelegramBumpRequestHandlerService bumpRequestHandlerService;
 
 	@Autowired
 	private TelegramContributorsCommandHandlerService contributorsCommandHandlerService;
@@ -293,8 +297,9 @@ public class TelegramService {
 	}
 
 	private void registerRequestsHandlers() {
-		bot.register(newRequestHandlerService.geCondition(), newRequestHandlerService);
-		bot.register(updateRequestHandlerService.geCondition(), updateRequestHandlerService);
+		bot.register(newRequestHandlerService.getCondition(), newRequestHandlerService);
+		bot.register(updateRequestHandlerService.getCondition(), updateRequestHandlerService);
+		bot.register(bumpRequestHandlerService.getCondition(), bumpRequestHandlerService);
 	}
 
 	private void registerContributorsHandlers() {

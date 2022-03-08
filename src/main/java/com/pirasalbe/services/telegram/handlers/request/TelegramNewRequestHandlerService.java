@@ -9,7 +9,6 @@ import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pirasalbe.models.database.Group;
-import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 import com.pirasalbe.utils.DateUtils;
 
 /**
@@ -21,14 +20,15 @@ import com.pirasalbe.utils.DateUtils;
 @Component
 public class TelegramNewRequestHandlerService extends AbstractTelegramRequestHandlerService {
 
-	public TelegramCondition geCondition() {
-		// messages with request
-		return update -> update.message() != null && hasRequestTag(update.message().text());
+	@Override
+	protected Message getMessage(Update update) {
+		return update.message();
 	}
 
 	@Override
 	public void handle(TelegramBot bot, Update update) {
-		Message message = update.message();
+		Message message = getRequestMessage(update);
+
 		Long chatId = message.chat().id();
 
 		LocalDateTime requestTime = DateUtils.integerToLocalDateTime(message.date());
@@ -36,7 +36,7 @@ public class TelegramNewRequestHandlerService extends AbstractTelegramRequestHan
 		// manage only requests from active groups
 		Optional<Group> optional = groupService.findById(chatId);
 		if (optional.isPresent()) {
-			newRequest(bot, message, chatId, requestTime, optional.get());
+			newRequest(bot, message, chatId, message.messageId(), requestTime, optional.get());
 		}
 	}
 

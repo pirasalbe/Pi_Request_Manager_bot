@@ -11,7 +11,6 @@ import com.pengrad.telegrambot.model.Update;
 import com.pirasalbe.models.UpdateRequestAction;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.request.Format;
-import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.RequestUtils;
 
@@ -24,14 +23,14 @@ import com.pirasalbe.utils.RequestUtils;
 @Component
 public class TelegramUpdateRequestHandlerService extends AbstractTelegramRequestHandlerService {
 
-	public TelegramCondition geCondition() {
-		// edit request
-		return update -> update.editedMessage() != null && hasRequestTag(update.editedMessage().text());
+	@Override
+	protected Message getMessage(Update update) {
+		return update.editedMessage();
 	}
 
 	@Override
 	public void handle(TelegramBot bot, Update update) {
-		Message message = update.editedMessage();
+		Message message = getRequestMessage(update);
 
 		Long chatId = message.chat().id();
 
@@ -57,7 +56,7 @@ public class TelegramUpdateRequestHandlerService extends AbstractTelegramRequest
 					// request may or may not exists
 					LocalDateTime requestTime = DateUtils.integerToLocalDateTime(message.editDate());
 
-					newRequest(bot, message, chatId, requestTime, group, content, link);
+					newRequest(bot, message, chatId, message.messageId(), requestTime, group, content, link);
 				}
 			} else {
 				manageIncompleteRequest(bot, message, chatId);
