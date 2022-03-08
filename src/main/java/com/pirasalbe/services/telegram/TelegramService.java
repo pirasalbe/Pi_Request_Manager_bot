@@ -246,12 +246,10 @@ public class TelegramService {
 				commandConditionFactory.onCommand(TelegramGroupsCommandHandlerService.COMMAND_REQUEST_LIMIT),
 				groupRoleCondition), groupsCommandHandlerService.updateRequestLimit());
 
-		bot.register(
-				Arrays.asList(groupChatCondition,
-						commandConditionFactory.onCommand(
-								TelegramGroupsCommandHandlerService.COMMAND_NONENGLISH_AUDIOBOOK_DAYS_WAIT),
-						groupRoleCondition),
-				groupsCommandHandlerService.updateAudiobooksDaysWait());
+		bot.register(Arrays.asList(groupChatCondition,
+				commandConditionFactory
+						.onCommand(TelegramGroupsCommandHandlerService.COMMAND_NONENGLISH_AUDIOBOOK_DAYS_WAIT),
+				groupRoleCondition), groupsCommandHandlerService.updateAudiobooksDaysWait());
 
 		bot.register(Arrays.asList(groupChatCondition,
 				commandConditionFactory.onCommand(
@@ -281,6 +279,10 @@ public class TelegramService {
 		bot.register(Arrays.asList(privateChatCondition,
 				commandConditionFactory.onCommand(TelegramChannelCommandHandlerService.COMMAND_DISABLE),
 				channelRoleCondition), channelCommandHandlerService.disableChannel());
+
+		bot.register(Arrays.asList(privateChatCondition,
+				commandConditionFactory.onCommand(TelegramChannelCommandHandlerService.COMMAND_CONFIGURE_LIST),
+				channelRoleCondition), channelCommandHandlerService.configureChannels());
 
 		bot.register(Arrays.asList(privateChatCondition,
 				commandConditionFactory.onCommand(TelegramChannelCommandHandlerService.COMMAND_CONFIGURE),

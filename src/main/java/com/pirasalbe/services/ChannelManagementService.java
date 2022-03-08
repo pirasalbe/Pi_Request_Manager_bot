@@ -56,6 +56,10 @@ public class ChannelManagementService {
 		this.bot = telegramBotService.getBot();
 	}
 
+	public List<Channel> findAllChannels() {
+		return channelService.findAll();
+	}
+
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void insertIfNotExists(Long id, String name) {
 		if (!channelService.existsById(id)) {

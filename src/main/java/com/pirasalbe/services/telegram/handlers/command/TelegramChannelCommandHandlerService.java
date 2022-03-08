@@ -26,6 +26,7 @@ import com.pengrad.telegrambot.response.GetChatResponse;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.models.ChannelRuleType;
 import com.pirasalbe.models.UserRole;
+import com.pirasalbe.models.database.Channel;
 import com.pirasalbe.models.database.ChannelRule;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.request.Format;
@@ -50,6 +51,7 @@ import com.pirasalbe.utils.TelegramUtils;
 public class TelegramChannelCommandHandlerService extends AbstractTelegramHandlerService {
 
 	public static final String COMMAND_CHANNEL_ID = "/channel_id";
+	public static final String COMMAND_CONFIGURE_LIST = "/configure_channels";
 	public static final String COMMAND_CONFIGURE = "/configure_channel";
 	public static final String COMMAND_DISABLE = "/disable_channel";
 	public static final String COMMAND_REFRESH = "/refresh_channel";
@@ -104,6 +106,36 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 			SendMessage sendMessage = new SendMessage(chatId, "Channel disabled");
 
 			bot.execute(sendMessage);
+		};
+	}
+
+	public TelegramHandler configureChannels() {
+		return (bot, update) -> {
+			Long chatId = TelegramUtils.getChatId(update);
+
+			SendMessage sendMessage = new SendMessage(chatId, "Choose the channel you want to configure");
+			sendMessage.parseMode(ParseMode.HTML);
+
+			// prepare keyboard
+			InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
+
+			// get rules
+			List<Channel> channels = channelManagementService.findAllChannels();
+
+			// prepare buttons
+			for (int i = 0; i < channels.size(); i++) {
+				Channel channel = channels.get(i);
+
+				InlineKeyboardButton button = new InlineKeyboardButton(channel.getName());
+				button.callbackData(getCallback(channel.getId(), TelegramConditionUtils.GROUP_CONDITION));
+
+				inlineKeyboard.addRow(button);
+			}
+
+			sendMessage.replyMarkup(inlineKeyboard);
+
+			bot.execute(sendMessage);
+
 		};
 	}
 
