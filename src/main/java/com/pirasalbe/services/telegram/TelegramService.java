@@ -249,7 +249,7 @@ public class TelegramService {
 		bot.register(
 				Arrays.asList(groupChatCondition,
 						commandConditionFactory.onCommand(
-								TelegramGroupsCommandHandlerService.COMMAND_AUDIOBOOK_DAYS_WAIT),
+								TelegramGroupsCommandHandlerService.COMMAND_NONENGLISH_AUDIOBOOK_DAYS_WAIT),
 						groupRoleCondition),
 				groupsCommandHandlerService.updateAudiobooksDaysWait());
 

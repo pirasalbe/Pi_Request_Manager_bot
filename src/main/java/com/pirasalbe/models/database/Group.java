@@ -116,9 +116,9 @@ public class Group {
 		builder.append("Id: <i>").append(id).append(END_OF_LINE_TO_STRING);
 		builder.append("Name: <i>").append(name).append(END_OF_LINE_TO_STRING);
 		builder.append("Request Limit: <i>").append(requestLimit).append(END_OF_LINE_TO_STRING);
-		builder.append("Days to wait to request a new audiobook: <i>").append(audiobooksDaysWait)
+		builder.append("Days to wait to request a new non-English audiobook: <i>").append(audiobooksDaysWait)
 				.append(END_OF_LINE_TO_STRING);
-		builder.append("Days to wait to request a new english audiobook: <i>").append(englishAudiobooksDaysWait)
+		builder.append("Days to wait to request a new English audiobook: <i>").append(englishAudiobooksDaysWait)
 				.append(END_OF_LINE_TO_STRING);
 		builder.append("Can request ebooks: <i>").append(allowEbooks).append(END_OF_LINE_TO_STRING);
 		builder.append("Can request audiobooks: <i>").append(allowAudiobooks).append(END_OF_LINE_TO_STRING);
