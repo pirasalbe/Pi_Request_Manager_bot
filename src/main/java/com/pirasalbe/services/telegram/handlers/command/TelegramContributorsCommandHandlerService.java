@@ -736,9 +736,6 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		if (format.isPresent()) {
 			title.append("\nFormat [").append(format.get()).append("]");
 		}
-		if (format.isPresent()) {
-			title.append("\nFormat [").append(format.get()).append("]");
-		}
 		if (source.isPresent()) {
 			title.append("\nSource [").append(source.get()).append("]");
 		}
