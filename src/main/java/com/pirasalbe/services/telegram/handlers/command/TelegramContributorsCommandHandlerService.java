@@ -199,7 +199,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				Long messageId = optionalMessageId.get();
 				Long groupId = optionalGroupId.get();
 
-				result = performAction(action, messageId, groupId);
+				result = performAction(bot, action, messageId, groupId);
 
 				if (optionalShowMessageId.isPresent()) {
 					// delete original messsage and send it again
@@ -235,7 +235,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				&& update.callbackQuery().message().chat().type() == Type.Private;
 	}
 
-	private String performAction(ContributorAction action, Long messageId, Long groupId) {
+	private String performAction(TelegramBot bot, ContributorAction action, Long messageId, Long groupId) {
 		String result = null;
 
 		if (action == ContributorAction.REMOVE) {
@@ -243,8 +243,18 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			boolean deleteRequest = requestManagementService.deleteRequest(messageId, groupId);
 			result = deleteRequest ? "Request removed" : REQUEST_NOT_FOUND;
 
-		} else if (action == ContributorAction.CANCEL || action == ContributorAction.DONE
-				|| action == ContributorAction.PAUSE || action == ContributorAction.PENDING) {
+		} else if (action == ContributorAction.DONE) {
+
+			result = changeRequestStatus(action, messageId, groupId);
+
+			SendMessage sendMessage = new SendMessage(groupId,
+					"Hey there 👋 Here's your requested book. Happy Reading/Listening <i>(based on ebook or audiobook)</i>!");
+			sendMessage.parseMode(ParseMode.HTML);
+			sendMessage.replyToMessageId(messageId.intValue());
+			bot.execute(sendMessage);
+
+		} else if (action == ContributorAction.CANCEL || action == ContributorAction.PAUSE
+				|| action == ContributorAction.PENDING) {
 
 			result = changeRequestStatus(action, messageId, groupId);
 
