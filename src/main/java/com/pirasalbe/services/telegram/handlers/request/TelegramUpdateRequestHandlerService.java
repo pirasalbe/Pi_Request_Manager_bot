@@ -11,6 +11,7 @@ import com.pengrad.telegrambot.model.Update;
 import com.pirasalbe.models.UpdateRequestAction;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.request.Format;
+import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.RequestUtils;
 
@@ -26,6 +27,15 @@ public class TelegramUpdateRequestHandlerService extends AbstractTelegramRequest
 	@Override
 	protected Message getMessage(Update update) {
 		return update.editedMessage();
+	}
+
+	@Override
+	public TelegramCondition getCondition() {
+		return update -> super.getCondition().check(update) && !isBotRequest(getRequestMessage(update));
+	}
+
+	private boolean isBotRequest(Message message) {
+		return message.viaBot() != null && (message.forwardFrom() != null && message.forwardFrom().isBot());
 	}
 
 	@Override

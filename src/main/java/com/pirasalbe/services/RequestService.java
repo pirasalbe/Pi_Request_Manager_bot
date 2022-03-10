@@ -123,7 +123,7 @@ public class RequestService {
 
 		Optional<Request> optional = findById(messageId, groupId);
 
-		if (optional.isPresent()) {
+		if (optional.isPresent() && optional.get().getStatus() != RequestStatus.RESOLVED) {
 			Request request = optional.get();
 			request.setLink(link);
 			request.setStatus(RequestStatus.PENDING);
