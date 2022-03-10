@@ -232,12 +232,25 @@ public class RequestUtils {
 		StringBuilder messageBuilder = new StringBuilder();
 
 		messageBuilder.append(request.getContent());
+
 		messageBuilder.append("\n\n[");
 
 		messageBuilder.append("Request by ").append(getUser(bot, request)).append("(<code>").append(request.getUserId())
 				.append("</code>)");
-		messageBuilder.append(" in ").append("#").append(groupName.replace(' ', '_')).append(".");
-		messageBuilder.append(" Status: <b>").append(request.getStatus().getDescription().toUpperCase()).append("</b>");
+		messageBuilder.append(" in ").append("#").append(groupName.replace(' ', '_'));
+		messageBuilder.append("]\n");
+
+		messageBuilder.append("[Status: <b>").append(request.getStatus().getDescription().toUpperCase())
+				.append("</b>]\n");
+
+		messageBuilder.append("[");
+		messageBuilder.append("Requested: <i>")
+				.append(getTimeBetweenDates(request.getRequestDate(), DateUtils.getNow())).append("</i>");
+
+		if (request.getStatus() == RequestStatus.RESOLVED) {
+			messageBuilder.append(". Fulfilled: <i>")
+					.append(getTimeBetweenDates(request.getResolvedDate(), DateUtils.getNow())).append("</i>");
+		}
 
 		messageBuilder.append("]");
 
