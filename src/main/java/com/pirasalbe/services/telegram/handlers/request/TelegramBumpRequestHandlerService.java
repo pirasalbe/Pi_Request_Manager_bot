@@ -2,14 +2,22 @@ package com.pirasalbe.services.telegram.handlers.request;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
+import com.pengrad.telegrambot.model.request.ParseMode;
+import com.pengrad.telegrambot.request.DeleteMessage;
+import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.models.database.Group;
+import com.pirasalbe.services.SchedulerService;
 import com.pirasalbe.utils.DateUtils;
+import com.pirasalbe.utils.TelegramUtils;
 
 /**
  * Service to manage requests from users
@@ -19,6 +27,9 @@ import com.pirasalbe.utils.DateUtils;
  */
 @Component
 public class TelegramBumpRequestHandlerService extends AbstractTelegramRequestHandlerService {
+
+	@Autowired
+	private SchedulerService schedulerService;
 
 	@Override
 	protected Message getMessage(Update update) {
@@ -58,10 +69,31 @@ public class TelegramBumpRequestHandlerService extends AbstractTelegramRequestHa
 
 		LocalDateTime requestTime = DateUtils.integerToLocalDateTime(message.date());
 
+		sendBumpNotification(bot, requestMessage, message, chatId);
+
 		// manage only requests from active groups
 		Optional<Group> optional = groupService.findById(chatId);
 		if (optional.isPresent()) {
 			newRequest(bot, requestMessage, chatId, message.messageId(), requestTime, optional.get());
+		}
+	}
+
+	private void sendBumpNotification(TelegramBot bot, Message requestMessage, Message message, Long chatId) {
+		StringBuilder bumpBuilder = new StringBuilder();
+		bumpBuilder.append(TelegramUtils.tagUser(message));
+		bumpBuilder.append("You asked for an update for <a href='");
+		bumpBuilder.append(TelegramUtils.getLink(requestMessage));
+		bumpBuilder.append("'>your request</a>.");
+
+		SendMessage sendMessage = new SendMessage(chatId, bumpBuilder.toString());
+		sendMessage.replyToMessageId(message.messageId());
+		sendMessage.parseMode(ParseMode.HTML);
+
+		SendResponse sendResponse = bot.execute(sendMessage);
+		if (sendResponse.isOk()) {
+			schedulerService.schedule(
+					(b, r) -> b.execute(new DeleteMessage(r.message().chat().id(), r.message().messageId())),
+					sendResponse, 10, TimeUnit.SECONDS);
 		}
 	}
 
