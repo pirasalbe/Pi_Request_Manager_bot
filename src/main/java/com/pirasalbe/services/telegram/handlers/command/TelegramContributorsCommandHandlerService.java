@@ -609,6 +609,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 				SendMessage sendMessage = new SendMessage(chatId, message);
 				sendMessage.parseMode(ParseMode.HTML);
+				sendMessage.disableWebPagePreview(true);
 
 				sendMessageAndDelete(bot, sendMessage, 60, TimeUnit.SECONDS);
 				deleteMessage(bot, update.message());
