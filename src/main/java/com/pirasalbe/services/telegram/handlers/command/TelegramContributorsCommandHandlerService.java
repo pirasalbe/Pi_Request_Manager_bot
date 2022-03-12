@@ -556,14 +556,31 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			StringBuilder requestBuilder = new StringBuilder();
 			Long messageId = request.getId().getMessageId();
 			Long groupId = request.getId().getGroupId();
+
+			// request link
 			requestBuilder.append("<a href='").append(TelegramUtils.getLink(groupId.toString(), messageId.toString()))
 					.append("'>");
 
 			requestBuilder.append(getChatName(chatNames, groupId)).append(" ");
 			requestBuilder.append(i + 1).append("</a> ");
 
-			requestBuilder.append(RequestUtils.getTimeBetweenDates(request.getRequestDate(), now)).append(" ago ");
+			// request date
+			requestBuilder.append(RequestUtils.getTimeBetweenDates(request.getRequestDate(), now, true))
+					.append(" ago ");
 
+			// request tags
+			requestBuilder.append("#").append(request.getFormat().name().toLowerCase()).append(" #")
+					.append(request.getSource().name().toLowerCase()).append(" #");
+
+			if (request.getOtherTags() != null) {
+				requestBuilder.append(request.getOtherTags());
+			} else {
+				requestBuilder.append("english");
+			}
+
+			requestBuilder.append(" ");
+
+			// request actions
 			requestBuilder.append("[<a href='")
 					.append(RequestUtils.getActionsLink(configuration.getUsername(), messageId, groupId))
 					.append("'>Actions</a> for <code>").append(messageId).append("</code>]\n");
