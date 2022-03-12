@@ -26,6 +26,7 @@ import com.pirasalbe.services.telegram.conditions.TelegramRoleConditionFactory;
 import com.pirasalbe.services.telegram.handlers.command.TelegramAliveCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramChannelCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramContributorsCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.command.TelegramDeleteCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramGroupsCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramHelpCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramMeCommandHandlerService;
@@ -100,6 +101,9 @@ public class TelegramService {
 	@Autowired
 	private TelegramContributorsCommandHandlerService contributorsCommandHandlerService;
 
+	@Autowired
+	private TelegramDeleteCommandHandlerService deleteCommandHandlerService;
+
 	@PostConstruct
 	public void initialize() {
 
@@ -132,6 +136,9 @@ public class TelegramService {
 
 		// contributors
 		registerContributorsHandlers();
+
+		// remove all commands
+		bot.register(deleteCommandHandlerService, deleteCommandHandlerService);
 
 		bot.launch();
 	}
