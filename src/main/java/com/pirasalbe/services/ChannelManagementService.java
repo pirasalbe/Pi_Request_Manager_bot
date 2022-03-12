@@ -241,14 +241,14 @@ public class ChannelManagementService {
 
 		if (response.isOk()) {
 			LOGGER.debug("Request {} deleted successfully", channelRequest.getId());
+
+			// delete record
+			channelRequestService.delete(channelId, messageId);
 		} else {
 			String responseDescription = response.description();
 			LOGGER.error("Error deleting request {} from channel {} with errors {}", messageId, channelId,
 					responseDescription);
 		}
-
-		// delete record
-		channelRequestService.delete(channelId, messageId);
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
