@@ -175,6 +175,10 @@ public class RequestUtils {
 	}
 
 	public static String getTimeBetweenDates(LocalDateTime from, LocalDateTime to) {
+		return getTimeBetweenDates(from, to, false);
+	}
+
+	public static String getTimeBetweenDates(LocalDateTime from, LocalDateTime to, boolean shortNames) {
 		StringBuilder stringBuilder = new StringBuilder();
 
 		// get numbers
@@ -183,29 +187,35 @@ public class RequestUtils {
 		long minutes = DateUtils.getMinutes(from, to, days, hours);
 
 		// aggregate them
-		if (days > 0) {
-			stringBuilder.append(days).append(" day").append(StringUtils.getPlural(days));
-		}
+		appendTime(stringBuilder, days, false, shortNames, "d", "day");
 
 		// get hours
 		if (days > 0 && hours > 0) {
 			stringBuilder.append(minutes > 0 ? ", " : " and ");
 		}
 
-		if (hours > 0) {
-			stringBuilder.append(hours).append(" hour").append(StringUtils.getPlural(hours));
-		}
+		appendTime(stringBuilder, hours, false, shortNames, "h", "hour");
 
 		// get minutes
 		if (hours > 0 && minutes > 0 || days > 0 && minutes > 0) {
 			stringBuilder.append(" and ");
 		}
 
-		if (minutes > 0 || stringBuilder.length() == 0) {
-			stringBuilder.append(minutes).append(" minute").append(StringUtils.getPlural(minutes));
-		}
+		appendTime(stringBuilder, minutes, stringBuilder.length() == 0, shortNames, "m", "minute");
 
 		return stringBuilder.toString();
+	}
+
+	private static void appendTime(StringBuilder stringBuilder, long value, boolean force, boolean shortNames,
+			String shortName, String longName) {
+		if (value > 0 || force) {
+			stringBuilder.append(value).append(" ");
+			if (shortNames) {
+				stringBuilder.append(shortName);
+			} else {
+				stringBuilder.append(longName).append(StringUtils.getPlural(value));
+			}
+		}
 	}
 
 	public static String getComeBackAgain(LocalDateTime requestTime, LocalDateTime nextValidRequest) {
@@ -235,22 +245,32 @@ public class RequestUtils {
 
 		messageBuilder.append("\n\n[");
 
-		messageBuilder.append("Request by ").append(getUser(bot, request)).append("(<code>").append(request.getUserId())
+		// 👤 Hayut (5258002384) | 👥 #Audoroom | ⏳PENDING | 🕔 7h 4m ago
+
+		// user info
+		messageBuilder.append("👤 ").append(getUser(bot, request)).append(" (<code>").append(request.getUserId())
 				.append("</code>)");
-		messageBuilder.append(" in ").append("#").append(groupName.replace(' ', '_'));
-		messageBuilder.append("]\n");
 
-		messageBuilder.append("[Status: <b>").append(request.getStatus().getDescription().toUpperCase())
-				.append("</b>]\n");
+		// group info
+		messageBuilder.append(" | ");
+		String groupNameSanitized = groupName.replace(' ', '_').replace(".", "").replace(":", "");
+		messageBuilder.append("👥 #").append(groupNameSanitized);
 
-		messageBuilder.append("[");
-		messageBuilder.append("Requested: <i>")
-				.append(getTimeBetweenDates(request.getRequestDate(), DateUtils.getNow())).append("</i>");
+		// status info
+		messageBuilder.append(" | ");
+		messageBuilder.append(request.getStatus().getIcon()).append(" ")
+				.append(request.getStatus().getDescription().toUpperCase());
 
+		// resolved info
 		if (request.getStatus() == RequestStatus.RESOLVED) {
-			messageBuilder.append(". Fulfilled: <i>")
-					.append(getTimeBetweenDates(request.getResolvedDate(), DateUtils.getNow())).append("</i>");
+			messageBuilder.append(" | ");
+			messageBuilder.append(RequestStatus.RESOLVED.getIcon())
+					.append(getTimeBetweenDates(request.getResolvedDate(), DateUtils.getNow(), true));
 		}
+
+		// time info
+		messageBuilder.append(" | ");
+		messageBuilder.append("🕔 ").append(getTimeBetweenDates(request.getRequestDate(), DateUtils.getNow(), true));
 
 		messageBuilder.append("]");
 
@@ -282,18 +302,18 @@ public class RequestUtils {
 
 		inlineKeyboard.addRow(requestButton, refreshButton);
 
-		InlineKeyboardButton pendingButton = new InlineKeyboardButton("⏳ Pending")
+		InlineKeyboardButton pendingButton = new InlineKeyboardButton(RequestStatus.PENDING.getIcon() + " Pending")
 				.callbackData(RequestUtils.getActionCallback(messageId, groupId, ContributorAction.PENDING));
 
-		InlineKeyboardButton doneButton = new InlineKeyboardButton("✅ Done")
+		InlineKeyboardButton doneButton = new InlineKeyboardButton(RequestStatus.RESOLVED.getIcon() + " Done")
 				.callbackData(RequestUtils.getActionCallback(messageId, groupId, ContributorAction.DONE));
-		InlineKeyboardButton pauseButton = new InlineKeyboardButton("⏸ Pause")
+		InlineKeyboardButton pauseButton = new InlineKeyboardButton(RequestStatus.PAUSED.getIcon() + " Pause")
 				.callbackData(RequestUtils.getActionCallback(messageId, groupId, ContributorAction.PAUSE));
 
 		inlineKeyboard.addRow(getButton(status, RequestStatus.PAUSED, pauseButton, pendingButton),
 				getButton(status, RequestStatus.RESOLVED, doneButton, pendingButton));
 
-		InlineKeyboardButton cancelButton = new InlineKeyboardButton("✖️ Cancel")
+		InlineKeyboardButton cancelButton = new InlineKeyboardButton(RequestStatus.CANCELLED.getIcon() + " Cancel")
 				.callbackData(RequestUtils.getActionCallback(messageId, groupId, ContributorAction.CANCEL));
 		InlineKeyboardButton removeButton = new InlineKeyboardButton("🗑 Remove")
 				.callbackData(RequestUtils.getConfirmActionCallback(messageId, groupId, ContributorAction.REMOVE));
