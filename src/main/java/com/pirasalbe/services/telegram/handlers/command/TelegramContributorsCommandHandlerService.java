@@ -17,6 +17,7 @@ import com.pengrad.telegrambot.model.Chat.Type;
 import com.pengrad.telegrambot.model.Document;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
+import com.pengrad.telegrambot.model.User;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.ParseMode;
@@ -175,14 +176,6 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		return stringBuilder.toString();
 	}
 
-	public TelegramHandler markDone() {
-		return markDone(true);
-	}
-
-	public TelegramHandler markDoneSilently() {
-		return markDone(false);
-	}
-
 	public TelegramHandler changeStatusWithCallback() {
 		return (bot, update) -> {
 			String text = update.callbackQuery().data();
@@ -199,7 +192,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				Long messageId = optionalMessageId.get();
 				Long groupId = optionalGroupId.get();
 
-				result = performAction(bot, action, messageId, groupId);
+				result = performAction(bot, action, messageId, groupId, update.callbackQuery().from());
 
 				if (optionalShowMessageId.isPresent()) {
 					// delete original messsage and send it again
@@ -235,7 +228,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				&& update.callbackQuery().message().chat().type() == Type.Private;
 	}
 
-	private String performAction(TelegramBot bot, ContributorAction action, Long messageId, Long groupId) {
+	private String performAction(TelegramBot bot, ContributorAction action, Long messageId, Long groupId,
+			User contributor) {
 		String result = null;
 
 		if (action == ContributorAction.REMOVE) {
@@ -247,8 +241,21 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 			result = changeRequestStatus(action, messageId, groupId);
 
-			SendMessage sendMessage = new SendMessage(groupId,
-					"Hey there 👋 Here's your requested book. Happy Reading/Listening <i>(based on ebook or audiobook)</i>!");
+			Optional<Request> optional = requestService.findById(messageId, groupId);
+
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append("Hey there 👋 Here's your requested book. Happy ");
+
+			if (optional.isPresent() && optional.get().getFormat() == Format.AUDIOBOOK) {
+				stringBuilder.append("Listening");
+			} else {
+				stringBuilder.append("Reading");
+			}
+
+			stringBuilder.append("!\n");
+			stringBuilder.append("Request fulfilled by <code>").append(TelegramUtils.getUserName(contributor))
+					.append("</code>");
+			SendMessage sendMessage = new SendMessage(groupId, stringBuilder.toString());
 			sendMessage.parseMode(ParseMode.HTML);
 			sendMessage.replyToMessageId(messageId.intValue());
 			bot.execute(sendMessage);
@@ -293,7 +300,16 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		} else {
 			result = REQUEST_NOT_FOUND;
 		}
+
 		return result;
+	}
+
+	public TelegramHandler markDone() {
+		return markDone(true);
+	}
+
+	public TelegramHandler markDoneSilently() {
+		return markDone(false);
 	}
 
 	private TelegramHandler markDone(boolean reply) {
