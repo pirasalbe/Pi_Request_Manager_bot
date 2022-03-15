@@ -1,7 +1,7 @@
 package com.pirasalbe.models.request;
 
 public enum RequestStatus {
-	PENDING("pending", "⏳"), IN_PROGRESS("in progress", "🧑‍💻"), PAUSED("paused", "⏸"), RESOLVED("fulfilled", "⏳"),
+	PENDING("pending", "⏳"), IN_PROGRESS("in progress", "🧑‍💻"), PAUSED("paused", "⏸"), RESOLVED("fulfilled", "✅"),
 	CANCELLED("cancelled", "✖️");
 
 	private String description;
