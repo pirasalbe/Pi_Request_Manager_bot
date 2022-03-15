@@ -248,7 +248,7 @@ public class RequestUtils {
 		// 👤 Hayut (5258002384) | 👥 #Audoroom | ⏳PENDING | 🕔 7h 4m ago
 
 		// user info
-		messageBuilder.append("👤 ").append(getUser(bot, request)).append(" (<code>").append(request.getUserId())
+		messageBuilder.append("👤 ").append(getUser(bot, request)).append("(<code>").append(request.getUserId())
 				.append("</code>)");
 
 		// group info
