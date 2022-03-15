@@ -31,7 +31,8 @@ public class TelegramDeleteCommandHandlerService extends AbstractTelegramHandler
 		Message message = update.message();
 
 		// only when not PM
-		if (message != null && message.chat().type() != com.pengrad.telegrambot.model.Chat.Type.Private) {
+		if (message != null && message.chat().type() != com.pengrad.telegrambot.model.Chat.Type.Private
+				&& message.entities() != null) {
 
 			MessageEntity[] entities = message.entities();
 			for (int i = 0; i < entities.length && !asserted; i++) {
