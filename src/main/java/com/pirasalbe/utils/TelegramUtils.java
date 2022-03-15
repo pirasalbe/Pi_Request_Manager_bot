@@ -62,7 +62,7 @@ public class TelegramUtils {
 	 * @param text   Text to show
 	 * @return String
 	 */
-	private static String tagUser(Long userId, String text) {
+	public static String tagUser(Long userId, String text) {
 		return "<a href=\"tg://user?id=" + userId + "\">" + text + "</a>. ";
 	}
 

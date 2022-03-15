@@ -124,7 +124,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (optional.isPresent()) {
 				Message message = update.message().replyToMessage();
 
-				boolean success = requestManagementService.markPending(message, optional.get());
+				boolean success = requestManagementService.markPending(message, optional.get(),
+						update.message().from().id());
 
 				// send a message to notify operation
 				String link = TelegramUtils.getLink(message);
@@ -148,7 +149,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (optional.isPresent()) {
 				Message message = update.message().replyToMessage();
 
-				boolean success = requestManagementService.markPaused(message, optional.get());
+				boolean success = requestManagementService.markPaused(message, optional.get(),
+						update.message().from().id());
 
 				// send a message to notify operation
 				String link = TelegramUtils.getLink(message);
@@ -172,7 +174,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (optional.isPresent()) {
 				Message message = update.message().replyToMessage();
 
-				boolean success = requestManagementService.markInProgress(message, optional.get());
+				boolean success = requestManagementService.markInProgress(message, optional.get(),
+						update.message().from().id());
 
 				// send a message to notify operation
 				String link = TelegramUtils.getLink(message);
@@ -265,7 +268,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 		} else if (action == ContributorAction.DONE) {
 
-			result = changeRequestStatus(action, messageId, groupId);
+			result = changeRequestStatus(action, messageId, groupId, contributor.id());
 
 			Optional<Request> optional = requestService.findById(messageId, groupId);
 
@@ -289,7 +292,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		} else if (action == ContributorAction.CANCEL || action == ContributorAction.PAUSE
 				|| action == ContributorAction.PENDING || action == ContributorAction.IN_PROGRESS) {
 
-			result = changeRequestStatus(action, messageId, groupId);
+			result = changeRequestStatus(action, messageId, groupId, contributor.id());
 
 		} else {
 			result = "Nothing to do";
@@ -298,7 +301,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		return result;
 	}
 
-	private String changeRequestStatus(ContributorAction action, Long messageId, Long groupId) {
+	private String changeRequestStatus(ContributorAction action, Long messageId, Long groupId, Long contributorId) {
 		String result;
 		RequestStatus newStatus = null;
 
@@ -324,7 +327,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		Optional<Group> group = groupService.findById(groupId);
 		Optional<Request> optional = requestService.findById(messageId, groupId);
 		if (group.isPresent() && optional.isPresent()) {
-			requestManagementService.updateStatus(optional.get(), group.get(), newStatus);
+			requestManagementService.updateStatus(optional.get(), group.get(), newStatus, contributorId);
 			result = "Request marked as " + newStatus.getDescription();
 		} else {
 			result = REQUEST_NOT_FOUND;
@@ -350,7 +353,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (optional.isPresent()) {
 				Message message = update.message().replyToMessage();
 
-				boolean success = requestManagementService.markDone(message, optional.get());
+				boolean success = requestManagementService.markDone(message, optional.get(),
+						update.message().from().id());
 
 				// reply
 				String link = TelegramUtils.getLink(message);
@@ -428,7 +432,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (optional.isPresent()) {
 				Message message = update.message().replyToMessage();
 
-				boolean success = requestManagementService.markDone(message, optional.get());
+				boolean success = requestManagementService.markDone(message, optional.get(),
+						update.message().from().id());
 
 				String link = TelegramUtils.getLink(message);
 				StringBuilder stringBuilder = new StringBuilder();
@@ -461,7 +466,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 				// delete message
 				if (messageId != null) {
-					boolean success = requestManagementService.markCancelled(messageId, optional.get());
+					boolean success = requestManagementService.markCancelled(messageId, optional.get(),
+							update.message().from().id());
 
 					String link = TelegramUtils.getLink(chatId.toString(), messageId.toString());
 					StringBuilder builder = new StringBuilder();

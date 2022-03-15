@@ -12,6 +12,7 @@ import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.request.GetChatMember;
 import com.pengrad.telegrambot.response.GetChatMemberResponse;
+import com.pirasalbe.models.Cache;
 import com.pirasalbe.models.ContributorAction;
 import com.pirasalbe.models.database.Request;
 import com.pirasalbe.models.request.RequestStatus;
@@ -24,6 +25,8 @@ import com.pirasalbe.models.request.Source;
  *
  */
 public class RequestUtils {
+
+	private static Cache<Long, String> userNames = new Cache<>(604800l);
 
 	private RequestUtils() {
 		super();
@@ -248,8 +251,8 @@ public class RequestUtils {
 		// 👤 Hayut (5258002384) | 👥 #Audoroom | ⏳PENDING | 🕔 7h 4m ago
 
 		// user info
-		messageBuilder.append("👤 ").append(getUser(bot, request)).append("(<code>").append(request.getUserId())
-				.append("</code>)");
+		messageBuilder.append("👤 ").append(getUser(bot, request.getId().getGroupId(), request.getUserId()))
+				.append("(<code>").append(request.getUserId()).append("</code>)");
 
 		// group info
 		messageBuilder.append(" | ");
@@ -272,23 +275,36 @@ public class RequestUtils {
 		messageBuilder.append(" | ");
 		messageBuilder.append("🕔 ").append(getTimeBetweenDates(request.getRequestDate(), DateUtils.getNow(), true));
 
+		// contributor
+		if (request.getContributor() != null) {
+			messageBuilder.append(" | ");
+			messageBuilder.append("🙋 ").append(getUser(bot, request.getId().getGroupId(), request.getContributor()));
+		}
+
 		messageBuilder.append("]");
 
 		return messageBuilder.toString();
 	}
 
-	private static String getUser(TelegramBot bot, Request request) {
-		GetChatMember getChatMember = new GetChatMember(request.getId().getGroupId(), request.getUserId());
-		GetChatMemberResponse member = bot.execute(getChatMember);
+	private static String getUser(TelegramBot bot, Long groupId, Long userId) {
+		String username = null;
 
-		String user = null;
-		if (member.isOk()) {
-			user = TelegramUtils.tagUser(member.chatMember().user());
+		if (userNames.containsKey(userId)) {
+			username = userNames.get(userId);
 		} else {
-			user = TelegramUtils.tagUser(request.getUserId());
+
+			GetChatMember getChatMember = new GetChatMember(groupId, userId);
+			GetChatMemberResponse member = bot.execute(getChatMember);
+
+			if (member.isOk()) {
+				username = TelegramUtils.getUserName(member.chatMember().user());
+				userNames.put(userId, username);
+			} else {
+				username = userId.toString();
+			}
 		}
 
-		return user.replace(".", "");
+		return TelegramUtils.tagUser(userId, username).replace(".", "");
 	}
 
 	public static InlineKeyboardMarkup getRequestKeyboard(String username, Long groupId, Long messageId,

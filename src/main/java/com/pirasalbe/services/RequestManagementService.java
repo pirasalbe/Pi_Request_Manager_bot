@@ -406,41 +406,40 @@ public class RequestManagementService {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public boolean markPending(Message message, Group group) {
-		return updateStatus(message, group, RequestStatus.PENDING);
+	public boolean markPending(Message message, Group group, Long contributor) {
+		return updateStatus(message, group, RequestStatus.PENDING, contributor);
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public boolean markPaused(Message message, Group group) {
-		return updateStatus(message, group, RequestStatus.PAUSED);
+	public boolean markPaused(Message message, Group group, Long contributor) {
+		return updateStatus(message, group, RequestStatus.PAUSED, contributor);
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public boolean markInProgress(Message message, Group group) {
-		return updateStatus(message, group, RequestStatus.IN_PROGRESS);
+	public boolean markInProgress(Message message, Group group, Long contributor) {
+		return updateStatus(message, group, RequestStatus.IN_PROGRESS, contributor);
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public boolean markDone(Message message, Group group) {
-		return updateStatus(message, group, RequestStatus.RESOLVED);
+	public boolean markDone(Message message, Group group, Long contributor) {
+		return updateStatus(message, group, RequestStatus.RESOLVED, contributor);
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public boolean markCancelled(Long messageId, Group group) {
+	public boolean markCancelled(Long messageId, Group group, Long contributor) {
 		boolean success = false;
 
 		Optional<Request> optional = requestService.findById(messageId, group.getId());
 		if (optional.isPresent()) {
 			// mark request as done
-			updateStatus(optional.get(), group, RequestStatus.CANCELLED);
+			updateStatus(optional.get(), group, RequestStatus.CANCELLED, contributor);
 			success = true;
 		}
 
 		return success;
 	}
 
-	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	private boolean updateStatus(Message message, Group group, RequestStatus status) {
+	private boolean updateStatus(Message message, Group group, RequestStatus status, Long contributor) {
 		String link = RequestUtils.getLink(message.text(), message.entities());
 
 		boolean success = false;
@@ -449,7 +448,7 @@ public class RequestManagementService {
 			Request request = requestService.findByUniqueKey(message.chat().id(), message.from().id(), link);
 			if (request != null) {
 				// update status
-				updateStatus(request, group, status);
+				updateStatus(request, group, status, contributor);
 				success = true;
 			}
 		}
@@ -458,8 +457,8 @@ public class RequestManagementService {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void updateStatus(Request request, Group group, RequestStatus status) {
-		Request update = requestService.updateStatus(request, status);
+	public void updateStatus(Request request, Group group, RequestStatus status, Long contributor) {
+		Request update = requestService.updateStatus(request, status, contributor);
 
 		schedulerService.schedule(() -> channelManagementService.forwardRequest(update, group.getName()),
 				FORWARD_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);

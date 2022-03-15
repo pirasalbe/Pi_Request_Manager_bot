@@ -148,8 +148,9 @@ public class RequestService {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public Request updateStatus(Request request, RequestStatus status) {
+	public Request updateStatus(Request request, RequestStatus status, Long contributor) {
 		request.setStatus(status);
+		request.setContributor(contributor);
 		if (status == RequestStatus.RESOLVED) {
 			request.setResolvedDate(DateUtils.getNow());
 		} else {

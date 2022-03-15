@@ -51,6 +51,8 @@ public class Request {
 	@Column(name = "RESOLVED_DATE")
 	private LocalDateTime resolvedDate;
 
+	private Long contributor;
+
 	public Request() {
 		super();
 	}
@@ -133,6 +135,14 @@ public class Request {
 
 	public void setResolvedDate(LocalDateTime resolvedDate) {
 		this.resolvedDate = resolvedDate;
+	}
+
+	public Long getContributor() {
+		return contributor;
+	}
+
+	public void setContributor(Long contributor) {
+		this.contributor = contributor;
 	}
 
 }
