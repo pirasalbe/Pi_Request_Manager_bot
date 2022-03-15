@@ -267,7 +267,7 @@ public class RequestUtils {
 		// resolved info
 		if (request.getStatus() == RequestStatus.RESOLVED) {
 			messageBuilder.append(" | ");
-			messageBuilder.append(RequestStatus.RESOLVED.getIcon())
+			messageBuilder.append(RequestStatus.RESOLVED.getIcon()).append(" ")
 					.append(getTimeBetweenDates(request.getResolvedDate(), DateUtils.getNow(), true));
 		}
 
