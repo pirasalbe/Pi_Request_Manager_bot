@@ -307,10 +307,14 @@ public class RequestUtils {
 
 		InlineKeyboardButton doneButton = new InlineKeyboardButton(RequestStatus.RESOLVED.getIcon() + " Done")
 				.callbackData(RequestUtils.getActionCallback(messageId, groupId, ContributorAction.DONE));
+		InlineKeyboardButton inProgressButton = new InlineKeyboardButton(
+				RequestStatus.IN_PROGRESS.getIcon() + " In Progress").callbackData(
+						RequestUtils.getActionCallback(messageId, groupId, ContributorAction.IN_PROGRESS));
 		InlineKeyboardButton pauseButton = new InlineKeyboardButton(RequestStatus.PAUSED.getIcon() + " Pause")
 				.callbackData(RequestUtils.getActionCallback(messageId, groupId, ContributorAction.PAUSE));
 
 		inlineKeyboard.addRow(getButton(status, RequestStatus.PAUSED, pauseButton, pendingButton),
+				getButton(status, RequestStatus.IN_PROGRESS, inProgressButton, pendingButton),
 				getButton(status, RequestStatus.RESOLVED, doneButton, pendingButton));
 
 		InlineKeyboardButton cancelButton = new InlineKeyboardButton(RequestStatus.CANCELLED.getIcon() + " Cancel")

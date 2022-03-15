@@ -65,13 +65,15 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			+ TelegramConditionUtils.GROUP_CONDITION + "[+-]?[0-9]+";
 	public static final String CONFIRM_CALLBACK = "^" + ContributorAction.CONFIRM + " " + MESSAGE_INFO_CALLBACK + " "
 			+ TelegramConditionUtils.ACTION_CONDITION + "[a-zA-Z]+$";
-	public static final String CHANGE_STATUS_CALLBACK = "^(" + ContributorAction.PENDING + "|" + ContributorAction.PAUSE
-			+ "|" + ContributorAction.DONE + "|" + ContributorAction.CANCEL + "|" + ContributorAction.REMOVE + ") "
-			+ MESSAGE_INFO_CALLBACK + "( " + TelegramConditionUtils.REFRESH_SHOW_CONDITION + "[0-9]+)?$";
+	public static final String CHANGE_STATUS_CALLBACK = "^(" + ContributorAction.PENDING + "|"
+			+ ContributorAction.IN_PROGRESS + "|" + ContributorAction.PAUSE + "|" + ContributorAction.DONE + "|"
+			+ ContributorAction.CANCEL + "|" + ContributorAction.REMOVE + ") " + MESSAGE_INFO_CALLBACK + "( "
+			+ TelegramConditionUtils.REFRESH_SHOW_CONDITION + "[0-9]+)?$";
 
 	public static final String COMMAND_SHOW = "/show";
 	public static final String COMMAND_PENDING = "/pending";
 	public static final String COMMAND_PAUSE = "/pause";
+	public static final String COMMAND_IN_PROGRESS = "/in_progress";
 	public static final String COMMAND_CANCEL = "/cancel";
 	public static final String COMMAND_REMOVE = "/remove";
 	public static final String COMMAND_DONE = "/done";
@@ -152,6 +154,30 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				String link = TelegramUtils.getLink(message);
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append(requestStatusMessage(link, success, "marked as paused"));
+				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+				sendMessage.parseMode(ParseMode.HTML);
+
+				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.SECONDS);
+				deleteMessage(bot, update.message());
+			}
+		};
+	}
+
+	public TelegramHandler markInProgress() {
+		return (bot, update) -> {
+			Long chatId = TelegramUtils.getChatId(update);
+
+			Optional<Group> optional = groupService.findById(chatId);
+
+			if (optional.isPresent()) {
+				Message message = update.message().replyToMessage();
+
+				boolean success = requestManagementService.markInProgress(message, optional.get());
+
+				// send a message to notify operation
+				String link = TelegramUtils.getLink(message);
+				StringBuilder stringBuilder = new StringBuilder();
+				stringBuilder.append(requestStatusMessage(link, success, "marked as in progress"));
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
 
@@ -261,7 +287,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			bot.execute(sendMessage);
 
 		} else if (action == ContributorAction.CANCEL || action == ContributorAction.PAUSE
-				|| action == ContributorAction.PENDING) {
+				|| action == ContributorAction.PENDING || action == ContributorAction.IN_PROGRESS) {
 
 			result = changeRequestStatus(action, messageId, groupId);
 
@@ -285,6 +311,9 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			break;
 		case PAUSE:
 			newStatus = RequestStatus.PAUSED;
+			break;
+		case IN_PROGRESS:
+			newStatus = RequestStatus.IN_PROGRESS;
 			break;
 		case PENDING:
 		default:

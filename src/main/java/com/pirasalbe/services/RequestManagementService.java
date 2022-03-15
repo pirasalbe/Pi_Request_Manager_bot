@@ -416,6 +416,11 @@ public class RequestManagementService {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public boolean markInProgress(Message message, Group group) {
+		return updateStatus(message, group, RequestStatus.IN_PROGRESS);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public boolean markDone(Message message, Group group) {
 		return updateStatus(message, group, RequestStatus.RESOLVED);
 	}

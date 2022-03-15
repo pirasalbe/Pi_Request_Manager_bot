@@ -376,6 +376,14 @@ public class TelegramService {
 						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
 				contributorsCommandHandlerService.markPaused());
 
+		// penging
+		bot.register(
+				Arrays.asList(groupChatCondition,
+						commandConditionFactory
+								.onCommand(TelegramContributorsCommandHandlerService.COMMAND_IN_PROGRESS),
+						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
+				contributorsCommandHandlerService.markInProgress());
+
 		// cancel
 		bot.register(Arrays.asList(groupChatCondition,
 				commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_CANCEL),
