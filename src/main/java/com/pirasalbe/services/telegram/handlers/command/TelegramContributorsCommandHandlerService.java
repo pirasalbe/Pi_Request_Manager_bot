@@ -605,13 +605,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 			// request tags
 			requestBuilder.append("#").append(request.getFormat().name().toLowerCase()).append(" #")
-					.append(request.getSource().name().toLowerCase()).append(" #");
-
-			if (request.getOtherTags() != null) {
-				requestBuilder.append(request.getOtherTags());
-			} else {
-				requestBuilder.append("english");
-			}
+					.append(request.getSource().name().toLowerCase()).append(" #").append(request.getOtherTags());
 
 			requestBuilder.append(" ");
 

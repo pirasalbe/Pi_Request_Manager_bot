@@ -142,7 +142,7 @@ public class RequestManagementService {
 
 		if (requestInfo != null) {
 			// if null -> language was English
-			int days = requestInfo.getOtherTags() == null ? englishAudiobooksDaysWait : audiobooksDaysWait;
+			int days = requestInfo.isEnglish() ? englishAudiobooksDaysWait : audiobooksDaysWait;
 
 			// last audiobook
 			LocalDateTime nextValidRequest = requestInfo.getDate().plusDays(days);

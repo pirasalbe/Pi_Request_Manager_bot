@@ -26,6 +26,8 @@ import com.pirasalbe.models.request.Source;
  */
 public class RequestUtils {
 
+	public static final String OTHER_TAGS_ENGLISH = "english";
+
 	private static Cache<Long, String> userNames = new Cache<>(604800l);
 
 	private RequestUtils() {

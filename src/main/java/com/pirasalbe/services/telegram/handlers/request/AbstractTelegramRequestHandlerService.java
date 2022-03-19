@@ -186,16 +186,18 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 	}
 
 	protected String getOtherTags(String content) {
-		String otherTags = null;
+		String otherTags = RequestUtils.OTHER_TAGS_ENGLISH;
 
 		// split every word
+		boolean found = false;
 		String[] parts = content.replace("\n", " ").split(" ");
-		for (int i = 0; i < parts.length && otherTags == null; i++) {
+		for (int i = 0; i < parts.length && !found; i++) {
 			String part = parts[i].toLowerCase();
 
 			// if the word is a tag and is unknown
 			if (Pattern.matches("^#.*", part) && !KNOWN_TAGS.contains(part)) {
 				otherTags = part.substring(1);
+				found = true;
 			}
 		}
 
