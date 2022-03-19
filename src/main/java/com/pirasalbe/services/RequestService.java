@@ -202,7 +202,7 @@ public class RequestService {
 	}
 
 	public List<Request> findRequests(Optional<Long> groupId, RequestStatus status, Optional<Source> source,
-			Optional<Format> format, boolean descendent) {
+			Optional<Format> format, Optional<String> otherTags, boolean descendent) {
 
 		CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
 		CriteriaQuery<Request> criteriaQuery = criteriaBuilder.createQuery(Request.class);
@@ -228,6 +228,11 @@ public class RequestService {
 		// format
 		if (format.isPresent()) {
 			predicates.add(criteriaBuilder.equal(requestRoot.get("format"), format.get()));
+		}
+
+		// otherTags
+		if (otherTags.isPresent()) {
+			predicates.add(criteriaBuilder.equal(requestRoot.get("otherTags"), otherTags.get()));
 		}
 
 		criteriaQuery.where(predicates.toArray(new Predicate[0]));

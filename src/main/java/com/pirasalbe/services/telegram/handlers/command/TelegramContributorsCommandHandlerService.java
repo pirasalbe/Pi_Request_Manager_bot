@@ -541,13 +541,15 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				Optional<RequestStatus> status = TelegramConditionUtils.getStatus(text);
 				Optional<Format> format = TelegramConditionUtils.getFormat(text);
 				Optional<Source> source = TelegramConditionUtils.getSource(text);
+				Optional<String> otherTags = TelegramConditionUtils.getOtherTags(text);
 				Optional<Boolean> optionalDescendent = TelegramConditionUtils.getDescendent(text);
 
 				boolean descendent = optionalDescendent.isPresent() && optionalDescendent.get();
 				RequestStatus requestStatus = status.orElse(RequestStatus.PENDING);
-				List<Request> requests = requestService.findRequests(group, requestStatus, source, format, descendent);
+				List<Request> requests = requestService.findRequests(group, requestStatus, source, format, otherTags,
+						descendent);
 
-				String title = getTitle(requestStatus, group, format, source, descendent);
+				String title = getTitle(requestStatus, group, format, source, otherTags, descendent);
 
 				if (requests.isEmpty()) {
 					SendMessage sendMessage = new SendMessage(chatId, title + "No requests found");
@@ -797,7 +799,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	}
 
 	private String getTitle(RequestStatus requestStatus, Optional<Long> group, Optional<Format> format,
-			Optional<Source> source, boolean descendent) {
+			Optional<Source> source, Optional<String> otherTags, boolean descendent) {
 		StringBuilder title = new StringBuilder();
 		title.append("<b>Requests ").append(requestStatus.getDescription()).append("</b>");
 		if (group.isPresent()) {
@@ -811,6 +813,9 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		}
 		if (source.isPresent()) {
 			title.append("\nSource [").append(source.get()).append("]");
+		}
+		if (otherTags.isPresent()) {
+			title.append("\nOther [").append(otherTags.get()).append("]");
 		}
 		title.append("\nShow ").append(
 				descendent ? TelegramConditionUtils.ORDER_CONDITION_NEW : TelegramConditionUtils.ORDER_CONDITION_OLD)

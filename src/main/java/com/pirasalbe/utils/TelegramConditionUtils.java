@@ -23,6 +23,7 @@ public class TelegramConditionUtils {
 	public static final String STATUS_CONDITION = "status=";
 	public static final String FORMAT_CONDITION = "format=";
 	public static final String SOURCE_CONDITION = "source=";
+	public static final String OTHER_CONDITION = "other=";
 	public static final String ORDER_CONDITION = "order=";
 	public static final String REFRESH_SHOW_CONDITION = "refresh_show=";
 
@@ -87,6 +88,10 @@ public class TelegramConditionUtils {
 
 	public static Optional<Source> getSource(String text) {
 		return getCondition(text, SOURCE_CONDITION, Source::valueOf);
+	}
+
+	public static Optional<String> getOtherTags(String text) {
+		return getCondition(text, OTHER_CONDITION, String::toLowerCase);
 	}
 
 	public static Optional<Boolean> getDescendent(String text) {
