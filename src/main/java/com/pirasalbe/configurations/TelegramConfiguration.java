@@ -11,6 +11,12 @@ public class TelegramConfiguration {
 
 	private String token;
 
+	private Long number;
+
+	private Integer apiId;
+
+	private String apiHash;
+
 	public String getUsername() {
 		return username;
 	}
@@ -23,8 +29,32 @@ public class TelegramConfiguration {
 		this.token = token;
 	}
 
+	public Long getNumber() {
+		return number;
+	}
+
+	public void setNumber(Long number) {
+		this.number = number;
+	}
+
 	public String getToken() {
 		return token;
+	}
+
+	public Integer getApiId() {
+		return apiId;
+	}
+
+	public void setApiId(Integer apiId) {
+		this.apiId = apiId;
+	}
+
+	public String getApiHash() {
+		return apiHash;
+	}
+
+	public void setApiHash(String apiHash) {
+		this.apiHash = apiHash;
 	}
 
 }
