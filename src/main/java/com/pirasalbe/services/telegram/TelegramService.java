@@ -339,7 +339,7 @@ public class TelegramService {
 		// requests
 		bot.register(Arrays.asList(groupAndPrivateChatCondition,
 				commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_REQUESTS),
-				contributorRoleCondition), contributorsCommandHandlerService.getRequests());
+				contributorRoleCondition), contributorsCommandHandlerService.findRequests());
 
 		// request actions
 		bot.register(

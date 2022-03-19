@@ -526,7 +526,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		};
 	}
 
-	public TelegramHandler getRequests() {
+	public TelegramHandler findRequests() {
 		return (bot, update) -> {
 			Long chatId = TelegramUtils.getChatId(update);
 
