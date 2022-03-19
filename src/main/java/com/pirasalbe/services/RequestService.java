@@ -1,18 +1,22 @@
 package com.pirasalbe.services;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -199,29 +203,45 @@ public class RequestService {
 
 	public List<Request> findRequests(Optional<Long> groupId, RequestStatus status, Optional<Source> source,
 			Optional<Format> format, boolean descendent) {
-		List<Request> requests = null;
-		Direction direction = descendent ? Direction.DESC : Direction.ASC;
-		Sort sort = Sort.by(direction, "requestDate");
 
-		if (groupId.isPresent() && source.isPresent() && format.isPresent()) {
-			requests = repository.findByFilters(groupId.get(), status, source.get(), format.get(), sort);
-		} else if (groupId.isPresent() && source.isPresent()) {
-			requests = repository.findByFilters(groupId.get(), status, source.get(), sort);
-		} else if (groupId.isPresent() && format.isPresent()) {
-			requests = repository.findByFilters(groupId.get(), status, format.get(), sort);
-		} else if (groupId.isPresent()) {
-			requests = repository.findByFilters(groupId.get(), status, sort);
-		} else if (source.isPresent() && format.isPresent()) {
-			requests = repository.findByFilters(status, source.get(), format.get(), sort);
-		} else if (source.isPresent()) {
-			requests = repository.findByFilters(status, source.get(), sort);
-		} else if (format.isPresent()) {
-			requests = repository.findByFilters(status, format.get(), sort);
-		} else {
-			requests = repository.findByFilters(status, sort);
+		CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
+		CriteriaQuery<Request> criteriaQuery = criteriaBuilder.createQuery(Request.class);
+		Root<Request> requestRoot = criteriaQuery.from(Request.class);
+
+		criteriaQuery.select(requestRoot);
+
+		List<Predicate> predicates = new ArrayList<>();
+
+		// status
+		predicates.add(criteriaBuilder.equal(requestRoot.get("status"), status));
+
+		// group
+		if (groupId.isPresent()) {
+			predicates.add(criteriaBuilder.equal(requestRoot.get("id").get("groupId"), groupId.get()));
 		}
 
-		return requests;
+		// source
+		if (source.isPresent()) {
+			predicates.add(criteriaBuilder.equal(requestRoot.get("source"), source.get()));
+		}
+
+		// format
+		if (format.isPresent()) {
+			predicates.add(criteriaBuilder.equal(requestRoot.get("format"), format.get()));
+		}
+
+		criteriaQuery.where(predicates.toArray(new Predicate[0]));
+
+		// order by
+		if (descendent) {
+			criteriaQuery.orderBy(criteriaBuilder.desc(requestRoot.get("requestDate")));
+		} else {
+			criteriaQuery.orderBy(criteriaBuilder.asc(requestRoot.get("requestDate")));
+		}
+
+		TypedQuery<Request> query = entityManager.createQuery(criteriaQuery);
+
+		return query.getResultList();
 	}
 
 }

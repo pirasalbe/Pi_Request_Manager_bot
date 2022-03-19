@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -12,9 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.pirasalbe.models.database.Request;
 import com.pirasalbe.models.database.RequestPK;
-import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.request.RequestStatus;
-import com.pirasalbe.models.request.Source;
 
 /**
  * Repository to interact with Request table
@@ -57,36 +54,5 @@ public interface RequestRepository extends JpaRepository<Request, RequestPK> {
 	@Modifying
 	@Query("DELETE FROM Request r WHERE r.status = :status AND r.requestDate < :requestDate")
 	void deleteOldByStatus(@Param("requestDate") LocalDateTime requestDate, @Param("status") RequestStatus status);
-
-	@Query("SELECT r " + "FROM Request r "
-			+ "WHERE r.status = :status AND r.id.groupId = :groupId AND r.format = :format AND r.source = :source")
-	List<Request> findByFilters(@Param("groupId") Long groupId, @Param("status") RequestStatus status,
-			@Param("source") Source source, @Param("format") Format format, Sort sort);
-
-	@Query("SELECT r " + "FROM Request r "
-			+ "WHERE r.status = :status AND r.id.groupId = :groupId AND r.format = :format")
-	List<Request> findByFilters(@Param("groupId") Long groupId, @Param("status") RequestStatus status,
-			@Param("format") Format format, Sort sort);
-
-	@Query("SELECT r " + "FROM Request r "
-			+ "WHERE r.status = :status AND r.id.groupId = :groupId AND r.source = :source")
-	List<Request> findByFilters(@Param("groupId") Long groupId, @Param("status") RequestStatus status,
-			@Param("source") Source source, Sort sort);
-
-	@Query("SELECT r " + "FROM Request r " + "WHERE r.status = :status AND r.id.groupId = :groupId")
-	List<Request> findByFilters(@Param("groupId") Long groupId, @Param("status") RequestStatus status, Sort sort);
-
-	@Query("SELECT r " + "FROM Request r " + "WHERE r.status = :status AND r.format = :format AND r.source = :source")
-	List<Request> findByFilters(@Param("status") RequestStatus status, @Param("source") Source source,
-			@Param("format") Format format, Sort sort);
-
-	@Query("SELECT r " + "FROM Request r " + "WHERE r.status = :status AND r.source = :source")
-	List<Request> findByFilters(@Param("status") RequestStatus status, @Param("source") Source source, Sort sort);
-
-	@Query("SELECT r " + "FROM Request r " + "WHERE r.status = :status AND r.format = :format")
-	List<Request> findByFilters(@Param("status") RequestStatus status, @Param("format") Format format, Sort sort);
-
-	@Query("SELECT r " + "FROM Request r " + "WHERE r.status = :status")
-	List<Request> findByFilters(@Param("status") RequestStatus status, Sort sort);
 
 }
