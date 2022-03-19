@@ -214,4 +214,11 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 		</update>
 	</changeSet>
 
+	<changeSet id="21 - Update other tags value" author="pirasalbe">
+		<update tableName="REQUESTS">
+			<column name="OTHER_TAGS" value="english"/>
+			<where>OTHER_TAGS='ENGLISH'</where>
+		</update>
+	</changeSet>
+
 </databaseChangeLog>
