@@ -201,7 +201,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 			}
 		}
 
-		return otherTags;
+		return otherTags.toLowerCase();
 	}
 
 	protected Format getFormat(String content) {
