@@ -201,7 +201,7 @@ public class RequestManagementService {
 			stringBuilder.append("You’re only allowed to request ").append(requestLimit > 1 ? "up to " : "");
 			stringBuilder.append(requestLimit).append(" book").append(StringUtils.getPlural(requestLimit));
 			stringBuilder.append(" every 24 hours");
-			stringBuilder.append(" ").append(getRequestLink(lastRequest, "last request")).append(".\n");
+			stringBuilder.append(" ").append(getRequestLink(lastRequest, "request")).append(".\n");
 			stringBuilder.append(RequestUtils.getComeBackAgain(requestTime, lastRequestDate.plusHours(24)));
 			validation = Validation.invalid(stringBuilder.toString());
 		}
