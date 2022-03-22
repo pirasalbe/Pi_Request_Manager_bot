@@ -24,7 +24,12 @@ import com.pirasalbe.models.database.ChannelRule;
 import com.pirasalbe.models.database.Request;
 import com.pirasalbe.models.database.RequestPK;
 import com.pirasalbe.services.telegram.TelegramBotService;
+import com.pirasalbe.services.telegram.TelegramUserBotService;
 import com.pirasalbe.utils.RequestUtils;
+import com.pirasalbe.utils.TelegramUtils;
+
+import it.tdlight.jni.TdApi;
+import it.tdlight.jni.TdApi.GetMessageLinkInfo;
 
 /**
  * Service that manages the channels
@@ -51,6 +56,9 @@ public class ChannelManagementService {
 	private ChannelRequestService channelRequestService;
 
 	private TelegramBot bot;
+
+	@Autowired
+	private TelegramUserBotService userBotService;
 
 	public ChannelManagementService(TelegramBotService telegramBotService) {
 		this.bot = telegramBotService.getBot();
@@ -237,18 +245,49 @@ public class ChannelManagementService {
 		Long channelId = channelRequest.getId().getChannelId();
 		Long messageId = channelRequest.getId().getMessageId();
 
+		// get tdlib message id
+		deleteMessageWithUserBot(channelId, messageId);
+
+		// delete record
+		channelRequestService.delete(channelId, messageId);
+	}
+
+	private void deleteMessageWithUserBot(Long channelId, Long messageId) {
+		userBotService.send(new GetMessageLinkInfo(TelegramUtils.getLink(channelId, messageId)), result -> {
+			if (result.isError()) {
+				LOGGER.error("Cannot get userBot messageId for request {} from channel {} with errors {}", messageId,
+						channelId, result.getError());
+				deleteMessageWithBot(channelId, messageId);
+			} else {
+				// read the id
+				long id = result.get().message.id;
+
+				// delete message with
+				userBotService.send(new TdApi.DeleteMessages(channelId, new long[] { id }, true), deleteResult -> {
+					if (deleteResult.isError()) {
+						LOGGER.error("Error deleting request {} with userbot from channel {} with errors {}", messageId,
+								channelId, deleteResult.getError());
+
+						deleteMessageWithBot(channelId, messageId);
+					} else {
+						LOGGER.debug("Request with messageId {} with userBot in channel {} deleted successfully",
+								messageId, channelId);
+					}
+				});
+			}
+		});
+	}
+
+	private void deleteMessageWithBot(Long channelId, Long messageId) {
 		BaseResponse response = bot.execute(new DeleteMessage(channelId, messageId.intValue()));
 
 		if (response.isOk()) {
-			LOGGER.debug("Request {} deleted successfully", channelRequest.getId());
+			LOGGER.debug("Request with messageId {} in channel {} deleted successfully", messageId, channelId);
 		} else {
 			String responseDescription = response.description();
 			LOGGER.error("Error deleting request {} from channel {} with errors {}", messageId, channelId,
 					responseDescription);
 		}
-
-		// delete record
-		channelRequestService.delete(channelId, messageId);
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
