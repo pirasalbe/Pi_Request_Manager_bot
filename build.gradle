@@ -15,8 +15,18 @@ repositories {
 	maven { url "https://mvn.mchv.eu/repository/mchv/" }
 }
 
+if (project.hasProperty('pi')) {
+	dependencies {
+   		implementation 'it.tdlight:tdlight-natives-linux-armhf'
+   	}
+} else {
+	dependencies {
+		implementation 'it.tdlight:tdlight-natives-linux-amd64'
+   	}
+}
+
 ext {
-	tdlightVersion = "2.8.1.2"
+	tdlightVersion = "2.8.2.2"
 }
 
 eclipse {
@@ -45,8 +55,6 @@ dependencies {
 	// tdlib
 	implementation platform('it.tdlight:tdlight-java-bom:' + tdlightVersion)
 	implementation 'it.tdlight:tdlight-java'
-	implementation 'it.tdlight:tdlight-natives-linux-amd64'
-	//implementation 'it.tdlight:tdlight-natives-linux-armhf'
 }
 
 test {
