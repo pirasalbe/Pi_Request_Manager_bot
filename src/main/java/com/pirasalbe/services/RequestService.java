@@ -17,6 +17,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +41,8 @@ import com.pirasalbe.utils.DateUtils;
 @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 public class RequestService {
 
+	private static final String REQUEST_DATE = "requestDate";
+
 	@Autowired
 	private RequestRepository repository;
 
@@ -54,7 +58,7 @@ public class RequestService {
 	}
 
 	public Page<Request> findAll(int page, int size) {
-		return repository.findAll(PageRequest.of(page, size));
+		return repository.findAll(PageRequest.of(page, size).withSort(Sort.by(Direction.ASC, REQUEST_DATE)));
 	}
 
 	public boolean deleteById(Long messageId, Long groupId) {
@@ -239,9 +243,9 @@ public class RequestService {
 
 		// order by
 		if (descendent) {
-			criteriaQuery.orderBy(criteriaBuilder.desc(requestRoot.get("requestDate")));
+			criteriaQuery.orderBy(criteriaBuilder.desc(requestRoot.get(REQUEST_DATE)));
 		} else {
-			criteriaQuery.orderBy(criteriaBuilder.asc(requestRoot.get("requestDate")));
+			criteriaQuery.orderBy(criteriaBuilder.asc(requestRoot.get(REQUEST_DATE)));
 		}
 
 		TypedQuery<Request> query = entityManager.createQuery(criteriaQuery);
