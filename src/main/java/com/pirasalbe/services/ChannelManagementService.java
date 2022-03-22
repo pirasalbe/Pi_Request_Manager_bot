@@ -26,10 +26,11 @@ import com.pirasalbe.models.database.RequestPK;
 import com.pirasalbe.services.telegram.TelegramBotService;
 import com.pirasalbe.services.telegram.TelegramUserBotService;
 import com.pirasalbe.utils.RequestUtils;
-import com.pirasalbe.utils.TelegramUtils;
 
+import it.tdlight.client.Result;
 import it.tdlight.jni.TdApi;
-import it.tdlight.jni.TdApi.GetMessageLinkInfo;
+import it.tdlight.jni.TdApi.MessageLinkInfo;
+import it.tdlight.jni.TdApi.Ok;
 
 /**
  * Service that manages the channels
@@ -253,29 +254,30 @@ public class ChannelManagementService {
 	}
 
 	private void deleteMessageWithUserBot(Long channelId, Long messageId) {
-		userBotService.send(new GetMessageLinkInfo(TelegramUtils.getLink(channelId, messageId)), result -> {
-			if (result.isError()) {
-				LOGGER.error("Cannot get userBot messageId for request {} from channel {} with errors {}", messageId,
-						channelId, result.getError());
+		Result<MessageLinkInfo> messageInfo = userBotService.getMessageId(channelId, messageId);
+
+		if (messageInfo.isError()) {
+			LOGGER.error("Cannot get userBot messageId for request {} from channel {} with errors {}", messageId,
+					channelId, messageInfo.getError());
+			deleteMessageWithBot(channelId, messageId);
+		} else {
+			// read the id
+			long id = messageInfo.get().message.id;
+
+			// delete message with
+			Result<Ok> deleteResult = userBotService
+					.sendSync(new TdApi.DeleteMessages(channelId, new long[] { id }, true));
+
+			if (deleteResult.isError()) {
+				LOGGER.error("Error deleting request {} with userbot from channel {} with errors {}", messageId,
+						channelId, deleteResult.getError());
+
 				deleteMessageWithBot(channelId, messageId);
 			} else {
-				// read the id
-				long id = result.get().message.id;
-
-				// delete message with
-				userBotService.send(new TdApi.DeleteMessages(channelId, new long[] { id }, true), deleteResult -> {
-					if (deleteResult.isError()) {
-						LOGGER.error("Error deleting request {} with userbot from channel {} with errors {}", messageId,
-								channelId, deleteResult.getError());
-
-						deleteMessageWithBot(channelId, messageId);
-					} else {
-						LOGGER.debug("Request with messageId {} with userBot in channel {} deleted successfully",
-								messageId, channelId);
-					}
-				});
+				LOGGER.debug("Request with messageId {} with userBot in channel {} deleted successfully", messageId,
+						channelId);
 			}
-		});
+		}
 	}
 
 	private void deleteMessageWithBot(Long channelId, Long messageId) {
