@@ -261,6 +261,10 @@ public class RequestUtils {
 		String groupNameSanitized = groupName.replace(' ', '_').replace(".", "").replace(":", "");
 		messageBuilder.append("👥 #").append(groupNameSanitized);
 
+		// time info
+		messageBuilder.append(" | ");
+		messageBuilder.append("🕔 ").append(getTimeBetweenDates(request.getRequestDate(), DateUtils.getNow(), true));
+
 		// status info
 		messageBuilder.append(" | ");
 		messageBuilder.append(request.getStatus().getIcon()).append(" ")
@@ -272,10 +276,6 @@ public class RequestUtils {
 			messageBuilder.append(RequestStatus.RESOLVED.getIcon()).append(" ")
 					.append(getTimeBetweenDates(request.getResolvedDate(), DateUtils.getNow(), true));
 		}
-
-		// time info
-		messageBuilder.append(" | ");
-		messageBuilder.append("🕔 ").append(getTimeBetweenDates(request.getRequestDate(), DateUtils.getNow(), true));
 
 		// contributor
 		if (request.getContributor() != null) {
