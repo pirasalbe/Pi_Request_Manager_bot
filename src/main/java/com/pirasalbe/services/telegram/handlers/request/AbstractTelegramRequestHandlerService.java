@@ -46,7 +46,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 			ARCHIVE_TAG, STORYTEL_TAG, SCRIBD_TAG);
 
 	protected static final List<String> BUMPS = Arrays.asList("bump", "update", "can i get", "need", "please help",
-			"thank");
+			"send", "thank");
 
 	@Autowired
 	protected ErrorConfiguration errorConfiguration;
