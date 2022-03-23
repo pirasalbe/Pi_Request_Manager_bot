@@ -123,13 +123,26 @@ public class RequestManagementService {
 		return validation;
 	}
 
-	private String getRequestLink(Request request, String text) {
+	private String getRequestLink(Request request, String requestText, String resolvedText) {
 		StringBuilder builder = new StringBuilder();
-		builder.append("(").append("<a href='");
-		builder.append(TelegramUtils.getLink(request.getId().getGroupId().toString(),
-				request.getId().getMessageId().toString()));
+
+		builder.append("(");
+		builder.append(getRequestLink(request.getId().getGroupId(), request.getId().getMessageId(), requestText));
+		if (request.getResolvedMessageId() != null) {
+			builder.append(" and ");
+			builder.append(getRequestLink(request.getId().getGroupId(), request.getResolvedMessageId(), resolvedText));
+		}
+		builder.append(")");
+
+		return builder.toString();
+	}
+
+	private String getRequestLink(Long groupId, Long messageId, String text) {
+		StringBuilder builder = new StringBuilder();
+		builder.append("<a href='");
+		builder.append(TelegramUtils.getLink(groupId.toString(), messageId.toString()));
 		builder.append("'>");
-		builder.append(text).append("</a>").append(")");
+		builder.append(text).append("</a>");
 
 		return builder.toString();
 	}
@@ -156,7 +169,9 @@ public class RequestManagementService {
 				stringBuilder.append(requestInfo.getType().name().toLowerCase());
 				stringBuilder.append(" an audiobook in one of our groups on ");
 				stringBuilder.append(DateUtils.formatDate(requestInfo.getDate()));
-				stringBuilder.append(" ").append(getRequestLink(requestInfo.getRequest(), "link")).append(".\n");
+				stringBuilder.append(" ")
+						.append(getRequestLink(requestInfo.getRequest(), "request", "received audiobook"))
+						.append(".\n");
 				stringBuilder.append(RequestUtils.getComeBackAgain(DateUtils.getNow(), nextValidRequest));
 				validation = Validation.invalid(stringBuilder.toString());
 			}
@@ -201,7 +216,7 @@ public class RequestManagementService {
 			stringBuilder.append("You’re only allowed to request ").append(requestLimit > 1 ? "up to " : "");
 			stringBuilder.append(requestLimit).append(" book").append(StringUtils.getPlural(requestLimit));
 			stringBuilder.append(" every 24 hours");
-			stringBuilder.append(" ").append(getRequestLink(lastRequest, "request")).append(".\n");
+			stringBuilder.append(" ").append(getRequestLink(lastRequest, "request", "received ebook")).append(".\n");
 			stringBuilder.append(RequestUtils.getComeBackAgain(requestTime, lastRequestDate.plusHours(24)));
 			validation = Validation.invalid(stringBuilder.toString());
 		}
@@ -340,7 +355,7 @@ public class RequestManagementService {
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append("You already requested this title on ");
 			stringBuilder.append(DateUtils.formatDate(previousRequestDate));
-			stringBuilder.append(" ").append(getRequestLink(request, "link")).append(".\n");
+			stringBuilder.append(" ").append(getRequestLink(request, "request", "received book")).append(".\n");
 			stringBuilder.append("No need to bump requests with special hashtags.");
 			result = new RequestResult(Result.CANNOT_REPEAT_REQUEST, stringBuilder.toString());
 		} else {
@@ -351,7 +366,7 @@ public class RequestManagementService {
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append("You already requested this title on ")
 					.append(DateUtils.formatDate(previousRequestDate));
-			stringBuilder.append(" ").append(getRequestLink(request, "original request")).append(".\n");
+			stringBuilder.append(" ").append(getRequestLink(request, "request", "received book")).append(".\n");
 			stringBuilder.append(RequestUtils.getComeBackAgain(requestDate, minDateForNewRequest)).append("\n");
 			stringBuilder.append(
 					"If you have requested it many times and still haven't received the book, then it's most likely that the book is not available as of now. It's better if you request again after a month or so.");
@@ -421,8 +436,8 @@ public class RequestManagementService {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public boolean markDone(Message message, Group group, Long contributor) {
-		return updateStatus(message, group, RequestStatus.RESOLVED, contributor);
+	public boolean markDone(Message message, Group group, Long resolvedMessageId, Long contributor) {
+		return updateStatus(message, group, RequestStatus.RESOLVED, resolvedMessageId, contributor);
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
@@ -432,7 +447,7 @@ public class RequestManagementService {
 		Optional<Request> optional = requestService.findById(messageId, group.getId());
 		if (optional.isPresent()) {
 			// mark request as done
-			updateStatus(optional.get(), group, RequestStatus.CANCELLED, contributor);
+			updateStatus(optional.get(), group, RequestStatus.CANCELLED, null, contributor);
 			success = true;
 		}
 
@@ -440,6 +455,11 @@ public class RequestManagementService {
 	}
 
 	private boolean updateStatus(Message message, Group group, RequestStatus status, Long contributor) {
+		return updateStatus(message, group, status, null, contributor);
+	}
+
+	private boolean updateStatus(Message message, Group group, RequestStatus status, Long resolvedMessageId,
+			Long contributor) {
 		String link = RequestUtils.getLink(message.text(), message.entities());
 
 		boolean success = false;
@@ -448,7 +468,7 @@ public class RequestManagementService {
 			Request request = requestService.findByUniqueKey(message.chat().id(), message.from().id(), link);
 			if (request != null) {
 				// update status
-				updateStatus(request, group, status, contributor);
+				updateStatus(request, group, status, resolvedMessageId, contributor);
 				success = true;
 			}
 		}
@@ -457,8 +477,9 @@ public class RequestManagementService {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void updateStatus(Request request, Group group, RequestStatus status, Long contributor) {
-		Request update = requestService.updateStatus(request, status, contributor);
+	public void updateStatus(Request request, Group group, RequestStatus status, Long resolvedMessageId,
+			Long contributor) {
+		Request update = requestService.updateStatus(request, status, resolvedMessageId, contributor);
 
 		schedulerService.schedule(() -> channelManagementService.forwardRequest(update, group.getName()),
 				FORWARD_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);

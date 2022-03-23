@@ -221,4 +221,10 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 		</update>
 	</changeSet>
 
+	<changeSet id="22 - Add column to Requests" author="pirasalbe">
+		<addColumn tableName="REQUESTS">
+			<column name="RESOLVED_MESSAGE_ID" type="bigint" />
+		</addColumn>
+	</changeSet>
+
 </databaseChangeLog>

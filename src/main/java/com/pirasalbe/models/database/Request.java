@@ -51,6 +51,9 @@ public class Request {
 	@Column(name = "RESOLVED_DATE")
 	private LocalDateTime resolvedDate;
 
+	@Column(name = "RESOLVED_MESSAGE_ID")
+	private Long resolvedMessageId;
+
 	private Long contributor;
 
 	public Request() {
@@ -135,6 +138,14 @@ public class Request {
 
 	public void setResolvedDate(LocalDateTime resolvedDate) {
 		this.resolvedDate = resolvedDate;
+	}
+
+	public Long getResolvedMessageId() {
+		return resolvedMessageId;
+	}
+
+	public void setResolvedMessageId(Long resolvedMessageId) {
+		this.resolvedMessageId = resolvedMessageId;
 	}
 
 	public Long getContributor() {

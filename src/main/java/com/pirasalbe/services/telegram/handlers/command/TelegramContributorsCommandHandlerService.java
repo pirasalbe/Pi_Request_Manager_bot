@@ -24,6 +24,7 @@ import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.configurations.TelegramConfiguration;
 import com.pirasalbe.models.ContributorAction;
 import com.pirasalbe.models.UserRole;
@@ -268,8 +269,6 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 		} else if (action == ContributorAction.DONE) {
 
-			result = changeRequestStatus(action, messageId, groupId, contributor.id());
-
 			Optional<Request> optional = requestService.findById(messageId, groupId);
 
 			StringBuilder stringBuilder = new StringBuilder();
@@ -287,7 +286,14 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			SendMessage sendMessage = new SendMessage(groupId, stringBuilder.toString());
 			sendMessage.parseMode(ParseMode.HTML);
 			sendMessage.replyToMessageId(messageId.intValue());
-			bot.execute(sendMessage);
+			SendResponse response = bot.execute(sendMessage);
+
+			Long resolvedMessageId = messageId;
+			if (response.isOk()) {
+				resolvedMessageId = response.message().messageId().longValue();
+			}
+
+			result = changeRequestStatus(action, messageId, groupId, resolvedMessageId, contributor.id());
 
 		} else if (action == ContributorAction.CANCEL || action == ContributorAction.PAUSE
 				|| action == ContributorAction.PENDING || action == ContributorAction.IN_PROGRESS) {
@@ -302,6 +308,11 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	}
 
 	private String changeRequestStatus(ContributorAction action, Long messageId, Long groupId, Long contributorId) {
+		return changeRequestStatus(action, messageId, groupId, null, contributorId);
+	}
+
+	private String changeRequestStatus(ContributorAction action, Long messageId, Long groupId, Long resolvedMessageId,
+			Long contributorId) {
 		String result;
 		RequestStatus newStatus = null;
 
@@ -327,7 +338,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		Optional<Group> group = groupService.findById(groupId);
 		Optional<Request> optional = requestService.findById(messageId, groupId);
 		if (group.isPresent() && optional.isPresent()) {
-			requestManagementService.updateStatus(optional.get(), group.get(), newStatus, contributorId);
+			requestManagementService.updateStatus(optional.get(), group.get(), newStatus, resolvedMessageId,
+					contributorId);
 			result = "Request marked as " + newStatus.getDescription();
 		} else {
 			result = REQUEST_NOT_FOUND;
@@ -353,14 +365,19 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (optional.isPresent()) {
 				Message message = update.message().replyToMessage();
 
-				boolean success = requestManagementService.markDone(message, optional.get(),
-						update.message().from().id());
-
 				// reply
+				Integer resolvedMessageId = null;
 				String link = TelegramUtils.getLink(message);
 				if (reply) {
-					markDoneWithMessage(bot, update, chatId, message);
+					resolvedMessageId = markDoneWithMessage(bot, update, chatId, message);
 				}
+
+				if (resolvedMessageId == null) {
+					resolvedMessageId = message.messageId();
+				}
+
+				boolean success = requestManagementService.markDone(message, optional.get(),
+						resolvedMessageId.longValue(), update.message().from().id());
 
 				// send a message to notify operation
 				StringBuilder notificationBuilder = new StringBuilder();
@@ -375,7 +392,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		};
 	}
 
-	private void markDoneWithMessage(TelegramBot bot, Update update, Long chatId, Message message) {
+	private Integer markDoneWithMessage(TelegramBot bot, Update update, Long chatId, Message message) {
 		StringBuilder replyBuilder = new StringBuilder();
 
 		String text = TelegramUtils.removeCommand(update.message().text(), update.message().entities()).trim();
@@ -392,7 +409,14 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		// reply to the request
 		sendMessageReply.replyToMessageId(message.messageId());
 
-		bot.execute(sendMessageReply);
+		SendResponse response = bot.execute(sendMessageReply);
+
+		Integer resolvedMessageId = null;
+		if (response.isOk()) {
+			resolvedMessageId = response.message().messageId();
+		}
+
+		return resolvedMessageId;
 	}
 
 	public TelegramCondition replyToMessageWithFileCondition() {
@@ -433,7 +457,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				Message message = update.message().replyToMessage();
 
 				boolean success = requestManagementService.markDone(message, optional.get(),
-						update.message().from().id());
+						update.message().messageId().longValue(), update.message().from().id());
 
 				String link = TelegramUtils.getLink(message);
 				StringBuilder stringBuilder = new StringBuilder();

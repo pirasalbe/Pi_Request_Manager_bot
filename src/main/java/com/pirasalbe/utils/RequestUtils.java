@@ -275,6 +275,14 @@ public class RequestUtils {
 			messageBuilder.append(" | ");
 			messageBuilder.append(RequestStatus.RESOLVED.getIcon()).append(" ")
 					.append(getTimeBetweenDates(request.getResolvedDate(), DateUtils.getNow(), true));
+
+			if (request.getResolvedMessageId() != null) {
+				messageBuilder.append(" | ");
+				messageBuilder.append("<a href='")
+						.append(TelegramUtils.getLink(request.getId().getGroupId(), request.getResolvedMessageId()))
+						.append("'>Fulfilled here").append("</a>");
+
+			}
 		}
 
 		// contributor
