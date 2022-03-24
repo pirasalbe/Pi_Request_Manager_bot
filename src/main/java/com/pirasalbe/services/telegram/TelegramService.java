@@ -30,6 +30,7 @@ import com.pirasalbe.services.telegram.handlers.command.TelegramDeleteCommandHan
 import com.pirasalbe.services.telegram.handlers.command.TelegramGroupsCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramHelpCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramMeCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.command.TelegramNextAudiobookCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramSuperAdminCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.request.TelegramBumpRequestHandlerService;
 import com.pirasalbe.services.telegram.handlers.request.TelegramNewRequestHandlerService;
@@ -100,6 +101,9 @@ public class TelegramService {
 
 	@Autowired
 	private TelegramContributorsCommandHandlerService contributorsCommandHandlerService;
+
+	@Autowired
+	private TelegramNextAudiobookCommandHandlerService nextAudiobookCommandHandlerService;
 
 	@Autowired
 	private TelegramDeleteCommandHandlerService deleteCommandHandlerService;
@@ -392,6 +396,13 @@ public class TelegramService {
 		bot.register(Arrays.asList(groupChatCondition,
 				commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_REMOVE),
 				contributorRoleCondition), contributorsCommandHandlerService.removeRequest());
+
+		// next audiobook
+		bot.register(
+				Arrays.asList(groupChatCondition,
+						commandConditionFactory.onCommand(TelegramNextAudiobookCommandHandlerService.COMMAND),
+						nextAudiobookCommandHandlerService, contributorRoleCondition),
+				nextAudiobookCommandHandlerService);
 	}
 
 }
