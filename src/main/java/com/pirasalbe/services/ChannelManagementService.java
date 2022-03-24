@@ -260,11 +260,11 @@ public class ChannelManagementService {
 			LOGGER.error("Cannot get userBot messageId for request {} from channel {} with errors {}", messageId,
 					channelId, messageInfo.getError());
 			deleteMessageWithBot(channelId, messageId);
-		} else {
+		} else if (messageInfo.get().message.canBeDeletedForAllUsers) {
 			// read the id
 			long id = messageInfo.get().message.id;
 
-			// delete message with
+			// delete message with userbot
 			Result<Ok> deleteResult = userBotService
 					.sendSync(new TdApi.DeleteMessages(channelId, new long[] { id }, true));
 
@@ -277,6 +277,12 @@ public class ChannelManagementService {
 				LOGGER.debug("Request with messageId {} with userBot in channel {} deleted successfully", messageId,
 						channelId);
 			}
+		} else {
+			LOGGER.error(
+					"Error deleting request {} with userbot from channel {} because not allowed to delete for all users",
+					messageId, channelId);
+
+			deleteMessageWithBot(channelId, messageId);
 		}
 	}
 
