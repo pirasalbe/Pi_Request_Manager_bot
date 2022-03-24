@@ -5,6 +5,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.TelegramBot;
@@ -18,6 +20,8 @@ import com.pirasalbe.services.telegram.TelegramBotService;
  */
 @Component
 public class SchedulerService {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(SchedulerService.class);
 
 	private TelegramBot bot;
 
@@ -33,8 +37,18 @@ public class SchedulerService {
 
 	public void schedule(Runnable runnable, long timeout, TimeUnit timeUnit) {
 		ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-		scheduledExecutorService.schedule(runnable, timeout, timeUnit);
+		scheduledExecutorService.schedule(getSafeRunnable(runnable), timeout, timeUnit);
 		scheduledExecutorService.shutdown();
+	}
+
+	private Runnable getSafeRunnable(Runnable runnable) {
+		return () -> {
+			try {
+				runnable.run();
+			} catch (Exception e) {
+				LOGGER.error("Unexpected error in scheduled task", e);
+			}
+		};
 	}
 
 }

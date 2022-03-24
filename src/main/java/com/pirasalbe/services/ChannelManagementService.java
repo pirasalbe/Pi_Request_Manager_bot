@@ -260,7 +260,7 @@ public class ChannelManagementService {
 			LOGGER.error("Cannot get userBot messageId for request {} from channel {} with errors {}", messageId,
 					channelId, messageInfo.getError());
 			deleteMessageWithBot(channelId, messageId);
-		} else if (messageInfo.get().message.canBeDeletedForAllUsers) {
+		} else if (messageInfo.get().message != null && messageInfo.get().message.canBeDeletedForAllUsers) {
 			// read the id
 			long id = messageInfo.get().message.id;
 
