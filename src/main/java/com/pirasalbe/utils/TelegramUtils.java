@@ -1,5 +1,8 @@
 package com.pirasalbe.utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.MessageEntity;
 import com.pengrad.telegrambot.model.MessageEntity.Type;
@@ -13,6 +16,8 @@ import com.pengrad.telegrambot.model.User;
  *
  */
 public class TelegramUtils {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(TelegramUtils.class);
 
 	private TelegramUtils() {
 		super();
@@ -57,7 +62,7 @@ public class TelegramUtils {
 	 * @param text   Text to show
 	 * @return String
 	 */
-	private static String tagUser(Long userId, String text) {
+	public static String tagUser(Long userId, String text) {
 		return "<a href=\"tg://user?id=" + userId + "\">" + text + "</a>. ";
 	}
 
@@ -80,6 +85,9 @@ public class TelegramUtils {
 		} else if (update.callbackQuery() != null) {
 			// get the text from keyboard response
 			result = update.callbackQuery().from().id();
+		} else if (update.channelPost() != null) {
+			// get the text from keyboard response
+			result = update.channelPost().chat().id();
 		}
 
 		return result;
@@ -103,6 +111,9 @@ public class TelegramUtils {
 		} else if (update.callbackQuery() != null) {
 			// get the text from keyboard response
 			result = update.callbackQuery().from();
+		} else if (update.channelPost() != null) {
+			// get the text from channel post
+			result = update.channelPost().from();
 		}
 
 		return result;
@@ -239,6 +250,55 @@ public class TelegramUtils {
 		}
 
 		return "https://t.me/c/" + groupId + "/" + messageId;
+	}
+
+	/**
+	 * Get message from update
+	 *
+	 * @param update Update
+	 * @return Message
+	 */
+	public static Message getMessage(Update update) {
+		Message message = null;
+		if (update.message() != null) {
+			message = update.message();
+		} else if (update.channelPost() != null) {
+			message = update.channelPost();
+		} else if (update.callbackQuery() != null) {
+			message = update.callbackQuery().message();
+		}
+
+		return message;
+	}
+
+	/**
+	 * Checks the request limit and sleep if needed
+	 *
+	 * @param requestCount Request done till now
+	 * @param newRequest   If the new request was successful
+	 * @return The new request count
+	 */
+	public static int checkRequestLimitSameGroup(int requestCount, boolean newRequest) {
+		int result = requestCount;
+
+		// if tr
+		if (newRequest) {
+			result = requestCount + 1;
+		}
+
+		// if request count greater then the limit, sleep and reset count
+		if (result >= 10) {
+			LOGGER.info("Cooldown due to the Telegram limits");
+			try {
+				Thread.sleep(120000);
+				result = 0;
+			} catch (InterruptedException e) {
+				LOGGER.warn("Could not sleep to prevent request limit", e);
+			}
+			LOGGER.info("End cooldown period");
+		}
+
+		return result;
 	}
 
 }

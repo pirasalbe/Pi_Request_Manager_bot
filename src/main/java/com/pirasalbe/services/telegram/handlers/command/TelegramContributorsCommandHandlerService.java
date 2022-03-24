@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -18,14 +17,14 @@ import com.pengrad.telegrambot.model.Chat.Type;
 import com.pengrad.telegrambot.model.Document;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
+import com.pengrad.telegrambot.model.User;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import com.pengrad.telegrambot.request.DeleteMessage;
-import com.pengrad.telegrambot.request.GetChatMember;
 import com.pengrad.telegrambot.request.SendMessage;
-import com.pengrad.telegrambot.response.GetChatMemberResponse;
+import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.configurations.TelegramConfiguration;
 import com.pirasalbe.models.ContributorAction;
 import com.pirasalbe.models.UserRole;
@@ -42,6 +41,7 @@ import com.pirasalbe.services.RequestService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
 import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.RequestUtils;
+import com.pirasalbe.utils.TelegramConditionUtils;
 import com.pirasalbe.utils.TelegramUtils;
 
 /**
@@ -61,35 +61,26 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			".azw3", ".azw", ".txt", ".doc", ".docx", ".rtf", ".cbz", ".cbr", ".djvu", ".chm", ".fb2", ".mp3", ".m4b",
 			".opus");
 
-	private static final String MESSAGE_CONDITION = "message=";
-	private static final String GROUP_CONDITION = "group=";
-	private static final String ACTION_CONDITION = "action=";
-	private static final String STATUS_CONDITION = "status=";
-	private static final String FORMAT_CONDITION = "format=";
-	private static final String SOURCE_CONDITION = "source=";
-	private static final String ORDER_CONDITION = "order=";
-	private static final String REFRESH_SHOW_CONDITION = "refresh_show=";
-
 	private static final String START_PAYLOAD_SHOW = "^\\/start show_message=[0-9]+_group=[+-]?[0-9]+$";
-	private static final String MESSAGE_INFO_CALLBACK = MESSAGE_CONDITION + "[0-9]+ " + GROUP_CONDITION + "[+-]?[0-9]+";
-	private static final String CONFIRM_CALLBACK = "^" + ContributorAction.CONFIRM + " " + MESSAGE_INFO_CALLBACK
-			+ " action=[a-zA-Z]+$";
-	private static final String CHANGE_STATUS_CALLBACK = "^(" + ContributorAction.PENDING + "|"
-			+ ContributorAction.OUTSTANDING + "|" + ContributorAction.DONE + "|" + ContributorAction.CANCEL + "|"
-			+ ContributorAction.REMOVE + ") " + MESSAGE_INFO_CALLBACK + " " + REFRESH_SHOW_CONDITION + "[0-9]+" + "$";
+	private static final String MESSAGE_INFO_CALLBACK = TelegramConditionUtils.MESSAGE_CONDITION + "[0-9]+ "
+			+ TelegramConditionUtils.GROUP_CONDITION + "[+-]?[0-9]+";
+	public static final String CONFIRM_CALLBACK = "^" + ContributorAction.CONFIRM + " " + MESSAGE_INFO_CALLBACK + " "
+			+ TelegramConditionUtils.ACTION_CONDITION + "[a-zA-Z]+$";
+	public static final String CHANGE_STATUS_CALLBACK = "^(" + ContributorAction.PENDING + "|"
+			+ ContributorAction.IN_PROGRESS + "|" + ContributorAction.PAUSE + "|" + ContributorAction.DONE + "|"
+			+ ContributorAction.CANCEL + "|" + ContributorAction.REMOVE + ") " + MESSAGE_INFO_CALLBACK + "( "
+			+ TelegramConditionUtils.REFRESH_SHOW_CONDITION + "[0-9]+)?$";
 
 	public static final String COMMAND_SHOW = "/show";
 	public static final String COMMAND_PENDING = "/pending";
-	public static final String COMMAND_OUTSTANDING = "/outstanding";
+	public static final String COMMAND_PAUSE = "/pause";
+	public static final String COMMAND_IN_PROGRESS = "/in_progress";
 	public static final String COMMAND_CANCEL = "/cancel";
 	public static final String COMMAND_REMOVE = "/remove";
 	public static final String COMMAND_DONE = "/done";
 	public static final String COMMAND_SILENT_DONE = "/sdone";
 
 	public static final String COMMAND_REQUESTS = "/requests";
-
-	private static final String ORDER_CONDITION_OLD = "OLD";
-	private static final String ORDER_CONDITION_NEW = "NEW";
 
 	private static final String REQUEST_NOT_FOUND = "Request not found";
 
@@ -102,10 +93,10 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	private GroupService groupService;
 
 	@Autowired
-	private RequestManagementService requestManagementService;
+	private RequestService requestService;
 
 	@Autowired
-	private RequestService requestService;
+	private RequestManagementService requestManagementService;
 
 	public TelegramCondition replyToMessageCondition() {
 		return this::replyToMessage;
@@ -134,7 +125,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (optional.isPresent()) {
 				Message message = update.message().replyToMessage();
 
-				boolean success = requestManagementService.markPending(message);
+				boolean success = requestManagementService.markPending(message, optional.get(),
+						update.message().from().id());
 
 				// send a message to notify operation
 				String link = TelegramUtils.getLink(message);
@@ -149,7 +141,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		};
 	}
 
-	public TelegramHandler markOutstanding() {
+	public TelegramHandler markPaused() {
 		return (bot, update) -> {
 			Long chatId = TelegramUtils.getChatId(update);
 
@@ -158,12 +150,38 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (optional.isPresent()) {
 				Message message = update.message().replyToMessage();
 
-				boolean success = requestManagementService.markOutstanding(message);
+				boolean success = requestManagementService.markPaused(message, optional.get(),
+						update.message().from().id());
 
 				// send a message to notify operation
 				String link = TelegramUtils.getLink(message);
 				StringBuilder stringBuilder = new StringBuilder();
-				stringBuilder.append(requestStatusMessage(link, success, "marked as outstanding"));
+				stringBuilder.append(requestStatusMessage(link, success, "marked as paused"));
+				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+				sendMessage.parseMode(ParseMode.HTML);
+
+				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.SECONDS);
+				deleteMessage(bot, update.message());
+			}
+		};
+	}
+
+	public TelegramHandler markInProgress() {
+		return (bot, update) -> {
+			Long chatId = TelegramUtils.getChatId(update);
+
+			Optional<Group> optional = groupService.findById(chatId);
+
+			if (optional.isPresent()) {
+				Message message = update.message().replyToMessage();
+
+				boolean success = requestManagementService.markInProgress(message, optional.get(),
+						update.message().from().id());
+
+				// send a message to notify operation
+				String link = TelegramUtils.getLink(message);
+				StringBuilder stringBuilder = new StringBuilder();
+				stringBuilder.append(requestStatusMessage(link, success, "marked as in progress"));
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
 
@@ -188,26 +206,13 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		return stringBuilder.toString();
 	}
 
-	public TelegramHandler markDone() {
-		return markDone(true);
-	}
-
-	public TelegramHandler markDoneSilently() {
-		return markDone(false);
-	}
-
-	public TelegramCondition changeStatusCallbackCondition() {
-		return update -> update.callbackQuery() != null && update.callbackQuery().data() != null
-				&& update.callbackQuery().data().matches(CHANGE_STATUS_CALLBACK);
-	}
-
 	public TelegramHandler changeStatusWithCallback() {
 		return (bot, update) -> {
 			String text = update.callbackQuery().data();
 
-			Optional<Long> optionalGroupId = getGroupId(text);
-			Optional<Long> optionalMessageId = getMessageId(text);
-			Optional<Integer> optionalShowMessageId = getRefreshShow(text);
+			Optional<Long> optionalGroupId = TelegramConditionUtils.getGroupId(text);
+			Optional<Long> optionalMessageId = TelegramConditionUtils.getMessageId(text);
+			Optional<Integer> optionalShowMessageId = TelegramConditionUtils.getRefreshShow(text);
 
 			String actionString = text.substring(0, text.indexOf(' '));
 			ContributorAction action = ContributorAction.valueOf(actionString);
@@ -217,19 +222,19 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				Long messageId = optionalMessageId.get();
 				Long groupId = optionalGroupId.get();
 
-				result = performAction(action, messageId, groupId);
+				result = performAction(bot, action, messageId, groupId, update.callbackQuery().from());
 
 				if (optionalShowMessageId.isPresent()) {
 					// delete original messsage and send it again
 					DeleteMessage deleteMessage = new DeleteMessage(update.callbackQuery().from().id(),
 							optionalShowMessageId.get());
 					bot.execute(deleteMessage);
-
-					sendRequestWithAction(bot, update.callbackQuery().from().id(), groupId, messageId);
 				}
 
+				sendRequestWithAction(bot, update.callbackQuery().from().id(), groupId, messageId);
+
 			} else {
-				result = "Request id not found";
+				result = "Request ids not found";
 			}
 
 			// callback response
@@ -238,8 +243,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 			bot.execute(answerCallbackQuery);
 
-			// delete confirmation button
-			if (update.callbackQuery().message() != null) {
+			// delete previous message if in private
+			if (isCallbackMessageFromPM(update)) {
 				DeleteMessage deleteMessage = new DeleteMessage(update.callbackQuery().from().id(),
 						update.callbackQuery().message().messageId());
 				bot.execute(deleteMessage);
@@ -248,25 +253,66 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		};
 	}
 
-	private String performAction(ContributorAction action, Long messageId, Long groupId) {
-		String result;
+	private boolean isCallbackMessageFromPM(Update update) {
+		return update.callbackQuery().message() != null
+				&& update.callbackQuery().message().chat().type() == Type.Private;
+	}
+
+	private String performAction(TelegramBot bot, ContributorAction action, Long messageId, Long groupId,
+			User contributor) {
+		String result = null;
+
 		if (action == ContributorAction.REMOVE) {
 
 			boolean deleteRequest = requestManagementService.deleteRequest(messageId, groupId);
 			result = deleteRequest ? "Request removed" : REQUEST_NOT_FOUND;
 
-		} else if (action == ContributorAction.CANCEL || action == ContributorAction.DONE
-				|| action == ContributorAction.OUTSTANDING || action == ContributorAction.PENDING) {
+		} else if (action == ContributorAction.DONE) {
 
-			result = changeRequestStatus(action, messageId, groupId);
+			Optional<Request> optional = requestService.findById(messageId, groupId);
+
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append("Hey there 👋 Here's your requested book. Happy ");
+
+			if (optional.isPresent() && optional.get().getFormat() == Format.AUDIOBOOK) {
+				stringBuilder.append("Listening");
+			} else {
+				stringBuilder.append("Reading");
+			}
+
+			stringBuilder.append("!\n");
+			stringBuilder.append("Request fulfilled by <code>").append(TelegramUtils.getUserName(contributor))
+					.append("</code>");
+			SendMessage sendMessage = new SendMessage(groupId, stringBuilder.toString());
+			sendMessage.parseMode(ParseMode.HTML);
+			sendMessage.replyToMessageId(messageId.intValue());
+			SendResponse response = bot.execute(sendMessage);
+
+			Long resolvedMessageId = messageId;
+			if (response.isOk()) {
+				resolvedMessageId = response.message().messageId().longValue();
+			}
+
+			result = changeRequestStatus(action, messageId, groupId, resolvedMessageId, contributor.id());
+
+		} else if (action == ContributorAction.CANCEL || action == ContributorAction.PAUSE
+				|| action == ContributorAction.PENDING || action == ContributorAction.IN_PROGRESS) {
+
+			result = changeRequestStatus(action, messageId, groupId, contributor.id());
 
 		} else {
 			result = "Nothing to do";
 		}
+
 		return result;
 	}
 
-	private String changeRequestStatus(ContributorAction action, Long messageId, Long groupId) {
+	private String changeRequestStatus(ContributorAction action, Long messageId, Long groupId, Long contributorId) {
+		return changeRequestStatus(action, messageId, groupId, null, contributorId);
+	}
+
+	private String changeRequestStatus(ContributorAction action, Long messageId, Long groupId, Long resolvedMessageId,
+			Long contributorId) {
 		String result;
 		RequestStatus newStatus = null;
 
@@ -277,8 +323,11 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		case DONE:
 			newStatus = RequestStatus.RESOLVED;
 			break;
-		case OUTSTANDING:
-			newStatus = RequestStatus.OUTSTANDING;
+		case PAUSE:
+			newStatus = RequestStatus.PAUSED;
+			break;
+		case IN_PROGRESS:
+			newStatus = RequestStatus.IN_PROGRESS;
 			break;
 		case PENDING:
 		default:
@@ -286,14 +335,25 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			break;
 		}
 
+		Optional<Group> group = groupService.findById(groupId);
 		Optional<Request> optional = requestService.findById(messageId, groupId);
-		if (optional.isPresent()) {
-			requestService.updateStatus(optional.get(), newStatus);
+		if (group.isPresent() && optional.isPresent()) {
+			requestManagementService.updateStatus(optional.get(), group.get(), newStatus, resolvedMessageId,
+					contributorId);
 			result = "Request marked as " + newStatus.getDescription();
 		} else {
 			result = REQUEST_NOT_FOUND;
 		}
+
 		return result;
+	}
+
+	public TelegramHandler markDone() {
+		return markDone(true);
+	}
+
+	public TelegramHandler markDoneSilently() {
+		return markDone(false);
 	}
 
 	private TelegramHandler markDone(boolean reply) {
@@ -305,13 +365,19 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (optional.isPresent()) {
 				Message message = update.message().replyToMessage();
 
-				boolean success = requestManagementService.markDone(message);
-
 				// reply
+				Integer resolvedMessageId = null;
 				String link = TelegramUtils.getLink(message);
 				if (reply) {
-					markDoneWithMessage(bot, update, chatId, message);
+					resolvedMessageId = markDoneWithMessage(bot, update, chatId, message);
 				}
+
+				if (resolvedMessageId == null) {
+					resolvedMessageId = message.messageId();
+				}
+
+				boolean success = requestManagementService.markDone(message, optional.get(),
+						resolvedMessageId.longValue(), update.message().from().id());
 
 				// send a message to notify operation
 				StringBuilder notificationBuilder = new StringBuilder();
@@ -326,7 +392,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		};
 	}
 
-	private void markDoneWithMessage(TelegramBot bot, Update update, Long chatId, Message message) {
+	private Integer markDoneWithMessage(TelegramBot bot, Update update, Long chatId, Message message) {
 		StringBuilder replyBuilder = new StringBuilder();
 
 		String text = TelegramUtils.removeCommand(update.message().text(), update.message().entities()).trim();
@@ -343,7 +409,14 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		// reply to the request
 		sendMessageReply.replyToMessageId(message.messageId());
 
-		bot.execute(sendMessageReply);
+		SendResponse response = bot.execute(sendMessageReply);
+
+		Integer resolvedMessageId = null;
+		if (response.isOk()) {
+			resolvedMessageId = response.message().messageId();
+		}
+
+		return resolvedMessageId;
 	}
 
 	public TelegramCondition replyToMessageWithFileCondition() {
@@ -383,7 +456,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (optional.isPresent()) {
 				Message message = update.message().replyToMessage();
 
-				boolean success = requestManagementService.markDone(message);
+				boolean success = requestManagementService.markDone(message, optional.get(),
+						update.message().messageId().longValue(), update.message().from().id());
 
 				String link = TelegramUtils.getLink(message);
 				StringBuilder stringBuilder = new StringBuilder();
@@ -416,7 +490,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 				// delete message
 				if (messageId != null) {
-					boolean success = requestManagementService.markCancelled(messageId, chatId);
+					boolean success = requestManagementService.markCancelled(messageId, optional.get(),
+							update.message().from().id());
 
 					String link = TelegramUtils.getLink(chatId.toString(), messageId.toString());
 					StringBuilder builder = new StringBuilder();
@@ -437,6 +512,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler removeRequest() {
 		return (bot, update) -> {
+			deleteMessage(bot, update.message());
+
 			Long chatId = TelegramUtils.getChatId(update);
 			String text = update.message().text();
 
@@ -469,12 +546,11 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				sendMessage.parseMode(ParseMode.HTML);
 
 				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.SECONDS);
-				deleteMessage(bot, update.message());
 			}
 		};
 	}
 
-	public TelegramHandler getRequests() {
+	public TelegramHandler findRequests() {
 		return (bot, update) -> {
 			Long chatId = TelegramUtils.getChatId(update);
 
@@ -486,16 +562,18 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (groupService.existsById(chatId) || isPrivate) {
 				deleteMessage(bot, update.message(), !isPrivate);
 
-				Optional<RequestStatus> status = getStatus(text);
-				Optional<Format> format = getFormat(text);
-				Optional<Source> source = getSource(text);
-				Optional<Boolean> optionalDescendent = getDescendent(text);
+				Optional<RequestStatus> status = TelegramConditionUtils.getStatus(text);
+				Optional<Format> format = TelegramConditionUtils.getFormat(text);
+				Optional<Source> source = TelegramConditionUtils.getSource(text);
+				Optional<String> otherTags = TelegramConditionUtils.getOtherTags(text);
+				Optional<Boolean> optionalDescendent = TelegramConditionUtils.getDescendent(text);
 
 				boolean descendent = optionalDescendent.isPresent() && optionalDescendent.get();
 				RequestStatus requestStatus = status.orElse(RequestStatus.PENDING);
-				List<Request> requests = requestService.findRequests(group, requestStatus, source, format, descendent);
+				List<Request> requests = requestService.findRequests(group, requestStatus, source, format, otherTags,
+						descendent);
 
-				String title = getTitle(requestStatus, format, source, descendent);
+				String title = getTitle(requestStatus, group, format, source, otherTags, descendent);
 
 				if (requests.isEmpty()) {
 					SendMessage sendMessage = new SendMessage(chatId, title + "No requests found");
@@ -513,7 +591,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 		if (isPrivate) {
 			// get requests in PM
-			group = getGroupId(text);
+			group = TelegramConditionUtils.getGroupId(text);
 		} else {
 			// get requests of the group
 			group = Optional.of(chatId);
@@ -539,36 +617,49 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			StringBuilder requestBuilder = new StringBuilder();
 			Long messageId = request.getId().getMessageId();
 			Long groupId = request.getId().getGroupId();
+
+			// request link
 			requestBuilder.append("<a href='").append(TelegramUtils.getLink(groupId.toString(), messageId.toString()))
 					.append("'>");
 
 			requestBuilder.append(getChatName(chatNames, groupId)).append(" ");
 			requestBuilder.append(i + 1).append("</a> ");
 
-			requestBuilder.append(RequestUtils.getTimeBetweenDates(request.getRequestDate(), now)).append(" ago ");
+			// request date
+			requestBuilder.append(RequestUtils.getTimeBetweenDates(request.getRequestDate(), now, true))
+					.append(" ago ");
 
+			// request tags
+			requestBuilder.append("#").append(request.getFormat().name().toLowerCase()).append(" #")
+					.append(request.getSource().name().toLowerCase()).append(" #").append(request.getOtherTags());
+
+			requestBuilder.append(" ");
+
+			// request actions
 			requestBuilder.append("[<a href='")
-					.append(TelegramUtils.getStartLink(configuration.getUsername(),
-							"show_message=" + messageId + "_group=" + groupId))
+					.append(RequestUtils.getActionsLink(configuration.getUsername(), messageId, groupId))
 					.append("'>Actions</a> for <code>").append(messageId).append("</code>]\n");
 
 			String requestText = requestBuilder.toString();
 
 			// if length is > message limit, send current text
 			if (builder.length() + requestText.length() > 4096) {
-				SendMessage sendMessage = new SendMessage(chatId, builder.toString());
-				sendMessage.parseMode(ParseMode.HTML);
-				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.MINUTES, deleteMessages);
+				sendRequestListMessage(bot, chatId, builder.toString(), deleteMessages);
 				builder = new StringBuilder(title);
 			}
 			builder.append(requestText);
 			// send last message
 			if (i == requests.size() - 1) {
-				SendMessage sendMessage = new SendMessage(chatId, builder.toString());
-				sendMessage.parseMode(ParseMode.HTML);
-				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.MINUTES, deleteMessages);
+				sendRequestListMessage(bot, chatId, builder.toString(), deleteMessages);
 			}
 		}
+	}
+
+	private void sendRequestListMessage(TelegramBot bot, Long chatId, String message, boolean deleteMessages) {
+		SendMessage sendMessage = new SendMessage(chatId, message);
+		sendMessage.parseMode(ParseMode.HTML);
+		sendMessage.disableWebPagePreview(true);
+		sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.MINUTES, deleteMessages);
 	}
 
 	private String getChatName(Map<Long, String> chatNames, Long groupId) {
@@ -616,6 +707,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 				SendMessage sendMessage = new SendMessage(chatId, message);
 				sendMessage.parseMode(ParseMode.HTML);
+				sendMessage.disableWebPagePreview(true);
 
 				sendMessageAndDelete(bot, sendMessage, 60, TimeUnit.SECONDS);
 				deleteMessage(bot, update.message());
@@ -633,8 +725,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			Long chatId = TelegramUtils.getChatId(update);
 			String text = update.message().text().replace('_', ' ');
 
-			Optional<Long> optionalGroupId = getGroupId(text);
-			Optional<Long> optionalMessageId = getMessageId(text);
+			Optional<Long> optionalGroupId = TelegramConditionUtils.getGroupId(text);
+			Optional<Long> optionalMessageId = TelegramConditionUtils.getMessageId(text);
 
 			if (optionalGroupId.isPresent() && optionalMessageId.isPresent()) {
 				Long groupId = optionalGroupId.get();
@@ -650,7 +742,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		Optional<Group> optional = groupService.findById(groupId);
 		if (optional.isPresent()) {
 
-			Optional<Request> requestOptional = requestService.findById(messageId, optional.get().getId());
+			Optional<Request> requestOptional = requestService.findById(messageId, groupId);
 			if (requestOptional.isPresent()) {
 				RequestStatus status = requestOptional.get().getStatus();
 
@@ -658,52 +750,15 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				SendMessage sendMessage = new SendMessage(chatId, message);
 				sendMessage.parseMode(ParseMode.HTML);
 				sendMessage.disableWebPagePreview(true);
-				InlineKeyboardMarkup inlineKeyboard = getRequestKeyboard(groupId, messageId, status);
+				InlineKeyboardMarkup inlineKeyboard = RequestUtils.getRequestKeyboard(configuration.getUsername(),
+						groupId, messageId, status, "📝 Refresh");
 
 				sendMessage.replyMarkup(inlineKeyboard);
+				sendMessage.disableNotification(true);
 
 				bot.execute(sendMessage);
 			}
 		}
-	}
-
-	private InlineKeyboardMarkup getRequestKeyboard(Long groupId, Long messageId, RequestStatus status) {
-		String callbackMessage = MESSAGE_CONDITION + messageId + " " + GROUP_CONDITION + groupId;
-		String callbackBegin = ContributorAction.CONFIRM + " " + callbackMessage + " action=";
-
-		InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
-		InlineKeyboardButton requestButton = new InlineKeyboardButton("📚 Request")
-				.url(TelegramUtils.getLink(groupId, messageId));
-		InlineKeyboardButton doneButton = new InlineKeyboardButton("✅ Done")
-				.callbackData(callbackBegin + ContributorAction.DONE);
-		InlineKeyboardButton pendingButton = new InlineKeyboardButton("⏳ Pending")
-				.callbackData(callbackBegin + ContributorAction.PENDING);
-		InlineKeyboardButton outstandingButton = new InlineKeyboardButton("⏸ Outstanding")
-				.callbackData(callbackBegin + ContributorAction.OUTSTANDING);
-		InlineKeyboardButton cancelButton = new InlineKeyboardButton("✖️ Cancel")
-				.callbackData(callbackBegin + ContributorAction.CANCEL);
-		InlineKeyboardButton removeButton = new InlineKeyboardButton("🗑 Remove")
-				.callbackData(callbackBegin + ContributorAction.REMOVE);
-
-		inlineKeyboard.addRow(requestButton, getButton(status, RequestStatus.RESOLVED, doneButton, pendingButton));
-		inlineKeyboard.addRow(getButton(status, RequestStatus.CANCELLED, cancelButton, pendingButton),
-				getButton(status, RequestStatus.OUTSTANDING, outstandingButton, pendingButton), removeButton);
-		return inlineKeyboard;
-	}
-
-	/**
-	 * Get the right button. Pending if status == otherButtonStatus, otherwise
-	 * otherButton
-	 *
-	 * @param status            Status of the request
-	 * @param otherButtonStatus Status of the button
-	 * @param otherButton       Button
-	 * @param pendingButton     Pending button
-	 * @return Button
-	 */
-	private InlineKeyboardButton getButton(RequestStatus status, RequestStatus otherButtonStatus,
-			InlineKeyboardButton otherButton, InlineKeyboardButton pendingButton) {
-		return status == otherButtonStatus ? pendingButton : otherButton;
 	}
 
 	private String getRequestInfo(TelegramBot bot, Group group, Optional<Request> requestOptional) {
@@ -712,14 +767,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		if (requestOptional.isPresent()) {
 			Request request = requestOptional.get();
 
-			messageBuilder.append(request.getContent());
-			messageBuilder.append("\n\n[");
-			messageBuilder.append("Request by ").append(getUser(bot, request)).append("(<code>")
-					.append(request.getUserId()).append("</code>)");
-			messageBuilder.append(" in ").append("#").append(group.getName().replace(' ', '_')).append(".");
-			messageBuilder.append(" Status: <b>").append(request.getStatus().getDescription().toUpperCase())
-					.append("</b>");
-			messageBuilder.append("]");
+			String requestInfo = RequestUtils.getRequestInfo(bot, group.getName(), request);
+			messageBuilder.append(requestInfo);
 		} else {
 			messageBuilder.append(REQUEST_NOT_FOUND);
 		}
@@ -727,31 +776,14 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		return messageBuilder.toString();
 	}
 
-	private String getUser(TelegramBot bot, Request request) {
-		GetChatMember getChatMember = new GetChatMember(request.getId().getGroupId(), request.getUserId());
-		GetChatMemberResponse member = bot.execute(getChatMember);
-
-		String user = null;
-		if (member.isOk()) {
-			user = TelegramUtils.tagUser(member.chatMember().user());
-		} else {
-			user = TelegramUtils.tagUser(request.getUserId());
-		}
-
-		return user.replace(".", "");
-	}
-
-	public TelegramCondition confirmActionCondition() {
-		return update -> update.callbackQuery() != null && update.callbackQuery().data() != null
-				&& update.callbackQuery().data().matches(CONFIRM_CALLBACK);
-	}
-
 	public TelegramHandler confirmAction() {
 		return (bot, update) -> {
 			String text = update.callbackQuery().data();
 
-			Optional<ContributorAction> actionOptional = getAction(text);
-			if (actionOptional.isPresent()) {
+			Optional<ContributorAction> actionOptional = TelegramConditionUtils.getAction(text);
+			Optional<Long> optionalGroupId = TelegramConditionUtils.getGroupId(text);
+			Optional<Long> optionalMessageId = TelegramConditionUtils.getMessageId(text);
+			if (actionOptional.isPresent() && optionalGroupId.isPresent() && optionalMessageId.isPresent()) {
 				ContributorAction action = actionOptional.get();
 
 				// reply to callback
@@ -762,17 +794,24 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append("You chose to <code>");
 				stringBuilder.append(action.getDescription());
-				stringBuilder.append("</code>\n");
+				stringBuilder.append("</code> <a href='")
+						.append(TelegramUtils.getLink(optionalGroupId.get(), optionalMessageId.get()))
+						.append("'>this request.</a>\n");
 				stringBuilder.append("Are you sure you want to continue?\n");
 				stringBuilder.append("<i>This message will disappear in 1 minute.</i>");
 				SendMessage sendMessage = new SendMessage(update.callbackQuery().from().id(), stringBuilder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
 
-				String callbackData = text.substring("confirm ".length(), text.indexOf(ACTION_CONDITION) - 1);
+				// get previous message
+				Long showRequestMessageId = null;
+				if (isCallbackMessageFromPM(update)) {
+					showRequestMessageId = update.callbackQuery().message().messageId().longValue();
+				}
 
 				InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
-				InlineKeyboardButton yesButton = new InlineKeyboardButton("✔️ Yes").callbackData(action + " "
-						+ callbackData + " " + REFRESH_SHOW_CONDITION + update.callbackQuery().message().messageId());
+				InlineKeyboardButton yesButton = new InlineKeyboardButton("✔️ Yes")
+						.callbackData(RequestUtils.getActionCallback(optionalMessageId.get(), optionalGroupId.get(),
+								action, Optional.ofNullable(showRequestMessageId)));
 
 				inlineKeyboard.addRow(yesButton);
 
@@ -783,68 +822,28 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		};
 	}
 
-	private <T> Optional<T> getCondition(String text, String condition, Function<String, T> function) {
-		T result = null;
-
-		int indexOf = text.toLowerCase().indexOf(condition);
-		int end = text.indexOf(' ', indexOf);
-
-		if (end < indexOf) {
-			end = text.length();
-		}
-
-		if (indexOf > -1) {
-			String conditionString = text.toUpperCase().substring(indexOf + condition.length(), end);
-			result = function.apply(conditionString);
-		}
-
-		return Optional.ofNullable(result);
-	}
-
-	private Optional<Long> getMessageId(String text) {
-		return getCondition(text, MESSAGE_CONDITION, Long::parseLong);
-	}
-
-	private Optional<Long> getGroupId(String text) {
-		return getCondition(text, GROUP_CONDITION, Long::parseLong);
-	}
-
-	private Optional<ContributorAction> getAction(String text) {
-		return getCondition(text, ACTION_CONDITION, ContributorAction::valueOf);
-	}
-
-	private Optional<Integer> getRefreshShow(String text) {
-		return getCondition(text, REFRESH_SHOW_CONDITION, Integer::parseInt);
-	}
-
-	private Optional<RequestStatus> getStatus(String text) {
-		return getCondition(text, STATUS_CONDITION, RequestStatus::valueOf);
-	}
-
-	private Optional<Format> getFormat(String text) {
-		return getCondition(text, FORMAT_CONDITION, Format::valueOf);
-	}
-
-	private Optional<Source> getSource(String text) {
-		return getCondition(text, SOURCE_CONDITION, Source::valueOf);
-	}
-
-	private Optional<Boolean> getDescendent(String text) {
-		return getCondition(text, ORDER_CONDITION, s -> s.equals(ORDER_CONDITION_NEW));
-	}
-
-	private String getTitle(RequestStatus requestStatus, Optional<Format> format, Optional<Source> source,
-			boolean descendent) {
+	private String getTitle(RequestStatus requestStatus, Optional<Long> group, Optional<Format> format,
+			Optional<Source> source, Optional<String> otherTags, boolean descendent) {
 		StringBuilder title = new StringBuilder();
 		title.append("<b>Requests ").append(requestStatus.getDescription()).append("</b>");
+		if (group.isPresent()) {
+			Long groupId = group.get();
+			Optional<Group> groupOptional = groupService.findById(groupId);
+			title.append("\nGroup [").append(groupOptional.orElseThrow().getName()).append(" (<code>").append(groupId)
+					.append("</code>)]");
+		}
 		if (format.isPresent()) {
 			title.append("\nFormat [").append(format.get()).append("]");
 		}
 		if (source.isPresent()) {
 			title.append("\nSource [").append(source.get()).append("]");
 		}
-		title.append("\nShow ").append(descendent ? ORDER_CONDITION_NEW : ORDER_CONDITION_OLD).append(" first.")
-				.append("\n\n");
+		if (otherTags.isPresent()) {
+			title.append("\nOther [").append(otherTags.get()).append("]");
+		}
+		title.append("\nShow ").append(
+				descendent ? TelegramConditionUtils.ORDER_CONDITION_NEW : TelegramConditionUtils.ORDER_CONDITION_OLD)
+				.append(" first.").append("\n\n");
 
 		return title.toString();
 	}

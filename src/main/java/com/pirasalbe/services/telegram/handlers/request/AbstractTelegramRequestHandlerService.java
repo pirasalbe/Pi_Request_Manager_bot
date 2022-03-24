@@ -9,18 +9,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Message;
+import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pirasalbe.configurations.ErrorConfiguration;
 import com.pirasalbe.models.RequestResult;
 import com.pirasalbe.models.Validation;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.request.Source;
+import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
-import com.pirasalbe.services.RequestService;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramUtils;
 
@@ -43,26 +45,72 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 	protected static final List<String> KNOWN_TAGS = Arrays.asList(REQUEST_TAG, EBOOK_TAG, AUDIOBOOK_TAG, KU_TAG,
 			ARCHIVE_TAG, STORYTEL_TAG, SCRIBD_TAG);
 
+	protected static final List<String> BUMPS = Arrays.asList("bump", "update", "can i get", "need", "please help",
+			"send", "thank");
+
+	@Autowired
+	protected ErrorConfiguration errorConfiguration;
+
 	@Autowired
 	protected RequestManagementService requestManagementService;
 
 	@Autowired
-	protected RequestService requestService;
-
-	@Autowired
 	protected GroupService groupService;
+
+	/**
+	 * Get the message from the update
+	 *
+	 * @return Message
+	 */
+	protected abstract Message getMessage(Update update);
+
+	public TelegramCondition getCondition() {
+		// messages with request
+		return update -> getRequestMessage(update) != null;
+	}
+
+	protected Message getRequestMessage(Update update) {
+		Message message = null;
+
+		Message updateMessage = getMessage(update);
+
+		// direct request
+		if (updateMessage != null && hasRequestTag(updateMessage.text())) {
+			message = updateMessage;
+		}
+
+		return message;
+	}
 
 	protected boolean hasRequestTag(String text) {
 		// messages with request tag
 		return text != null && text.toLowerCase().contains(REQUEST_TAG);
 	}
 
-	protected void newRequest(TelegramBot bot, Message message, Long chatId, LocalDateTime requestTime, Group group) {
+	protected boolean isBump(String text) {
+		boolean result = false;
+
+		if (text != null) {
+			text = text.toLowerCase();
+
+			for (int i = 0; i < BUMPS.size() && !result; i++) {
+				String bump = BUMPS.get(i);
+
+				// message has bump keyword
+				result = text.contains(bump);
+			}
+		}
+
+		return result;
+	}
+
+	protected void newRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,
+			LocalDateTime requestTime, Group group) {
 		String content = RequestUtils.getContent(message.text(), message.entities());
 		String link = RequestUtils.getLink(message.text(), message.entities());
 
 		if (link != null) {
-			newRequest(bot, message, chatId, requestTime, group, content, link);
+			newRequest(bot, message, chatId, messageId, requestTime, group, content, link);
 		} else {
 			manageIncompleteRequest(bot, message, chatId);
 		}
@@ -72,13 +120,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		// notify user of the error
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append(TelegramUtils.tagUser(message));
-		stringBuilder.append("Your request is incomplete. See pinned messages.\n\n");
-		stringBuilder.append("It should look like this:\n\n");
-		stringBuilder.append("<i>#request (+ other tags if needed)</i>\n");
-		stringBuilder.append("<i>Title</i>\n");
-		stringBuilder.append("<i>Author</i>\n");
-		stringBuilder.append("<i>Publisher (or Self-published when publisher isn't specified)</i>\n");
-		stringBuilder.append("<i>Link</i>\n\n");
+		stringBuilder.append(errorConfiguration.getIncompleteRequest());
 		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 		sendMessage.replyToMessageId(message.messageId());
 		sendMessage.parseMode(ParseMode.HTML);
@@ -86,8 +128,8 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		bot.execute(sendMessage);
 	}
 
-	protected void newRequest(TelegramBot bot, Message message, Long chatId, LocalDateTime requestTime, Group group,
-			String content, String link) {
+	protected void newRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,
+			LocalDateTime requestTime, Group group, String content, String link) {
 		Long userId = message.from().id();
 
 		Format format = getFormat(content);
@@ -96,10 +138,10 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		Validation validation = requestManagementService.canRequest(group, userId, format, requestTime);
 		if (validation.isValid()) {
 			// create request
-			manageRequest(bot, message, chatId, message.messageId(), requestTime, group, content, link, format);
+			manageRequest(bot, message, chatId, messageId, requestTime, group, content, link, format);
 		} else {
 			// notify user of the error
-			DeleteMessage deleteMessage = new DeleteMessage(chatId, message.messageId());
+			DeleteMessage deleteMessage = new DeleteMessage(chatId, messageId);
 			SendMessage sendMessage = new SendMessage(chatId, TelegramUtils.tagUser(message) + validation.getReason());
 			sendMessage.parseMode(ParseMode.HTML);
 
@@ -144,20 +186,22 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 	}
 
 	protected String getOtherTags(String content) {
-		String otherTags = null;
+		String otherTags = RequestUtils.OTHER_TAGS_ENGLISH;
 
 		// split every word
+		boolean found = false;
 		String[] parts = content.replace("\n", " ").split(" ");
-		for (int i = 0; i < parts.length && otherTags == null; i++) {
+		for (int i = 0; i < parts.length && !found; i++) {
 			String part = parts[i].toLowerCase();
 
 			// if the word is a tag and is unknown
 			if (Pattern.matches("^#.*", part) && !KNOWN_TAGS.contains(part)) {
 				otherTags = part.substring(1);
+				found = true;
 			}
 		}
 
-		return otherTags;
+		return otherTags.toLowerCase();
 	}
 
 	protected Format getFormat(String content) {

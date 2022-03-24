@@ -3,9 +3,19 @@ package com.pirasalbe.utils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
+import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.MessageEntity;
 import com.pengrad.telegrambot.model.MessageEntity.Type;
+import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
+import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
+import com.pengrad.telegrambot.request.GetChatMember;
+import com.pengrad.telegrambot.response.GetChatMemberResponse;
+import com.pirasalbe.models.Cache;
+import com.pirasalbe.models.ContributorAction;
+import com.pirasalbe.models.database.Request;
+import com.pirasalbe.models.request.RequestStatus;
 import com.pirasalbe.models.request.Source;
 
 /**
@@ -15,6 +25,10 @@ import com.pirasalbe.models.request.Source;
  *
  */
 public class RequestUtils {
+
+	public static final String OTHER_TAGS_ENGLISH = "english";
+
+	private static Cache<Long, String> userNames = new Cache<>(604800l);
 
 	private RequestUtils() {
 		super();
@@ -63,6 +77,11 @@ public class RequestUtils {
 					link = content.substring(entity.offset(), entity.offset() + entity.length());
 				}
 			}
+		}
+
+		if (link != null) {
+			// remove params
+			link = link.split("\\?")[0];
 		}
 
 		return link;
@@ -161,6 +180,10 @@ public class RequestUtils {
 	}
 
 	public static String getTimeBetweenDates(LocalDateTime from, LocalDateTime to) {
+		return getTimeBetweenDates(from, to, false);
+	}
+
+	public static String getTimeBetweenDates(LocalDateTime from, LocalDateTime to, boolean shortNames) {
 		StringBuilder stringBuilder = new StringBuilder();
 
 		// get numbers
@@ -169,29 +192,35 @@ public class RequestUtils {
 		long minutes = DateUtils.getMinutes(from, to, days, hours);
 
 		// aggregate them
-		if (days > 0) {
-			stringBuilder.append(days).append(" day").append(StringUtils.getPlural(days));
-		}
+		appendTime(stringBuilder, days, false, shortNames, "d", "day");
 
 		// get hours
 		if (days > 0 && hours > 0) {
 			stringBuilder.append(minutes > 0 ? ", " : " and ");
 		}
 
-		if (hours > 0) {
-			stringBuilder.append(hours).append(" hour").append(StringUtils.getPlural(hours));
-		}
+		appendTime(stringBuilder, hours, false, shortNames, "h", "hour");
 
 		// get minutes
 		if (hours > 0 && minutes > 0 || days > 0 && minutes > 0) {
 			stringBuilder.append(" and ");
 		}
 
-		if (minutes > 0 || stringBuilder.length() == 0) {
-			stringBuilder.append(minutes).append(" minute").append(StringUtils.getPlural(minutes));
-		}
+		appendTime(stringBuilder, minutes, stringBuilder.length() == 0, shortNames, "m", "minute");
 
 		return stringBuilder.toString();
+	}
+
+	private static void appendTime(StringBuilder stringBuilder, long value, boolean force, boolean shortNames,
+			String shortName, String longName) {
+		if (value > 0 || force) {
+			stringBuilder.append(value).append(" ");
+			if (shortNames) {
+				stringBuilder.append(shortName);
+			} else {
+				stringBuilder.append(longName).append(StringUtils.getPlural(value));
+			}
+		}
 	}
 
 	public static String getComeBackAgain(LocalDateTime requestTime, LocalDateTime nextValidRequest) {
@@ -203,6 +232,182 @@ public class RequestUtils {
 		stringBuilder.append(".");
 
 		return stringBuilder.toString();
+	}
+
+	public static String getActionsLink(String username, Long messageId, Long groupId) {
+		StringBuilder paramBuilder = new StringBuilder();
+		paramBuilder.append("show_message=");
+		paramBuilder.append(messageId);
+		paramBuilder.append("_").append(TelegramConditionUtils.GROUP_CONDITION);
+		paramBuilder.append(groupId);
+		return TelegramUtils.getStartLink(username, paramBuilder.toString());
+	}
+
+	public static String getRequestInfo(TelegramBot bot, String groupName, Request request) {
+		StringBuilder messageBuilder = new StringBuilder();
+
+		messageBuilder.append(request.getContent());
+
+		messageBuilder.append("\n\n[");
+
+		// 👤 Hayut (5258002384) | 👥 #Audoroom | ⏳PENDING | 🕔 7h 4m ago
+
+		// user info
+		messageBuilder.append("👤 ").append(getUser(bot, request.getId().getGroupId(), request.getUserId()))
+				.append("(<code>").append(request.getUserId()).append("</code>)");
+
+		// group info
+		messageBuilder.append(" | ");
+		String groupNameSanitized = groupName.replace(' ', '_').replace(".", "").replace(":", "");
+		messageBuilder.append("👥 #").append(groupNameSanitized);
+
+		// time info
+		messageBuilder.append(" | ");
+		messageBuilder.append("🕔 ").append(getTimeBetweenDates(request.getRequestDate(), DateUtils.getNow(), true));
+
+		// status info
+		messageBuilder.append(" | ");
+		messageBuilder.append(request.getStatus().getIcon()).append(" ")
+				.append(request.getStatus().getDescription().toUpperCase());
+
+		// resolved info
+		if (request.getStatus() == RequestStatus.RESOLVED) {
+			messageBuilder.append(" | ");
+			messageBuilder.append(RequestStatus.RESOLVED.getIcon()).append(" ")
+					.append(getTimeBetweenDates(request.getResolvedDate(), DateUtils.getNow(), true));
+
+			if (request.getResolvedMessageId() != null) {
+				messageBuilder.append(" | ");
+				messageBuilder.append("<a href='")
+						.append(TelegramUtils.getLink(request.getId().getGroupId(), request.getResolvedMessageId()))
+						.append("'>Fulfilled here").append("</a>");
+
+			}
+		}
+
+		// contributor
+		if (request.getContributor() != null) {
+			messageBuilder.append(" | ");
+			messageBuilder.append("🙋 ").append(getUser(bot, request.getId().getGroupId(), request.getContributor()));
+		}
+
+		messageBuilder.append("]");
+
+		return messageBuilder.toString();
+	}
+
+	private static String getUser(TelegramBot bot, Long groupId, Long userId) {
+		String username = null;
+
+		if (userNames.containsKey(userId)) {
+			username = userNames.get(userId);
+		} else {
+
+			GetChatMember getChatMember = new GetChatMember(groupId, userId);
+			GetChatMemberResponse member = bot.execute(getChatMember);
+
+			if (member.isOk()) {
+				username = TelegramUtils.getUserName(member.chatMember().user());
+				userNames.put(userId, username);
+			} else {
+				username = userId.toString();
+			}
+		}
+
+		return TelegramUtils.tagUser(userId, username).replace(".", "");
+	}
+
+	public static InlineKeyboardMarkup getRequestKeyboard(String username, Long groupId, Long messageId,
+			RequestStatus status, String refreshButtonText) {
+		InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
+
+		InlineKeyboardButton requestButton = new InlineKeyboardButton("📚 Request")
+				.url(TelegramUtils.getLink(groupId, messageId));
+		InlineKeyboardButton refreshButton = new InlineKeyboardButton(refreshButtonText)
+				.url(RequestUtils.getActionsLink(username, messageId, groupId));
+
+		inlineKeyboard.addRow(requestButton, refreshButton);
+
+		InlineKeyboardButton pendingButton = new InlineKeyboardButton(RequestStatus.PENDING.getIcon() + " Pending")
+				.callbackData(RequestUtils.getActionCallback(messageId, groupId, ContributorAction.PENDING));
+
+		InlineKeyboardButton doneButton = new InlineKeyboardButton(RequestStatus.RESOLVED.getIcon() + " Done")
+				.callbackData(RequestUtils.getActionCallback(messageId, groupId, ContributorAction.DONE));
+		InlineKeyboardButton inProgressButton = new InlineKeyboardButton(
+				RequestStatus.IN_PROGRESS.getIcon() + " In Progress").callbackData(
+						RequestUtils.getActionCallback(messageId, groupId, ContributorAction.IN_PROGRESS));
+		InlineKeyboardButton pauseButton = new InlineKeyboardButton(RequestStatus.PAUSED.getIcon() + " Pause")
+				.callbackData(RequestUtils.getActionCallback(messageId, groupId, ContributorAction.PAUSE));
+
+		inlineKeyboard.addRow(getButton(status, RequestStatus.PAUSED, pauseButton, pendingButton),
+				getButton(status, RequestStatus.IN_PROGRESS, inProgressButton, pendingButton),
+				getButton(status, RequestStatus.RESOLVED, doneButton, pendingButton));
+
+		InlineKeyboardButton cancelButton = new InlineKeyboardButton(RequestStatus.CANCELLED.getIcon() + " Cancel")
+				.callbackData(RequestUtils.getActionCallback(messageId, groupId, ContributorAction.CANCEL));
+		InlineKeyboardButton removeButton = new InlineKeyboardButton("🗑 Remove")
+				.callbackData(RequestUtils.getConfirmActionCallback(messageId, groupId, ContributorAction.REMOVE));
+
+		inlineKeyboard.addRow(getButton(status, RequestStatus.CANCELLED, cancelButton, pendingButton), removeButton);
+
+		return inlineKeyboard;
+	}
+
+	/**
+	 * Get the right button. Pending if status == otherButtonStatus, otherwise
+	 * otherButton
+	 *
+	 * @param status            Status of the request
+	 * @param otherButtonStatus Status of the button
+	 * @param otherButton       Button
+	 * @param pendingButton     Pending button
+	 * @return Button
+	 */
+	private static InlineKeyboardButton getButton(RequestStatus status, RequestStatus otherButtonStatus,
+			InlineKeyboardButton otherButton, InlineKeyboardButton pendingButton) {
+		return status == otherButtonStatus ? pendingButton : otherButton;
+	}
+
+	private static String getConfirmActionCallback(Long messageId, Long groupId, ContributorAction action) {
+		StringBuilder callbackBuilder = new StringBuilder();
+
+		callbackBuilder.append(ContributorAction.CONFIRM);
+		callbackBuilder.append(" ");
+		callbackBuilder.append(getCallbackRequestData(messageId, groupId));
+		callbackBuilder.append(" ");
+		callbackBuilder.append(TelegramConditionUtils.ACTION_CONDITION).append(action);
+
+		return callbackBuilder.toString();
+	}
+
+	private static String getActionCallback(Long messageId, Long groupId, ContributorAction action) {
+		return getActionCallback(messageId, groupId, action, Optional.empty());
+	}
+
+	public static String getActionCallback(Long messageId, Long groupId, ContributorAction action,
+			Optional<Long> refreshMessage) {
+		StringBuilder callbackBuilder = new StringBuilder();
+
+		callbackBuilder.append(action);
+		callbackBuilder.append(" ");
+		callbackBuilder.append(getCallbackRequestData(messageId, groupId));
+
+		if (refreshMessage.isPresent()) {
+			callbackBuilder.append(" ");
+			callbackBuilder.append(TelegramConditionUtils.REFRESH_SHOW_CONDITION).append(refreshMessage.get());
+		}
+
+		return callbackBuilder.toString();
+	}
+
+	private static String getCallbackRequestData(Long messageId, Long groupId) {
+		StringBuilder callbackReequestDataBuilder = new StringBuilder();
+
+		callbackReequestDataBuilder.append(TelegramConditionUtils.MESSAGE_CONDITION).append(messageId);
+		callbackReequestDataBuilder.append(" ");
+		callbackReequestDataBuilder.append(TelegramConditionUtils.GROUP_CONDITION).append(groupId);
+
+		return callbackReequestDataBuilder.toString();
 	}
 
 }

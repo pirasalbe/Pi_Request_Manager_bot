@@ -7,30 +7,30 @@ import javax.persistence.Column;
 import javax.persistence.Embeddable;
 
 /**
- * Request Primary Key
+ * Channel Request Primary Key
  *
  * @author pirasalbe
  *
  */
 @Embeddable
-public class RequestPK implements Serializable {
+public class ChannelRequestPK implements Serializable {
 
 	private static final long serialVersionUID = 3126637537858452476L;
+
+	@Column(name = "CHANNEL_ID")
+	private Long channelId;
 
 	@Column(name = "MESSAGE_ID")
 	private Long messageId;
 
-	@Column(name = "GROUP_ID")
-	private Long groupId;
-
-	public RequestPK() {
+	public ChannelRequestPK() {
 		super();
 	}
 
-	public RequestPK(Long messageId, Long groupId) {
+	public ChannelRequestPK(Long channelId, Long messageId) {
 		super();
 		this.messageId = messageId;
-		this.groupId = groupId;
+		this.channelId = channelId;
 	}
 
 	public Long getMessageId() {
@@ -41,17 +41,17 @@ public class RequestPK implements Serializable {
 		this.messageId = messageId;
 	}
 
-	public Long getGroupId() {
-		return groupId;
+	public Long getChannelId() {
+		return channelId;
 	}
 
-	public void setGroupId(Long groupId) {
-		this.groupId = groupId;
+	public void setChannelId(Long channelId) {
+		this.channelId = channelId;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(groupId, messageId);
+		return Objects.hash(channelId, messageId);
 	}
 
 	@Override
@@ -60,13 +60,13 @@ public class RequestPK implements Serializable {
 			return true;
 		if (obj == null || getClass() != obj.getClass())
 			return false;
-		RequestPK other = (RequestPK) obj;
-		return Objects.equals(groupId, other.groupId) && Objects.equals(messageId, other.messageId);
+		ChannelRequestPK other = (ChannelRequestPK) obj;
+		return Objects.equals(channelId, other.channelId) && Objects.equals(messageId, other.messageId);
 	}
 
 	@Override
 	public String toString() {
-		return "RequestPK [messageId=" + messageId + ", groupId=" + groupId + "]";
+		return "ChannelRequestPK [channelId=" + channelId + ", messageId=" + messageId + "]";
 	}
 
 }

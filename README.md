@@ -26,6 +26,12 @@ The following command will create an executable jar.
 ./gradlew bootJar
 ```
 
+Use the following to generate a Raspberry executable jar.
+
+```
+./gradlew -Ppi bootJar
+```
+
 ### Build and Run
 
 The following command runs build the project and runs it.

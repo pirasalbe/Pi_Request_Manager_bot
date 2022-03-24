@@ -7,11 +7,26 @@ plugins {
 }
 
 group = 'com.pirasalbe'
-version = '2.2.0-SNAPSHOT'
+version = '2.3.0-SNAPSHOT'
 sourceCompatibility = '11'
 
 repositories {
-	mavenCentral()
+	mavenCentral()	
+	maven { url "https://mvn.mchv.eu/repository/mchv/" }
+}
+
+if (project.hasProperty('pi')) {
+	dependencies {
+   		implementation 'it.tdlight:tdlight-natives-linux-armhf'
+   	}
+} else {
+	dependencies {
+		implementation 'it.tdlight:tdlight-natives-linux-amd64'
+   	}
+}
+
+ext {
+	tdlightVersion = "2.8.2.2"
 }
 
 eclipse {
@@ -36,6 +51,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'com.github.pengrad:java-telegram-bot-api:5.7.0'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	
+	// tdlib
+	implementation platform('it.tdlight:tdlight-java-bom:' + tdlightVersion)
+	implementation 'it.tdlight:tdlight-java'
 }
 
 test {

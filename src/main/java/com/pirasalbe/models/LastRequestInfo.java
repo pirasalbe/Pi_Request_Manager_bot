@@ -3,6 +3,7 @@ package com.pirasalbe.models;
 import java.time.LocalDateTime;
 
 import com.pirasalbe.models.database.Request;
+import com.pirasalbe.utils.RequestUtils;
 
 public class LastRequestInfo {
 
@@ -41,6 +42,10 @@ public class LastRequestInfo {
 
 	public String getOtherTags() {
 		return request.getOtherTags();
+	}
+
+	public boolean isEnglish() {
+		return getOtherTags() == null || getOtherTags().equals(RequestUtils.OTHER_TAGS_ENGLISH);
 	}
 
 }

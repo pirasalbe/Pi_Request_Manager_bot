@@ -1,13 +1,21 @@
 package com.pirasalbe.services;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
 
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
@@ -33,6 +41,8 @@ import com.pirasalbe.utils.DateUtils;
 @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 public class RequestService {
 
+	private static final String REQUEST_DATE = "requestDate";
+
 	@Autowired
 	private RequestRepository repository;
 
@@ -45,6 +55,10 @@ public class RequestService {
 
 	public Optional<Request> findById(Long messageId, Long groupId) {
 		return repository.findById(new RequestPK(messageId, groupId));
+	}
+
+	public Page<Request> findAll(int page, int size) {
+		return repository.findAll(PageRequest.of(page, size).withSort(Sort.by(Direction.ASC, REQUEST_DATE)));
 	}
 
 	public boolean deleteById(Long messageId, Long groupId) {
@@ -63,15 +77,28 @@ public class RequestService {
 		entityManager.flush();
 	}
 
-	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void deleteOldRequests() {
-		LocalDateTime twoMonths = DateUtils.getNow().minusMonths(2);
-		repository.deleteOldCancelled(twoMonths);
-		repository.deleteOldResolved(twoMonths);
+	private LocalDateTime getOldLocalDateTime() {
+		return DateUtils.getNow().minusMonths(2);
+	}
+
+	public List<Request> getOldRequests() {
+		LocalDateTime twoMonths = getOldLocalDateTime();
+
+		List<Request> oldRequests = repository.findOldByStatus(twoMonths, RequestStatus.CANCELLED);
+		oldRequests.addAll(repository.findOldByStatus(twoMonths, RequestStatus.RESOLVED));
+
+		return oldRequests;
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void insert(Long messageId, Long groupId, String link, String content, Format format, Source source,
+	public void deleteOldRequests() {
+		LocalDateTime twoMonths = getOldLocalDateTime();
+		repository.deleteOldByStatus(twoMonths, RequestStatus.CANCELLED);
+		repository.deleteOldByStatus(twoMonths, RequestStatus.RESOLVED);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public Request insert(Long messageId, Long groupId, String link, String content, Format format, Source source,
 			String otherTags, Long userId, LocalDateTime requestDate) {
 		Request request = new Request();
 
@@ -85,21 +112,26 @@ public class RequestService {
 		request.setUserId(userId);
 		request.setRequestDate(requestDate);
 
+		return save(request);
+	}
+
+	private Request save(Request request) {
+		Request requestCopy = new Request();
+		BeanUtils.copyProperties(request, requestCopy);
+
 		repository.save(request);
+
+		return requestCopy;
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void update(Long messageId, Long groupId, String link, String content, Format format, Source source,
-			String otherTags) {
-		update(messageId, groupId, link, content, format, source, otherTags, null);
-	}
-
-	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void update(Long messageId, Long groupId, String link, String content, Format format, Source source,
+	public Request update(Long messageId, Long groupId, String link, String content, Format format, Source source,
 			String otherTags, LocalDateTime requestDate) {
+		Request requestCopy = null;
+
 		Optional<Request> optional = findById(messageId, groupId);
 
-		if (optional.isPresent()) {
+		if (optional.isPresent() && optional.get().getStatus() != RequestStatus.RESOLVED) {
 			Request request = optional.get();
 			request.setLink(link);
 			request.setStatus(RequestStatus.PENDING);
@@ -112,8 +144,10 @@ public class RequestService {
 				request.setRequestDate(requestDate);
 			}
 
-			repository.save(request);
+			requestCopy = save(request);
 		}
+
+		return requestCopy;
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
@@ -122,15 +156,23 @@ public class RequestService {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void updateStatus(Request request, RequestStatus status) {
+	public Request updateStatus(Request request, RequestStatus status, Long resolvedMessageId, Long contributor) {
+		return updateStatus(request, status, resolvedMessageId, DateUtils.getNow(), contributor);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public Request updateStatus(Request request, RequestStatus status, Long resolvedMessageId,
+			LocalDateTime resolveDate, Long contributor) {
 		request.setStatus(status);
+		request.setResolvedMessageId(resolvedMessageId);
+		request.setContributor(contributor);
 		if (status == RequestStatus.RESOLVED) {
-			request.setResolvedDate(DateUtils.getNow());
+			request.setResolvedDate(resolveDate);
 		} else {
 			request.setResolvedDate(null);
 		}
 
-		repository.save(request);
+		return save(request);
 	}
 
 	public Request getLastEbookRequestOfUser(Long userId) {
@@ -171,30 +213,51 @@ public class RequestService {
 	}
 
 	public List<Request> findRequests(Optional<Long> groupId, RequestStatus status, Optional<Source> source,
-			Optional<Format> format, boolean descendent) {
-		List<Request> requests = null;
-		Direction direction = descendent ? Direction.DESC : Direction.ASC;
-		Sort sort = Sort.by(direction, "requestDate");
+			Optional<Format> format, Optional<String> otherTags, boolean descendent) {
 
-		if (groupId.isPresent() && source.isPresent() && format.isPresent()) {
-			requests = repository.findByFilters(groupId.get(), status, source.get(), format.get(), sort);
-		} else if (groupId.isPresent() && source.isPresent()) {
-			requests = repository.findByFilters(groupId.get(), status, source.get(), sort);
-		} else if (groupId.isPresent() && format.isPresent()) {
-			requests = repository.findByFilters(groupId.get(), status, format.get(), sort);
-		} else if (groupId.isPresent()) {
-			requests = repository.findByFilters(groupId.get(), status, sort);
-		} else if (source.isPresent() && format.isPresent()) {
-			requests = repository.findByFilters(status, source.get(), format.get(), sort);
-		} else if (source.isPresent()) {
-			requests = repository.findByFilters(status, source.get(), sort);
-		} else if (format.isPresent()) {
-			requests = repository.findByFilters(status, format.get(), sort);
-		} else {
-			requests = repository.findByFilters(status, sort);
+		CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
+		CriteriaQuery<Request> criteriaQuery = criteriaBuilder.createQuery(Request.class);
+		Root<Request> requestRoot = criteriaQuery.from(Request.class);
+
+		criteriaQuery.select(requestRoot);
+
+		List<Predicate> predicates = new ArrayList<>();
+
+		// status
+		predicates.add(criteriaBuilder.equal(requestRoot.get("status"), status));
+
+		// group
+		if (groupId.isPresent()) {
+			predicates.add(criteriaBuilder.equal(requestRoot.get("id").get("groupId"), groupId.get()));
 		}
 
-		return requests;
+		// source
+		if (source.isPresent()) {
+			predicates.add(criteriaBuilder.equal(requestRoot.get("source"), source.get()));
+		}
+
+		// format
+		if (format.isPresent()) {
+			predicates.add(criteriaBuilder.equal(requestRoot.get("format"), format.get()));
+		}
+
+		// otherTags
+		if (otherTags.isPresent()) {
+			predicates.add(criteriaBuilder.equal(requestRoot.get("otherTags"), otherTags.get()));
+		}
+
+		criteriaQuery.where(predicates.toArray(new Predicate[0]));
+
+		// order by
+		if (descendent) {
+			criteriaQuery.orderBy(criteriaBuilder.desc(requestRoot.get(REQUEST_DATE)));
+		} else {
+			criteriaQuery.orderBy(criteriaBuilder.asc(requestRoot.get(REQUEST_DATE)));
+		}
+
+		TypedQuery<Request> query = entityManager.createQuery(criteriaQuery);
+
+		return query.getResultList();
 	}
 
 }

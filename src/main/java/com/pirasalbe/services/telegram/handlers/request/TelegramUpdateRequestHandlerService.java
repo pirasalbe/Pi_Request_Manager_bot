@@ -24,14 +24,23 @@ import com.pirasalbe.utils.RequestUtils;
 @Component
 public class TelegramUpdateRequestHandlerService extends AbstractTelegramRequestHandlerService {
 
-	public TelegramCondition geCondition() {
-		// edit request
-		return update -> update.editedMessage() != null && hasRequestTag(update.editedMessage().text());
+	@Override
+	protected Message getMessage(Update update) {
+		return update.editedMessage();
+	}
+
+	@Override
+	public TelegramCondition getCondition() {
+		return update -> super.getCondition().check(update) && !isBotRequest(getRequestMessage(update));
+	}
+
+	private boolean isBotRequest(Message message) {
+		return message.viaBot() != null && (message.forwardFrom() != null && message.forwardFrom().isBot());
 	}
 
 	@Override
 	public void handle(TelegramBot bot, Update update) {
-		Message message = update.editedMessage();
+		Message message = getRequestMessage(update);
 
 		Long chatId = message.chat().id();
 
@@ -57,7 +66,7 @@ public class TelegramUpdateRequestHandlerService extends AbstractTelegramRequest
 					// request may or may not exists
 					LocalDateTime requestTime = DateUtils.integerToLocalDateTime(message.editDate());
 
-					newRequest(bot, message, chatId, requestTime, group, content, link);
+					newRequest(bot, message, chatId, message.messageId(), requestTime, group, content, link);
 				}
 			} else {
 				manageIncompleteRequest(bot, message, chatId);
@@ -68,7 +77,7 @@ public class TelegramUpdateRequestHandlerService extends AbstractTelegramRequest
 	private void updateRequest(Message message, Group group, String content, String link) {
 		Format format = getFormat(content);
 
-		requestService.update(message.messageId().longValue(), group.getId(), link, content, format,
+		requestManagementService.updateRequest(message.messageId().longValue(), group, link, content, format,
 				getSource(content, format), getOtherTags(content));
 	}
 

@@ -158,4 +158,73 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 		</update>
 	</changeSet>
 
+	<changeSet id="16 - Create Channels" author="pirasalbe">
+		<createTable tableName="CHANNELS">
+			<column name="ID" type="bigint">
+				<constraints primaryKey="true" primaryKeyName="CHANNELS_PK" />
+			</column>
+			<column name="NAME" type="varchar(512)">
+				<constraints nullable="false" />
+			</column>
+		</createTable>
+	</changeSet>
+
+	<changeSet id="17 - Create Channels rules" author="pirasalbe">
+		<createTable tableName="CHANNEL_RULES">
+			<column name="CHANNEL_ID" type="bigint">
+				<constraints primaryKey="true" primaryKeyName="CHANNEL_RULES_PK" foreignKeyName="CHANNEL_RULES_CHANNELS_FK" references="CHANNELS(ID)" />
+			</column>
+			<column name="TYPE" type="varchar(128)">
+				<constraints primaryKey="true" primaryKeyName="CHANNEL_RULES_PK" />
+			</column>
+			<column name="VALUE" type="varchar(128)">
+				<constraints primaryKey="true" primaryKeyName="CHANNEL_RULES_PK" />
+			</column>
+		</createTable>
+	</changeSet>
+
+	<changeSet id="18 - Create Channels Requests" author="pirasalbe">
+		<createTable tableName="CHANNEL_REQUESTS">
+			<column name="CHANNEL_ID" type="bigint">
+				<constraints primaryKey="true" primaryKeyName="CHANNEL_REQUESTS_PK" foreignKeyName="CHANNEL_REQUESTS_CHANNELS_FK" references="CHANNELS(ID)" />
+			</column>
+			<column name="MESSAGE_ID" type="bigint">
+				<constraints primaryKey="true" primaryKeyName="CHANNEL_REQUESTS_PK" />
+			</column>
+			<column name="REQUEST_MESSAGE_ID" type="bigint">
+				<constraints primaryKey="true" />
+			</column>
+			<column name="REQUEST_GROUP_ID" type="bigint">
+				<constraints nullable="false" />
+			</column>
+		</createTable>
+		<addUniqueConstraint constraintName="CHANNEL_REQUESTS_UQ" tableName="CHANNEL_REQUESTS" columnNames="CHANNEL_ID, REQUEST_MESSAGE_ID, REQUEST_GROUP_ID" validate="true" />
+	</changeSet>
+
+	<changeSet id="19 - Add column to Requests" author="pirasalbe">
+		<addColumn tableName="REQUESTS">
+			<column name="CONTRIBUTOR" type="bigint" />
+		</addColumn>
+	</changeSet>
+
+	<changeSet id="20 - Update other tags value" author="pirasalbe">
+		<update tableName="REQUESTS">
+			<column name="OTHER_TAGS" value="ENGLISH"/>
+			<where>OTHER_TAGS IS NULL</where>
+		</update>
+	</changeSet>
+
+	<changeSet id="21 - Update other tags value" author="pirasalbe">
+		<update tableName="REQUESTS">
+			<column name="OTHER_TAGS" value="english"/>
+			<where>OTHER_TAGS='ENGLISH'</where>
+		</update>
+	</changeSet>
+
+	<changeSet id="22 - Add column to Requests" author="pirasalbe">
+		<addColumn tableName="REQUESTS">
+			<column name="RESOLVED_MESSAGE_ID" type="bigint" />
+		</addColumn>
+	</changeSet>
+
 </databaseChangeLog>

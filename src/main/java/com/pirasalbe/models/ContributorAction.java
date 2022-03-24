@@ -1,8 +1,8 @@
 package com.pirasalbe.models;
 
 public enum ContributorAction {
-	CONFIRM("confirm"), DONE("mark as done"), PENDING("mark as pending"), OUTSTANDING("mark as outstanding"),
-	CANCEL("cancel"), REMOVE("remove");
+	CONFIRM("confirm"), DONE("mark as done"), IN_PROGRESS("mark as in progress"), PENDING("mark as pending"),
+	PAUSE("mark as paused"), CANCEL("cancel"), REMOVE("remove");
 
 	private String description;
 

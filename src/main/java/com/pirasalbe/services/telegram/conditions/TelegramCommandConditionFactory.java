@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.MessageEntity;
 import com.pengrad.telegrambot.model.MessageEntity.Type;
+import com.pengrad.telegrambot.model.Update;
 import com.pirasalbe.configurations.TelegramConfiguration;
 import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 
@@ -71,7 +72,7 @@ public class TelegramCommandConditionFactory {
 			boolean asserted = false;
 
 			// commands only handles messages
-			Message message = update.message();
+			Message message = getMessage(update);
 			if (message != null) {
 				String messageCommand = getCommand(message.text(), message.entities());
 				asserted = messageCommand != null && commands.contains(messageCommand);
@@ -84,6 +85,23 @@ public class TelegramCommandConditionFactory {
 
 			return asserted;
 		};
+	}
+
+	/**
+	 * Get message from update
+	 *
+	 * @param update Update
+	 * @return Message
+	 */
+	private Message getMessage(Update update) {
+		Message message = null;
+		if (update.message() != null) {
+			message = update.message();
+		} else if (update.channelPost() != null) {
+			message = update.channelPost();
+		}
+
+		return message;
 	}
 
 	/**

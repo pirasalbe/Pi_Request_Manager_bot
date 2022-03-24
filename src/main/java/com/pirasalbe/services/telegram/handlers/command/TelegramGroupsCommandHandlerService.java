@@ -36,7 +36,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 	public static final String COMMAND_ENABLE = "/enable_group";
 	public static final String COMMAND_DISABLE = "/disable_group";
 	public static final String COMMAND_REQUEST_LIMIT = "/request_limit";
-	public static final String COMMAND_AUDIOBOOK_DAYS_WAIT = "/audiobooks_days_wait";
+	public static final String COMMAND_NONENGLISH_AUDIOBOOK_DAYS_WAIT = "/nonenglish_audiobooks_days_wait";
 	public static final String COMMAND_ENGLISH_AUDIOBOOK_DAYS_WAIT = "/english_audiobooks_days_wait";
 	public static final String COMMAND_ALLOW = "/allow";
 	public static final String COMMAND_NO_REPEAT = "/no_repeat";
@@ -143,12 +143,12 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 				boolean updateSuccess = groupService.updateAudiobooksDaysWait(chatId, daysWait);
 
 				if (updateSuccess) {
-					message = "Updated audiobooks days wait to <b>" + daysWait + "</b>";
+					message = "Updated non-English audiobooks days wait to <b>" + daysWait + "</b>";
 				} else {
 					message = ENABLE_THE_GROUP_FIRST;
 				}
 			} else {
-				message = rightFormatMessage(COMMAND_AUDIOBOOK_DAYS_WAIT, "number of days to wait");
+				message = rightFormatMessage(COMMAND_NONENGLISH_AUDIOBOOK_DAYS_WAIT, "number of days to wait");
 			}
 
 			SendMessage sendMessage = new SendMessage(chatId, message);

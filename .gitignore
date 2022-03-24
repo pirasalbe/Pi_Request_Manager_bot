@@ -8,6 +8,8 @@ build/
 ## CUSTOM
 *.log
 *.gz
+.cache
+userbot-data
 
 ### STS ###
 .apt_generated
