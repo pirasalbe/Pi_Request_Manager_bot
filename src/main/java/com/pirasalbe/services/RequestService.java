@@ -157,11 +157,17 @@ public class RequestService {
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public Request updateStatus(Request request, RequestStatus status, Long resolvedMessageId, Long contributor) {
+		return updateStatus(request, status, resolvedMessageId, DateUtils.getNow(), contributor);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public Request updateStatus(Request request, RequestStatus status, Long resolvedMessageId,
+			LocalDateTime resolveDate, Long contributor) {
 		request.setStatus(status);
 		request.setResolvedMessageId(resolvedMessageId);
 		request.setContributor(contributor);
 		if (status == RequestStatus.RESOLVED) {
-			request.setResolvedDate(DateUtils.getNow());
+			request.setResolvedDate(resolveDate);
 		} else {
 			request.setResolvedDate(null);
 		}

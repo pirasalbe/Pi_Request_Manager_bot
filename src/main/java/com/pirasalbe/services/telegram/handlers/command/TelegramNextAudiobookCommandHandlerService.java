@@ -13,7 +13,9 @@ import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.models.database.Group;
+import com.pirasalbe.models.database.Request;
 import com.pirasalbe.models.request.Format;
+import com.pirasalbe.models.request.RequestStatus;
 import com.pirasalbe.models.request.Source;
 import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
@@ -87,9 +89,12 @@ public class TelegramNextAudiobookCommandHandlerService extends AbstractTelegram
 				}
 
 				// add request
-				requestService.insert(messageId.longValue(), groupId,
+				Request request = requestService.insert(messageId.longValue(), groupId,
 						TelegramUtils.getLink(groupId, messageId.longValue()), text, Format.AUDIOBOOK, Source.AUDIBLE,
 						RequestUtils.OTHER_TAGS_ENGLISH, userId, requestDate);
+
+				requestService.updateStatus(request, RequestStatus.RESOLVED, messageId.longValue(), requestDate,
+						update.message().from().id());
 			}
 		}
 
