@@ -45,9 +45,6 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 	protected static final List<String> KNOWN_TAGS = Arrays.asList(REQUEST_TAG, EBOOK_TAG, AUDIOBOOK_TAG, KU_TAG,
 			ARCHIVE_TAG, STORYTEL_TAG, SCRIBD_TAG);
 
-	protected static final List<String> BUMPS = Arrays.asList("bump", "update", "can i get", "need", "please help",
-			"send", "thank");
-
 	@Autowired
 	protected ErrorConfiguration errorConfiguration;
 
@@ -85,23 +82,6 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 	protected boolean hasRequestTag(String text) {
 		// messages with request tag
 		return text != null && text.toLowerCase().contains(REQUEST_TAG);
-	}
-
-	protected boolean isBump(String text) {
-		boolean result = false;
-
-		if (text != null) {
-			text = text.toLowerCase();
-
-			for (int i = 0; i < BUMPS.size() && !result; i++) {
-				String bump = BUMPS.get(i);
-
-				// message has bump keyword
-				result = text.contains(bump);
-			}
-		}
-
-		return result;
 	}
 
 	protected void newRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,

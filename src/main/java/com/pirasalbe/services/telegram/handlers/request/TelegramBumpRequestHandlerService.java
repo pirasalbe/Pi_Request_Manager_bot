@@ -1,6 +1,8 @@
 package com.pirasalbe.services.telegram.handlers.request;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -27,6 +29,9 @@ import com.pirasalbe.utils.TelegramUtils;
  */
 @Component
 public class TelegramBumpRequestHandlerService extends AbstractTelegramRequestHandlerService {
+
+	protected static final List<String> BUMPS = Arrays.asList("bump", "update", "can i get", "need", "please help",
+			"send", "thank", "repost");
 
 	@Autowired
 	private SchedulerService schedulerService;
@@ -58,6 +63,23 @@ public class TelegramBumpRequestHandlerService extends AbstractTelegramRequestHa
 		}
 
 		return message;
+	}
+
+	protected boolean isBump(String text) {
+		boolean result = false;
+
+		if (text != null) {
+			text = text.toLowerCase();
+
+			for (int i = 0; i < BUMPS.size() && !result; i++) {
+				String bump = BUMPS.get(i);
+
+				// message has bump keyword
+				result = text.contains(bump);
+			}
+		}
+
+		return result;
 	}
 
 	@Override
