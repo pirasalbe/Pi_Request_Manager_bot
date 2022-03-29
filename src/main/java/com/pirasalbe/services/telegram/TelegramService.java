@@ -213,10 +213,9 @@ public class TelegramService {
 		bot.register(Arrays.asList(
 				replyToCommandConditionFactory.onCommand(TelegramSuperAdminCommandHandlerService.COMMAND_ADD),
 				superAdminRoleCondition), superAdminCommandHandlerService.addUser());
-		bot.register(
-				Arrays.asList(commandConditionFactory.onCommand(TelegramSuperAdminCommandHandlerService.COMMAND_ADD),
-						superAdminRoleCondition),
-				superAdminCommandHandlerService.addUser());
+		bot.register(Arrays.asList(superAdminChatCondition,
+				commandConditionFactory.onCommand(TelegramSuperAdminCommandHandlerService.COMMAND_ADD),
+				superAdminRoleCondition), superAdminCommandHandlerService.addUser());
 
 		// remove
 		bot.register(
@@ -229,10 +228,9 @@ public class TelegramService {
 				Arrays.asList(replyToCommandConditionFactory
 						.onCommand(TelegramSuperAdminCommandHandlerService.COMMAND_REMOVE), superAdminRoleCondition),
 				superAdminCommandHandlerService.removeUser());
-		bot.register(
-				Arrays.asList(commandConditionFactory.onCommand(TelegramSuperAdminCommandHandlerService.COMMAND_REMOVE),
-						superAdminRoleCondition),
-				superAdminCommandHandlerService.removeUser());
+		bot.register(Arrays.asList(superAdminChatCondition,
+				commandConditionFactory.onCommand(TelegramSuperAdminCommandHandlerService.COMMAND_REMOVE),
+				superAdminRoleCondition), superAdminCommandHandlerService.removeUser());
 
 	}
 
