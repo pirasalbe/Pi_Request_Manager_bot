@@ -1,5 +1,6 @@
 package com.pirasalbe.services;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -31,6 +32,10 @@ public class AdminService {
 
 	@Autowired
 	private AdminRepository repository;
+
+	public List<Admin> findAll() {
+		return repository.findAll();
+	}
 
 	public UserRole getAuthority(Long id) {
 		UserRole role = UserRole.USER;
