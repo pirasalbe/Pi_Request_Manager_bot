@@ -108,7 +108,7 @@ public class TelegramService {
 	public void initialize() {
 
 		// register commands
-		commandsService.registerCommands();
+		commandsService.registerCommandsAsync();
 
 		// help
 		bot.register(commandConditionFactory.onCommand(TelegramHelpCommandHandlerService.COMMAND),

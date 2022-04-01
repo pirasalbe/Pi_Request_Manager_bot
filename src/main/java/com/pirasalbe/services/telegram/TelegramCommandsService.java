@@ -1,7 +1,10 @@
 package com.pirasalbe.services.telegram;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -13,9 +16,14 @@ import com.pengrad.telegrambot.model.botcommandscope.BotCommandScopeAllGroupChat
 import com.pengrad.telegrambot.model.botcommandscope.BotCommandScopeAllPrivateChats;
 import com.pengrad.telegrambot.model.botcommandscope.BotCommandScopeDefault;
 import com.pengrad.telegrambot.model.botcommandscope.BotCommandsScopeChat;
+import com.pengrad.telegrambot.model.botcommandscope.BotCommandsScopeChatMember;
 import com.pengrad.telegrambot.request.SetMyCommands;
+import com.pengrad.telegrambot.response.BaseResponse;
 import com.pirasalbe.models.database.Admin;
+import com.pirasalbe.models.database.Group;
 import com.pirasalbe.services.AdminService;
+import com.pirasalbe.services.GroupService;
+import com.pirasalbe.services.SchedulerService;
 
 /**
  * Service to manage the commands logic
@@ -26,15 +34,32 @@ import com.pirasalbe.services.AdminService;
 @Component
 public class TelegramCommandsService {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(TelegramCommandsService.class);
+
 	@Autowired
 	private TelegramBotService bot;
 
 	@Autowired
 	private AdminService adminService;
 
-	public void registerCommands() {
-		TelegramBot telegramBot = bot.getBot();
+	@Autowired
+	private GroupService groupService;
 
+	@Autowired
+	private SchedulerService schedulerService;
+
+	private SetMyCommands userCommandsPM;
+	private SetMyCommands userCommandsGroup;
+
+	private SetMyCommands contributorsCommandsPM;
+	private SetMyCommands contributorsCommandsGroup;
+
+	private SetMyCommands managersCommandsPM;
+	private SetMyCommands managersCommandsGroup;
+
+	private SetMyCommands adminsCommandsPM;
+
+	public TelegramCommandsService() {
 		/*
 		 * Default commands
 		 */
@@ -42,13 +67,43 @@ public class TelegramCommandsService {
 		BotCommand alive = new BotCommand("alive", "Checks if the bot is online");
 		BotCommand help = new BotCommand("help", "Shows information on how to use the bot");
 
-		SetMyCommands defaultCommands = new SetMyCommands(start, alive, help);
+		BotCommand me = new BotCommand("me", "Shows user info");
+
+		userCommandsPM = new SetMyCommands(start, alive, help, me);
+		userCommandsGroup = new SetMyCommands(me);
 
 		/*
 		 * Contributors commands
 		 */
 		BotCommand requests = new BotCommand("requests", "See the requests. Supports filters.");
-		// TODO
+
+		BotCommand show = new BotCommand("show", "Shows a request.");
+
+		BotCommand done = new BotCommand("done",
+				"Marks the request as done and the bot replies to the request with [text].");
+		BotCommand sdone = new BotCommand("sdone", "Marks the request as done.");
+
+		BotCommand pending = new BotCommand("pending", "Marks a request as pending.");
+		BotCommand pause = new BotCommand("pause", "Marks a request as paused.");
+		BotCommand inProgress = new BotCommand("in_progress", "Marks a request as in progress.");
+
+		BotCommand cancel = new BotCommand("cancel", "Removes a request from the list of the pending requests.");
+		BotCommand remove = new BotCommand("remove", "Deletes a request.");
+
+		BotCommand nextAudiobook = new BotCommand("next_audiobook",
+				"Force a user to wait [days] days before requesting a new audiobook.");
+
+		BotCommand configureChannel = new BotCommand("configure_channel", "Starts the configuration process");
+		BotCommand disableChannel = new BotCommand("disable_channel", "Disables channel forwarding.");
+		BotCommand configureChannels = new BotCommand("configure_channels",
+				"Shows the channels enabled and allows the configuration.");
+		BotCommand refreshChannel = new BotCommand("refresh_channel",
+				"Checks all requests in the database and sync them with the one in the channel.");
+
+		contributorsCommandsPM = new SetMyCommands(start, alive, help, me, requests, configureChannel, disableChannel,
+				configureChannels, refreshChannel);
+		contributorsCommandsGroup = new SetMyCommands(start, alive, help, me, requests, show, done, sdone, pending,
+				pause, inProgress, cancel, remove, nextAudiobook);
 
 		/*
 		 * Manager commands
@@ -70,7 +125,11 @@ public class TelegramCommandsService {
 		BotCommand noRepeat = new BotCommand("no_repeat",
 				"Define the tags whose requests can't be repeated. It accepts a list of sources.");
 
-		// TODO
+		managersCommandsPM = new SetMyCommands(start, alive, help, me, requests, configureChannel, disableChannel,
+				configureChannels, refreshChannel);
+		managersCommandsGroup = new SetMyCommands(start, alive, help, me, groupInfo, enableGroup, disableGroup,
+				requestLimit, nonenglishAudiobooksDaysWait, englishAudiobooksDaysWait, allow, noRepeat, requests, show,
+				done, sdone, pending, pause, inProgress, cancel, remove, nextAudiobook);
 
 		/*
 		 * Admin commands
@@ -79,7 +138,16 @@ public class TelegramCommandsService {
 		BotCommand adminsAdd = new BotCommand("admins_add", "Add admin");
 		BotCommand adminsRemove = new BotCommand("admins_remove", "Remove admin");
 
-		// TODO
+		adminsCommandsPM = new SetMyCommands(start, alive, help, me, admins, adminsAdd, adminsRemove, requests,
+				configureChannel, disableChannel, configureChannels, refreshChannel);
+	}
+
+	public void registerCommandsAsync() {
+		schedulerService.schedule(this::registerCommands, 5, TimeUnit.MILLISECONDS);
+	}
+
+	private void registerCommands() {
+		TelegramBot telegramBot = bot.getBot();
 
 		/**
 		 * Definition
@@ -87,35 +155,72 @@ public class TelegramCommandsService {
 
 		// private, default, admin scopes
 		BotCommandScopeDefault defaultScope = new BotCommandScopeDefault();
-		setCommands(telegramBot, defaultCommands, defaultScope);
+		setCommands(telegramBot, userCommandsPM, defaultScope);
 
 		BotCommandScopeAllPrivateChats privateChatsScope = new BotCommandScopeAllPrivateChats();
-		setCommands(telegramBot, defaultCommands, privateChatsScope);
+		setCommands(telegramBot, userCommandsPM, privateChatsScope);
 
 		BotCommandScopeAllChatAdministrators allChatAdministratorsScope = new BotCommandScopeAllChatAdministrators();
-		setCommands(telegramBot, defaultCommands, allChatAdministratorsScope);
+		setCommands(telegramBot, userCommandsGroup, allChatAdministratorsScope);
 
 		// no commands in groups
 		BotCommandScopeAllGroupChats allGroupChatsScope = new BotCommandScopeAllGroupChats();
-		setCommands(telegramBot, allGroupChatsScope);
+		setCommands(telegramBot, userCommandsGroup, allGroupChatsScope);
 
 		// admins
-		List<Admin> adminList = adminService.findAll();
-
-		for (Admin admin : adminList) {
-			BotCommandsScopeChat botCommandsScopeChat = new BotCommandsScopeChat(admin.getId());
-			setCommands(telegramBot, botCommandsScopeChat);
-		}
+		defineAdminCommands(telegramBot);
 	}
 
-	private void setCommands(TelegramBot telegramBot, BotCommandScope scope, BotCommand... commands) {
-		SetMyCommands myCommands = new SetMyCommands(commands);
-		setCommands(telegramBot, myCommands, scope);
+	private void defineAdminCommands(TelegramBot telegramBot) {
+		List<Admin> adminList = adminService.findAll();
+
+		List<Group> groupList = groupService.findAll();
+
+		for (Admin admin : adminList) {
+			BotCommandsScopeChat botCommandsPmScopeChat = new BotCommandsScopeChat(admin.getId());
+
+			switch (admin.getRole()) {
+			case CONTRIBUTOR:
+				setCommands(telegramBot, contributorsCommandsPM, botCommandsPmScopeChat);
+				break;
+			case MANAGER:
+				setCommands(telegramBot, managersCommandsPM, botCommandsPmScopeChat);
+				break;
+			case SUPERADMIN:
+				setCommands(telegramBot, adminsCommandsPM, botCommandsPmScopeChat);
+				break;
+			default:
+				setCommands(telegramBot, userCommandsPM, botCommandsPmScopeChat);
+				break;
+			}
+
+			for (Group group : groupList) {
+				BotCommandsScopeChatMember botCommandsGroupScopeChat = new BotCommandsScopeChatMember(group.getId(),
+						admin.getId());
+
+				switch (admin.getRole()) {
+				case CONTRIBUTOR:
+					setCommands(telegramBot, contributorsCommandsGroup, botCommandsGroupScopeChat);
+					break;
+				case MANAGER:
+				case SUPERADMIN:
+					setCommands(telegramBot, managersCommandsGroup, botCommandsGroupScopeChat);
+					break;
+				default:
+					setCommands(telegramBot, userCommandsGroup, botCommandsGroupScopeChat);
+					break;
+				}
+			}
+		}
 	}
 
 	private void setCommands(TelegramBot telegramBot, SetMyCommands myCommands, BotCommandScope scope) {
 		myCommands.scope(scope);
-		telegramBot.execute(myCommands);
+		BaseResponse response = telegramBot.execute(myCommands);
+
+		if (!response.isOk()) {
+			LOGGER.error("Cannot define commands {}: {}", myCommands, response);
+		}
 	}
 
 }
