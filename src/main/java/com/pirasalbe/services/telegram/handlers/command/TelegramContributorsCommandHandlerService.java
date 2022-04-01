@@ -622,8 +622,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			requestBuilder.append("<a href='").append(TelegramUtils.getLink(groupId.toString(), messageId.toString()))
 					.append("'>");
 
-			requestBuilder.append(getChatName(chatNames, groupId)).append(" ");
-			requestBuilder.append(i + 1).append("</a> ");
+			requestBuilder.append(i + 1).append(" ");
+			requestBuilder.append(getChatName(chatNames, groupId)).append("</a> ");
 
 			// request date
 			requestBuilder.append(RequestUtils.getTimeBetweenDates(request.getRequestDate(), now, true))
