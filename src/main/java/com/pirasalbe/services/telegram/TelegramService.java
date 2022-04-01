@@ -285,6 +285,11 @@ public class TelegramService {
 		TelegramCondition contributorRoleCondition = roleConditionFactory
 				.onRole(TelegramContributorsCommandHandlerService.ROLE);
 
+		// commands
+		bot.register(Arrays.asList(chatConditionFactory.onChatType(Type.Private),
+				commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_REFRESH_COMMANDS),
+				contributorRoleCondition), contributorsCommandHandlerService.refreshCommands());
+
 		// done
 		bot.register(Arrays.asList(groupChatCondition,
 				contributorsCommandHandlerService.replyToMessageWithFileCondition(), contributorRoleCondition),

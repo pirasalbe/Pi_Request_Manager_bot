@@ -38,6 +38,7 @@ import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
 import com.pirasalbe.services.RequestService;
+import com.pirasalbe.services.telegram.TelegramCommandsService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
 import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.RequestUtils;
@@ -71,6 +72,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			+ ContributorAction.CANCEL + "|" + ContributorAction.REMOVE + ") " + MESSAGE_INFO_CALLBACK + "( "
 			+ TelegramConditionUtils.REFRESH_SHOW_CONDITION + "[0-9]+)?$";
 
+	public static final String COMMAND_REFRESH_COMMANDS = "/refresh_commands";
+
 	public static final String COMMAND_SHOW = "/show";
 	public static final String COMMAND_PENDING = "/pending";
 	public static final String COMMAND_PAUSE = "/pause";
@@ -90,6 +93,9 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	private TelegramConfiguration configuration;
 
 	@Autowired
+	private TelegramCommandsService commandsService;
+
+	@Autowired
 	private GroupService groupService;
 
 	@Autowired
@@ -97,6 +103,17 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	@Autowired
 	private RequestManagementService requestManagementService;
+
+	public TelegramHandler refreshCommands() {
+		return (bot, update) -> {
+			Long chatId = TelegramUtils.getChatId(update);
+
+			commandsService.defineAdminCommandsAsync(chatId);
+
+			SendMessage sendMessage = new SendMessage(chatId, "Refreshing commands in progress.");
+			bot.execute(sendMessage);
+		};
+	}
 
 	public TelegramCondition replyToMessageCondition() {
 		return this::replyToMessage;
@@ -425,13 +442,17 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	}
 
 	private boolean isValidDocument(Document document) {
-		return document != null && (document.mimeType().isEmpty() || VALID_MIME_TYPES.contains(document.mimeType())
-				|| isValidExtension(document.fileName()));
+		return document != null && (isNotNullAndEmpty(document.mimeType())
+				|| VALID_MIME_TYPES.contains(document.mimeType()) || isValidExtension(document.fileName()));
 	}
 
 	private boolean isValidAudio(Audio audio) {
-		return audio != null && (audio.mimeType().isEmpty() || VALID_MIME_TYPES.contains(audio.mimeType())
+		return audio != null && (isNotNullAndEmpty(audio.mimeType()) || VALID_MIME_TYPES.contains(audio.mimeType())
 				|| isValidExtension(audio.fileName()));
+	}
+
+	private boolean isNotNullAndEmpty(String mimeType) {
+		return mimeType != null && mimeType.isEmpty();
 	}
 
 	private boolean isValidExtension(String filename) {

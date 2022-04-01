@@ -19,11 +19,13 @@ import com.pengrad.telegrambot.model.botcommandscope.BotCommandsScopeChat;
 import com.pengrad.telegrambot.model.botcommandscope.BotCommandsScopeChatMember;
 import com.pengrad.telegrambot.request.SetMyCommands;
 import com.pengrad.telegrambot.response.BaseResponse;
+import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Admin;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.services.AdminService;
 import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.SchedulerService;
+import com.pirasalbe.utils.TelegramUtils;
 
 /**
  * Service to manage the commands logic
@@ -168,49 +170,71 @@ public class TelegramCommandsService {
 		setCommands(telegramBot, userCommandsGroup, allGroupChatsScope);
 
 		// admins
-		defineAdminCommands(telegramBot);
+		defineAdminsCommands(telegramBot);
 	}
 
-	private void defineAdminCommands(TelegramBot telegramBot) {
+	private void defineAdminsCommands(TelegramBot telegramBot) {
 		List<Admin> adminList = adminService.findAll();
 
 		List<Group> groupList = groupService.findAll();
 
 		for (Admin admin : adminList) {
-			BotCommandsScopeChat botCommandsPmScopeChat = new BotCommandsScopeChat(admin.getId());
+			defineAdminCommands(telegramBot, groupList, admin.getId(), admin.getRole());
+		}
+	}
 
-			switch (admin.getRole()) {
+	public void defineAdminCommandsAsync(Long adminId) {
+		schedulerService.schedule(() -> defineAdminCommands(adminId), 5, TimeUnit.MILLISECONDS);
+	}
+
+	private void defineAdminCommands(Long adminId) {
+		TelegramBot telegramBot = bot.getBot();
+
+		UserRole role = adminService.getAuthority(adminId);
+
+		if (role.getAuthorityLevel() > UserRole.USER.getAuthorityLevel()) {
+			List<Group> groupList = groupService.findAll();
+
+			defineAdminCommands(telegramBot, groupList, adminId, role);
+		}
+	}
+
+	private void defineAdminCommands(TelegramBot telegramBot, List<Group> groupList, Long adminId, UserRole role) {
+		BotCommandsScopeChat botCommandsPmScopeChat = new BotCommandsScopeChat(adminId);
+
+		switch (role) {
+		case CONTRIBUTOR:
+			setCommands(telegramBot, contributorsCommandsPM, botCommandsPmScopeChat);
+			break;
+		case MANAGER:
+			setCommands(telegramBot, managersCommandsPM, botCommandsPmScopeChat);
+			break;
+		case SUPERADMIN:
+			setCommands(telegramBot, adminsCommandsPM, botCommandsPmScopeChat);
+			break;
+		default:
+			setCommands(telegramBot, userCommandsPM, botCommandsPmScopeChat);
+			break;
+		}
+
+		for (Group group : groupList) {
+			BotCommandsScopeChatMember botCommandsGroupScopeChat = new BotCommandsScopeChatMember(group.getId(),
+					adminId);
+
+			switch (role) {
 			case CONTRIBUTOR:
-				setCommands(telegramBot, contributorsCommandsPM, botCommandsPmScopeChat);
+				setCommands(telegramBot, contributorsCommandsGroup, botCommandsGroupScopeChat);
 				break;
 			case MANAGER:
-				setCommands(telegramBot, managersCommandsPM, botCommandsPmScopeChat);
-				break;
 			case SUPERADMIN:
-				setCommands(telegramBot, adminsCommandsPM, botCommandsPmScopeChat);
+				setCommands(telegramBot, managersCommandsGroup, botCommandsGroupScopeChat);
 				break;
 			default:
-				setCommands(telegramBot, userCommandsPM, botCommandsPmScopeChat);
+				setCommands(telegramBot, userCommandsGroup, botCommandsGroupScopeChat);
 				break;
 			}
 
-			for (Group group : groupList) {
-				BotCommandsScopeChatMember botCommandsGroupScopeChat = new BotCommandsScopeChatMember(group.getId(),
-						admin.getId());
-
-				switch (admin.getRole()) {
-				case CONTRIBUTOR:
-					setCommands(telegramBot, contributorsCommandsGroup, botCommandsGroupScopeChat);
-					break;
-				case MANAGER:
-				case SUPERADMIN:
-					setCommands(telegramBot, managersCommandsGroup, botCommandsGroupScopeChat);
-					break;
-				default:
-					setCommands(telegramBot, userCommandsGroup, botCommandsGroupScopeChat);
-					break;
-				}
-			}
+			TelegramUtils.cooldown();
 		}
 	}
 

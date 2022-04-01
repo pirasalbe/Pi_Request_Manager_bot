@@ -288,17 +288,21 @@ public class TelegramUtils {
 
 		// if request count greater then the limit, sleep and reset count
 		if (result >= 10) {
-			LOGGER.info("Cooldown due to the Telegram limits");
-			try {
-				Thread.sleep(120000);
-				result = 0;
-			} catch (InterruptedException e) {
-				LOGGER.warn("Could not sleep to prevent request limit", e);
-			}
-			LOGGER.info("End cooldown period");
+			cooldown();
+			result = 0;
 		}
 
 		return result;
+	}
+
+	public static void cooldown() {
+		LOGGER.info("Cooldown due to the Telegram limits");
+		try {
+			Thread.sleep(120000);
+		} catch (InterruptedException e) {
+			LOGGER.warn("Could not sleep to prevent request limit", e);
+		}
+		LOGGER.info("End cooldown period");
 	}
 
 }
