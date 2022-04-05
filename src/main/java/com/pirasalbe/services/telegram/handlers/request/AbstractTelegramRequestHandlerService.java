@@ -152,7 +152,9 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		boolean restricted = false;
 
 		LocalDateTime nextRequestDate = nextValidRequest.getNextRequest();
-		if (nextRequestDate != null) {
+
+		// mute if a date has been provided and it's more than 30 seconds
+		if (nextRequestDate != null && DateUtils.getSeconds(DateUtils.getNow(), nextRequestDate) > 60) {
 			Integer muteUntil = DateUtils.localDateTimeToInteger(nextRequestDate);
 
 			ChatPermissions chatPermissions = new ChatPermissions();

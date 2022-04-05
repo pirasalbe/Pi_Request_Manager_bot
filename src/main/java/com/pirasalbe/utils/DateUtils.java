@@ -64,4 +64,8 @@ public class DateUtils {
 		return minutes - (hours + days * 24) * 60;
 	}
 
+	public static long getSeconds(LocalDateTime from, LocalDateTime to) {
+		return ChronoUnit.SECONDS.between(from, to);
+	}
+
 }
