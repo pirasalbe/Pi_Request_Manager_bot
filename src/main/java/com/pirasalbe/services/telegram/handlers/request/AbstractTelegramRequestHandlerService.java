@@ -8,12 +8,16 @@ import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.ChatPermissions;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.DeleteMessage;
+import com.pengrad.telegrambot.request.RestrictChatMember;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.response.BaseResponse;
 import com.pirasalbe.configurations.ErrorConfiguration;
+import com.pirasalbe.models.NextValidRequest;
 import com.pirasalbe.models.RequestResult;
 import com.pirasalbe.models.Validation;
 import com.pirasalbe.models.database.Group;
@@ -23,6 +27,7 @@ import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
+import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramUtils;
 
@@ -115,19 +120,51 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		Format format = getFormat(content);
 
 		// check if user can request
-		Validation validation = requestManagementService.canRequest(group, userId, format, requestTime);
+		Validation<NextValidRequest> validation = requestManagementService.canRequest(group, userId, format,
+				requestTime);
 		if (validation.isValid()) {
 			// create request
 			manageRequest(bot, message, chatId, messageId, requestTime, group, content, link, format);
 		} else {
+			NextValidRequest nextValidRequest = validation.getReason();
+
+			// mute user
+			boolean muted = muteUser(bot, chatId, userId, nextValidRequest);
+
 			// notify user of the error
 			DeleteMessage deleteMessage = new DeleteMessage(chatId, messageId);
-			SendMessage sendMessage = new SendMessage(chatId, TelegramUtils.tagUser(message) + validation.getReason());
-			sendMessage.parseMode(ParseMode.HTML);
-
 			bot.execute(deleteMessage);
+
+			StringBuilder builder = new StringBuilder(TelegramUtils.tagUser(message));
+			builder.append(nextValidRequest.getMessage());
+			if (muted) {
+				builder.append("\n").append("You have been muted until then.");
+			}
+
+			SendMessage sendMessage = new SendMessage(chatId, builder.toString());
+			sendMessage.parseMode(ParseMode.HTML);
 			bot.execute(sendMessage);
+
 		}
+	}
+
+	private boolean muteUser(TelegramBot bot, Long chatId, Long userId, NextValidRequest nextValidRequest) {
+		boolean restricted = false;
+
+		LocalDateTime nextRequestDate = nextValidRequest.getNextRequest();
+		if (nextRequestDate != null) {
+			Integer muteUntil = DateUtils.localDateTimeToInteger(nextRequestDate);
+
+			ChatPermissions chatPermissions = new ChatPermissions();
+			chatPermissions.canSendMessages(false);
+			RestrictChatMember restrictChatMember = new RestrictChatMember(chatId, userId, chatPermissions);
+			restrictChatMember.untilDate(muteUntil);
+
+			BaseResponse response = bot.execute(restrictChatMember);
+			restricted = response.isOk();
+		}
+
+		return restricted;
 	}
 
 	private void manageRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,

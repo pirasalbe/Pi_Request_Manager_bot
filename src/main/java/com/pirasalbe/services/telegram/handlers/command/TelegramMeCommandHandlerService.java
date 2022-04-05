@@ -12,6 +12,7 @@ import com.pengrad.telegrambot.model.Chat.Type;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pirasalbe.models.NextValidRequest;
 import com.pirasalbe.models.Validation;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.database.Request;
@@ -112,14 +113,15 @@ public class TelegramMeCommandHandlerService extends AbstractTelegramHandlerServ
 	}
 
 	private String checkRequestLimit(Long userId, Group group, Format format, LocalDateTime requestDate) {
-		Validation validation = requestManagementService.canRequest(group, userId, format, requestDate);
+		Validation<NextValidRequest> validation = requestManagementService.canRequest(group, userId, format,
+				requestDate);
 
 		String result = null;
 
 		if (validation.isValid()) {
 			result = "You are allowed to request an " + format.name().toLowerCase();
 		} else {
-			result = validation.getReason();
+			result = validation.getReason().getMessage();
 		}
 
 		return result;

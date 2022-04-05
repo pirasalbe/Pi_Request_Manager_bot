@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.pengrad.telegrambot.model.Message;
 import com.pirasalbe.models.LastRequestInfo;
 import com.pirasalbe.models.LastRequestInfo.Type;
+import com.pirasalbe.models.NextValidRequest;
 import com.pirasalbe.models.RequestResult;
 import com.pirasalbe.models.RequestResult.Result;
 import com.pirasalbe.models.UpdateRequestAction;
@@ -87,8 +88,9 @@ public class RequestManagementService {
 	 * @param requestTime Time of the request
 	 * @return Validation
 	 */
-	public Validation canRequest(Group group, Long userId, Format format, LocalDateTime requestTime) {
-		Validation validation = isFormatAllowed(group.isAllowEbooks(), group.isAllowAudiobooks(), format);
+	public Validation<NextValidRequest> canRequest(Group group, Long userId, Format format, LocalDateTime requestTime) {
+		Validation<NextValidRequest> validation = isFormatAllowed(group.isAllowEbooks(), group.isAllowAudiobooks(),
+				format);
 
 		// check format allowed
 		if (validation.isValid()) {
@@ -111,13 +113,14 @@ public class RequestManagementService {
 		return validation;
 	}
 
-	private Validation isFormatAllowed(boolean ebooksAllowed, boolean audiobooksAllowed, Format format) {
-		Validation validation = Validation.valid();
+	private Validation<NextValidRequest> isFormatAllowed(boolean ebooksAllowed, boolean audiobooksAllowed,
+			Format format) {
+		Validation<NextValidRequest> validation = Validation.valid();
 
 		if (!ebooksAllowed && format.equals(Format.EBOOK)) {
-			validation = Validation.invalid("Ebooks are not allowed");
+			validation = Validation.invalid(new NextValidRequest("Ebooks are not allowed"));
 		} else if (!audiobooksAllowed && format.equals(Format.AUDIOBOOK)) {
-			validation = Validation.invalid("Audiobooks are not allowed");
+			validation = Validation.invalid(new NextValidRequest("Audiobooks are not allowed"));
 		}
 
 		return validation;
@@ -147,9 +150,9 @@ public class RequestManagementService {
 		return builder.toString();
 	}
 
-	private Validation isValidAudiobookRequest(Long userId, Integer audiobooksDaysWait,
+	private Validation<NextValidRequest> isValidAudiobookRequest(Long userId, Integer audiobooksDaysWait,
 			Integer englishAudiobooksDaysWait, Request pendingRequest, Request resolvedRequest) {
-		Validation validation = Validation.valid();
+		Validation<NextValidRequest> validation = Validation.valid();
 
 		LastRequestInfo requestInfo = getLastRequestInfo(pendingRequest, resolvedRequest);
 
@@ -173,7 +176,7 @@ public class RequestManagementService {
 						.append(getRequestLink(requestInfo.getRequest(), "request", "received audiobook"))
 						.append(".\n");
 				stringBuilder.append(RequestUtils.getComeBackAgain(DateUtils.getNow(), nextValidRequest));
-				validation = Validation.invalid(stringBuilder.toString());
+				validation = Validation.invalid(new NextValidRequest(nextValidRequest, stringBuilder.toString()));
 			}
 		}
 
@@ -199,8 +202,9 @@ public class RequestManagementService {
 		return requestInfo;
 	}
 
-	private Validation isValidEbookRequest(Long userId, Integer requestLimit, LocalDateTime requestTime) {
-		Validation validation = Validation.valid();
+	private Validation<NextValidRequest> isValidEbookRequest(Long userId, Integer requestLimit,
+			LocalDateTime requestTime) {
+		Validation<NextValidRequest> validation = Validation.valid();
 
 		LocalDateTime last24Hours = requestTime.minusHours(24);
 		List<Request> requests = requestService.getUserEbookRequestsOfToday(userId, last24Hours);
@@ -209,6 +213,8 @@ public class RequestManagementService {
 		if (requestCount >= requestLimit) {
 			Request lastRequest = requests.get(0);
 			LocalDateTime lastRequestDate = lastRequest.getRequestDate();
+			LocalDateTime nextValidRequest = lastRequestDate.plusHours(24);
+
 			LOGGER.warn("User {}, new request {}, {} ebook requested since {}", userId, requestTime, requestCount,
 					lastRequestDate);
 
@@ -217,8 +223,8 @@ public class RequestManagementService {
 			stringBuilder.append(requestLimit).append(" book").append(StringUtils.getPlural(requestLimit));
 			stringBuilder.append(" every 24 hours");
 			stringBuilder.append(" ").append(getRequestLink(lastRequest, "request", "received ebook")).append(".\n");
-			stringBuilder.append(RequestUtils.getComeBackAgain(requestTime, lastRequestDate.plusHours(24)));
-			validation = Validation.invalid(stringBuilder.toString());
+			stringBuilder.append(RequestUtils.getComeBackAgain(requestTime, nextValidRequest));
+			validation = Validation.invalid(new NextValidRequest(nextValidRequest, stringBuilder.toString()));
 		}
 
 		return validation;

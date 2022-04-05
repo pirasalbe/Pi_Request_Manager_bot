@@ -27,6 +27,12 @@ public class DateUtils {
 		return LocalDateTime.ofInstant(Instant.ofEpochSecond(timestampUnix), ZONE_ID);
 	}
 
+	public static Integer localDateTimeToInteger(LocalDateTime dateTime) {
+		Long seconds = dateTime.atZone(ZONE_ID).toEpochSecond();
+
+		return seconds.intValue();
+	}
+
 	public static LocalDateTime getNow() {
 		return LocalDateTime.now(ZONE_ID);
 	}
