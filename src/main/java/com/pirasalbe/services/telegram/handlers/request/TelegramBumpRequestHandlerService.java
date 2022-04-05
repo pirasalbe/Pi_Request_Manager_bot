@@ -31,7 +31,7 @@ import com.pirasalbe.utils.TelegramUtils;
 public class TelegramBumpRequestHandlerService extends AbstractTelegramRequestHandlerService {
 
 	protected static final List<String> BUMPS = Arrays.asList("bump", "update", "can i get", "need", "please help",
-			"send", "thank", "repost");
+			"send", "thank", "repost", "news");
 
 	@Autowired
 	private SchedulerService schedulerService;
@@ -42,8 +42,6 @@ public class TelegramBumpRequestHandlerService extends AbstractTelegramRequestHa
 
 		if (update.message() != null) {
 			message = update.message();
-		} else if (update.editedMessage() != null) {
-			message = update.editedMessage();
 		}
 
 		return message;
