@@ -40,6 +40,7 @@ import com.pirasalbe.services.RequestManagementService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
 import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.TelegramConditionUtils;
+import com.pirasalbe.utils.TelegramUtils;
 
 /**
  * Service to manage /me
@@ -248,6 +249,8 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 				sendMessage(bot, chatId, builder.toString());
 			}
 		}
+
+		TelegramUtils.cooldown(1000);
 
 	}
 

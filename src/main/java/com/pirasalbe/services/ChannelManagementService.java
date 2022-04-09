@@ -26,6 +26,7 @@ import com.pirasalbe.models.database.RequestPK;
 import com.pirasalbe.services.telegram.TelegramBotService;
 import com.pirasalbe.services.telegram.TelegramUserBotService;
 import com.pirasalbe.utils.RequestUtils;
+import com.pirasalbe.utils.TelegramUtils;
 
 import it.tdlight.client.Result;
 import it.tdlight.jni.TdApi;
@@ -160,6 +161,8 @@ public class ChannelManagementService {
 					channelRequestService.insert(channelId, messageId, request.getId());
 					forwarded = true;
 				}
+
+				TelegramUtils.cooldown(2000);
 			}
 		}
 

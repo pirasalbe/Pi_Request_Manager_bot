@@ -681,6 +681,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		sendMessage.parseMode(ParseMode.HTML);
 		sendMessage.disableWebPagePreview(true);
 		sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.MINUTES, deleteMessages);
+		TelegramUtils.cooldown(2000);
 	}
 
 	private String getChatName(Map<Long, String> chatNames, Long groupId) {
