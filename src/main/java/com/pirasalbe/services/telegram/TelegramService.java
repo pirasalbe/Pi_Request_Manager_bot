@@ -24,6 +24,7 @@ import com.pirasalbe.services.telegram.handlers.command.TelegramGroupsCommandHan
 import com.pirasalbe.services.telegram.handlers.command.TelegramHelpCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramMeCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramNextAudiobookCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.command.TelegramStatsCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramSuperAdminCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.request.TelegramBumpRequestHandlerService;
 import com.pirasalbe.services.telegram.handlers.request.TelegramNewRequestHandlerService;
@@ -102,6 +103,9 @@ public class TelegramService {
 	private TelegramNextAudiobookCommandHandlerService nextAudiobookCommandHandlerService;
 
 	@Autowired
+	private TelegramStatsCommandHandlerService statsCommandHandlerService;
+
+	@Autowired
 	private TelegramDeleteCommandHandlerService deleteCommandHandlerService;
 
 	@PostConstruct
@@ -136,6 +140,14 @@ public class TelegramService {
 
 		// contributors
 		registerContributorsHandlers();
+
+		// stats
+		bot.register(
+				Arrays.asList(
+						chatConditionFactory.onChatTypes(Arrays.asList(Type.Private, Type.group, Type.supergroup)),
+						commandConditionFactory.onCommand(TelegramStatsCommandHandlerService.COMMAND),
+						roleConditionFactory.onRole(TelegramStatsCommandHandlerService.ROLE)),
+				statsCommandHandlerService);
 
 		// remove all commands
 		bot.register(deleteCommandHandlerService, deleteCommandHandlerService);

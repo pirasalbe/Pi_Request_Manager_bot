@@ -48,6 +48,10 @@ public class DateUtils {
 		return localDateTime.format(DateTimeFormatter.ofPattern("dd LLL uuuu"));
 	}
 
+	public static String formatDate(LocalDate localDate) {
+		return localDate.format(DateTimeFormatter.ofPattern("EEE dd LLL uuuu"));
+	}
+
 	public static long getDays(LocalDateTime from, LocalDateTime to) {
 		return ChronoUnit.DAYS.between(from, to);
 	}
