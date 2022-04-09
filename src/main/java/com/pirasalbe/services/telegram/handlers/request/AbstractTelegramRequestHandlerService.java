@@ -214,7 +214,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 			String part = parts[i].toLowerCase();
 
 			// if the word is a tag and is unknown
-			if (Pattern.matches("^#.*", part) && !KNOWN_TAGS.contains(part)) {
+			if (Pattern.matches("^#[a-zA-Z]*", part) && !KNOWN_TAGS.contains(part)) {
 				otherTags = part.substring(1);
 				found = true;
 			}

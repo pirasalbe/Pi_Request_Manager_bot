@@ -61,7 +61,7 @@ public class RequestManagementService {
 	@Autowired
 	private ChannelManagementService channelManagementService;
 
-	@Scheduled(cron = "0 0 0 1-3 * ?")
+	@Scheduled(cron = "0 0 0 1-10 * ?")
 	public void deleteOldRequests() {
 		LOGGER.info("Start scheduled cleaning");
 
@@ -491,6 +491,10 @@ public class RequestManagementService {
 				FORWARD_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
 	}
 
+	public Page<Request> findAll(int page, int size) {
+		return requestService.findAll(page, size);
+	}
+
 	public void refreshChannel(Long channelId, List<Group> groups) {
 		LOGGER.info("Refresh {} started", channelId);
 
@@ -505,7 +509,7 @@ public class RequestManagementService {
 		// get all requests paginated
 		while (keep) {
 			LOGGER.info("Refresh {} page {}", channelId, page);
-			Page<Request> requestPage = requestService.findAll(page, size);
+			Page<Request> requestPage = findAll(page, size);
 
 			// forward all requests
 			List<Request> requests = requestPage.toList();
