@@ -265,6 +265,10 @@ public class RequestUtils {
 		messageBuilder.append(" | ");
 		messageBuilder.append("🕔 ").append(getTimeBetweenDates(request.getRequestDate(), DateUtils.getNow(), true));
 
+		// repetitions
+		messageBuilder.append(" | ");
+		messageBuilder.append("🔢 ").append(request.getRepetitions());
+
 		// status info
 		messageBuilder.append(" | ");
 		messageBuilder.append(request.getStatus().getIcon()).append(" ")

@@ -227,4 +227,21 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 		</addColumn>
 	</changeSet>
 
+	<changeSet id="23 - Add column to Requests" author="pirasalbe">
+		<addColumn tableName="REQUESTS">
+			<column name="REPETITIONS" type="bigint" />
+		</addColumn>
+	</changeSet>
+
+	<changeSet id="24 - Update repetitions value" author="pirasalbe">
+		<update tableName="REQUESTS">
+			<column name="REPETITIONS" value="1"/>
+			<where>REPETITIONS IS NULL</where>
+		</update>
+	</changeSet>
+
+	<changeSet id="25 - Make column repetitions not nullable" author="pirasalbe">
+		<addNotNullConstraint columnDataType="bigint" columnName="REPETITIONS" tableName="REQUESTS" validate="true"/>
+	</changeSet>
+
 </databaseChangeLog>

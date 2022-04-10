@@ -111,6 +111,7 @@ public class RequestService {
 		request.setOtherTags(otherTags);
 		request.setUserId(userId);
 		request.setRequestDate(requestDate);
+		request.setRepetitions(1l);
 
 		return save(request);
 	}
@@ -142,6 +143,7 @@ public class RequestService {
 
 			if (requestDate != null) {
 				request.setRequestDate(requestDate);
+				request.setRepetitions(request.getRepetitions() + 1);
 			}
 
 			requestCopy = save(request);

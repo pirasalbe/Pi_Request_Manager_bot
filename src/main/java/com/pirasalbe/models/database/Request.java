@@ -48,6 +48,9 @@ public class Request {
 	@Column(name = "REQUEST_DATE")
 	private LocalDateTime requestDate;
 
+	@Column(name = "REPETITIONS")
+	private Long repetitions;
+
 	@Column(name = "RESOLVED_DATE")
 	private LocalDateTime resolvedDate;
 
@@ -130,6 +133,14 @@ public class Request {
 
 	public void setRequestDate(LocalDateTime requestDate) {
 		this.requestDate = requestDate;
+	}
+
+	public Long getRepetitions() {
+		return repetitions;
+	}
+
+	public void setRepetitions(Long repetitions) {
+		this.repetitions = repetitions;
 	}
 
 	public LocalDateTime getResolvedDate() {

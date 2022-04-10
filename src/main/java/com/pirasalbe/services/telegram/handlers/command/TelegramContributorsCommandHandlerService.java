@@ -750,7 +750,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 					.append("</code>)]");
 		}
 		if (user.isPresent()) {
-			title.append("\nUser [").append(user.get()).append("]");
+			title.append("\nUser [<code>").append(user.get()).append("</code>]");
 		}
 		if (format.isPresent()) {
 			title.append("\nFormat [").append(format.get()).append("]");

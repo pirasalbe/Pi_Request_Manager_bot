@@ -213,7 +213,7 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 					.append("</code>)]");
 		}
 		if (user.isPresent()) {
-			filters.append("\nUser [").append(user.get()).append("]");
+			filters.append("\nUser [<code>").append(user.get()).append("</code>]");
 		}
 		if (format.isPresent()) {
 			filters.append("\nFormat [").append(format.get()).append("]");
