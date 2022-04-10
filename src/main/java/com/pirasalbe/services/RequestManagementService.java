@@ -59,7 +59,7 @@ public class RequestManagementService {
 	private SchedulerService schedulerService;
 
 	@Autowired
-	private ChannelManagementService channelManagementService;
+	private ChannelForwardingService channelForwardingService;
 
 	@Scheduled(cron = "0 0 0 1-10 * ?")
 	public void deleteOldRequests() {
@@ -75,7 +75,7 @@ public class RequestManagementService {
 
 		// delete forwarded messages
 		for (Request request : oldRequests) {
-			channelManagementService.deleteForwardedRequest(request.getId());
+			channelForwardingService.deleteForwardedRequest(request.getId());
 		}
 	}
 
@@ -325,7 +325,7 @@ public class RequestManagementService {
 		Request update = requestService.update(messageId, group.getId(), link, content, format, source, otherTags,
 				requestDate);
 
-		schedulerService.schedule(() -> channelManagementService.forwardRequest(update, group.getName()),
+		schedulerService.schedule(() -> channelForwardingService.forwardRequest(update, group.getName()),
 				FORWARD_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
 	}
 
@@ -334,7 +334,7 @@ public class RequestManagementService {
 		Request insert = requestService.insert(messageId, group.getId(), link, content, format, source, otherTags,
 				userId, requestDate);
 
-		schedulerService.schedule(() -> channelManagementService.forwardRequest(insert, group.getName()),
+		schedulerService.schedule(() -> channelForwardingService.forwardRequest(insert, group.getName()),
 				FORWARD_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
 	}
 
@@ -408,7 +408,7 @@ public class RequestManagementService {
 	public void deleteGroupRequests(Long groupId) {
 		requestService.deleteByGroupId(groupId);
 
-		schedulerService.schedule(() -> channelManagementService.deleteForwardedRequestsByGroupId(groupId),
+		schedulerService.schedule(() -> channelForwardingService.deleteForwardedRequestsByGroupId(groupId),
 				DELETE_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
 	}
 
@@ -419,7 +419,7 @@ public class RequestManagementService {
 		if (deleted) {
 			// delete forwarded messages
 			schedulerService.schedule(
-					() -> channelManagementService.deleteForwardedRequest(new RequestPK(messageId, groupId)),
+					() -> channelForwardingService.deleteForwardedRequest(new RequestPK(messageId, groupId)),
 					DELETE_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
 		}
 
@@ -487,7 +487,7 @@ public class RequestManagementService {
 			Long contributor) {
 		Request update = requestService.updateStatus(request, status, resolvedMessageId, contributor);
 
-		schedulerService.schedule(() -> channelManagementService.forwardRequest(update, group.getName()),
+		schedulerService.schedule(() -> channelForwardingService.forwardRequest(update, group.getName()),
 				FORWARD_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
 	}
 
@@ -516,7 +516,7 @@ public class RequestManagementService {
 
 			for (Request request : requests) {
 				String groupName = groupNames.get(request.getId().getGroupId());
-				boolean forwardRequest = channelManagementService.syncRequest(request, groupName, channelId);
+				boolean forwardRequest = channelForwardingService.syncRequest(request, groupName, channelId);
 
 				requestCount = TelegramUtils.checkRequestLimitSameGroup(requestCount, forwardRequest);
 			}
