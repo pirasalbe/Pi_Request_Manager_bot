@@ -1,4 +1,4 @@
-package com.pirasalbe.services;
+package com.pirasalbe.services.channels;
 
 import java.util.List;
 

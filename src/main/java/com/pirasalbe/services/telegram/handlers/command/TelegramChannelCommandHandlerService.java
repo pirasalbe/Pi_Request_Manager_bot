@@ -33,8 +33,8 @@ import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.request.RequestStatus;
 import com.pirasalbe.models.request.Source;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
-import com.pirasalbe.services.ChannelManagementService;
-import com.pirasalbe.services.RequestManagementService;
+import com.pirasalbe.services.channels.ChannelForwardingService;
+import com.pirasalbe.services.channels.ChannelManagementService;
 import com.pirasalbe.services.telegram.TelegramBotService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
 import com.pirasalbe.utils.TelegramConditionUtils;
@@ -65,7 +65,7 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 	private ChannelManagementService channelManagementService;
 
 	@Autowired
-	private RequestManagementService requestManagementService;
+	private ChannelForwardingService channelForwardingService;
 
 	@Autowired
 	private TelegramBotService telegramBotService;
@@ -429,17 +429,15 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 			sendMessage.replyToMessageId(update.message().messageId());
 			SendResponse sendResponse = bot.execute(sendMessage);
 
-			List<Group> groups = groupService.findAll();
-			schedulerService.schedule(() -> refreshChannel(chatId, sendResponse, channelId, groups), 10,
-					TimeUnit.MILLISECONDS);
+			schedulerService.schedule(() -> refreshChannel(chatId, sendResponse, channelId), 10, TimeUnit.MILLISECONDS);
 
 		};
 	}
 
-	private void refreshChannel(Long chatId, SendResponse sendResponse, Long channelId, List<Group> groups) {
-		requestManagementService.refreshChannel(channelId, groups);
+	private void refreshChannel(Long chatId, SendResponse sendResponse, Long channelId) {
+		channelForwardingService.refreshChannel(channelId);
 
-		SendMessage sendMessage = new SendMessage(chatId, "Refresh completed");
+		SendMessage sendMessage = new SendMessage(chatId, "Requests detected. Operation in progress.");
 		if (sendResponse.isOk()) {
 			sendMessage.replyToMessageId(sendResponse.message().messageId());
 		}

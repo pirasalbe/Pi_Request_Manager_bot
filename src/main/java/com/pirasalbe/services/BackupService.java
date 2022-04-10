@@ -21,6 +21,9 @@ import com.pirasalbe.models.database.ChannelRequest;
 import com.pirasalbe.models.database.ChannelRule;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.database.Request;
+import com.pirasalbe.services.channels.ChannelRequestService;
+import com.pirasalbe.services.channels.ChannelRuleService;
+import com.pirasalbe.services.channels.ChannelService;
 import com.pirasalbe.services.telegram.TelegramBotService;
 import com.pirasalbe.utils.DateUtils;
 

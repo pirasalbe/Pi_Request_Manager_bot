@@ -54,7 +54,11 @@ public class RequestService {
 	}
 
 	public Optional<Request> findById(Long messageId, Long groupId) {
-		return repository.findById(new RequestPK(messageId, groupId));
+		return findById(new RequestPK(messageId, groupId));
+	}
+
+	public Optional<Request> findById(RequestPK id) {
+		return repository.findById(id);
 	}
 
 	public Page<Request> findAll(int page, int size) {

@@ -1,13 +1,15 @@
-package com.pirasalbe.services;
+package com.pirasalbe.services.channels;
 
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -22,12 +24,15 @@ import com.pengrad.telegrambot.response.BaseResponse;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.configurations.TelegramConfiguration;
 import com.pirasalbe.models.ChannelRuleType;
-import com.pirasalbe.models.ForwardRequest;
+import com.pirasalbe.models.SyncRequest;
 import com.pirasalbe.models.database.Channel;
 import com.pirasalbe.models.database.ChannelRequest;
 import com.pirasalbe.models.database.ChannelRule;
+import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.database.Request;
 import com.pirasalbe.models.database.RequestPK;
+import com.pirasalbe.services.GroupService;
+import com.pirasalbe.services.RequestManagementService;
 import com.pirasalbe.services.telegram.TelegramBotService;
 import com.pirasalbe.services.telegram.TelegramUserBotService;
 import com.pirasalbe.utils.RequestUtils;
@@ -50,10 +55,6 @@ public class ChannelForwardingService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ChannelForwardingService.class);
 
-	private Queue<ForwardRequest> forwardQueue;
-
-	private Queue<RequestPK> deleteQueue;
-
 	@Autowired
 	private TelegramConfiguration configuration;
 
@@ -66,6 +67,15 @@ public class ChannelForwardingService {
 	@Autowired
 	private ChannelRequestService channelRequestService;
 
+	@Autowired
+	private ChannelForwardingQueueService channelForwardingQueueService;
+
+	@Autowired
+	private GroupService groupService;
+
+	@Autowired
+	private RequestManagementService requestManagementService;
+
 	private TelegramBot bot;
 
 	@Autowired
@@ -73,44 +83,113 @@ public class ChannelForwardingService {
 
 	public ChannelForwardingService(TelegramBotService telegramBotService) {
 		this.bot = telegramBotService.getBot();
-		this.forwardQueue = new LinkedBlockingQueue<>();
-		this.deleteQueue = new LinkedBlockingQueue<>();
-	}
-
-	/**
-	 * Send a request updated to the channels<br>
-	 * <b>It's highly recommended to call this method on a different thread</b>
-	 *
-	 * @param request   Request to update
-	 * @param groupName Name of the group of the request
-	 */
-	public void forwardRequest(Request request, String groupName) {
-		forwardQueue.add(new ForwardRequest(request, groupName));
 	}
 
 	@Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void consumeQueues() {
-		ForwardRequest forwardRequest = forwardQueue.poll();
+		boolean consumed = consumeForwardQueue();
 
-		if (forwardRequest != null) {
-			forwardRequest(forwardRequest);
-		} else {
-			RequestPK requestPK = deleteQueue.poll();
-			if (requestPK != null) {
-				deleteForwardedRequest(requestPK);
-			}
+		if (!consumed) {
+			consumed = consumeDeleteQueue();
+		}
+
+		if (!consumed) {
+			consumed = consumeDeleteByGroupIdQueue();
+		}
+
+		if (!consumed) {
+			consumed = consumeSyncQueue();
+		}
+
+		if (consumed) {
+
+			int syncQueueSize = channelForwardingQueueService.syncQueueSize();
+			int forwardQueueSize = channelForwardingQueueService.forwardQueueSize();
+			int deleteQueueSize = channelForwardingQueueService.deleteQueueSize();
+			int deleteByGroupIdQueueSize = channelForwardingQueueService.deleteByGroupIdQueueSize();
+
+			LOGGER.info("Managed a request. {} to sync, {} to forward, {} to delete, {} to delete by groupId",
+					syncQueueSize, forwardQueueSize, deleteQueueSize, deleteByGroupIdQueueSize);
 		}
 	}
 
-	private void forwardRequest(ForwardRequest forwardRequest) {
-		Request request = forwardRequest.getRequest();
+	private boolean consumeForwardQueue() {
+		boolean consumed = false;
 
-		// delete request from all channels
-		deleteForwardedRequest(request.getId());
+		RequestPK forward = channelForwardingQueueService.pollForwardQueue();
 
-		// forward request to the right channels
-		forwardRequestToChannels(request, forwardRequest.getGroupName());
+		if (forward != null) {
+			consumed = true;
+			forwardRequest(forward);
+		}
+
+		return consumed;
+	}
+
+	private boolean consumeDeleteQueue() {
+		boolean consumed = false;
+
+		RequestPK delete = channelForwardingQueueService.pollDeleteQueue();
+
+		if (delete != null) {
+			consumed = true;
+			deleteForwardedRequest(delete);
+		}
+
+		return consumed;
+	}
+
+	private boolean consumeDeleteByGroupIdQueue() {
+		boolean consumed = false;
+
+		Long delete = channelForwardingQueueService.pollDeleteByGroupIdQueue();
+
+		if (delete != null) {
+			consumed = true;
+			deleteForwardedRequestsByGroupId(delete);
+		}
+
+		return consumed;
+	}
+
+	private boolean consumeSyncQueue() {
+		boolean consumed = false;
+
+		SyncRequest syncRequest = channelForwardingQueueService.pollSyncQueue();
+
+		if (syncRequest != null) {
+			consumed = true;
+			syncRequest(syncRequest);
+		}
+
+		return consumed;
+	}
+
+	private void forwardRequest(RequestPK requestId) {
+		Optional<Request> optional = requestManagementService.findById(requestId);
+
+		if (optional.isPresent()) {
+			Optional<Group> group = groupService.findById(requestId.getGroupId());
+
+			// delete request from all channels
+			deleteForwardedRequest(requestId);
+
+			// forward request to the right channels
+			forwardRequestToChannels(optional.get(), getGroupName(group));
+		}
+	}
+
+	private String getGroupName(Optional<Group> group) {
+		String groupName = null;
+
+		if (group.isPresent()) {
+			groupName = group.get().getName();
+		} else {
+			groupName = "unknown";
+		}
+
+		return groupName;
 	}
 
 	/**
@@ -210,17 +289,6 @@ public class ChannelForwardingService {
 		return messageId;
 	}
 
-	/**
-	 * Delete a request forwarded to a channel<br>
-	 * <b>It's highly recommended to call this method on a different thread</b>
-	 *
-	 * @param request Request to delete
-	 */
-	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void deleteRequest(RequestPK requestId) {
-		deleteQueue.add(requestId);
-	}
-
 	private void deleteForwardedRequest(RequestPK requestId) {
 		// find all channels with the request
 		List<ChannelRequest> channelRequests = channelRequestService.findByRequest(requestId.getGroupId(),
@@ -245,6 +313,8 @@ public class ChannelForwardingService {
 
 		// delete record
 		channelRequestService.delete(channelId, messageId);
+
+		TelegramUtils.cooldown(2000);
 	}
 
 	private void deleteMessageWithUserBot(Long channelId, Long messageId) {
@@ -292,12 +362,51 @@ public class ChannelForwardingService {
 		}
 	}
 
-	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void deleteForwardedRequestsByGroupId(Long groupId) {
+	private void deleteForwardedRequestsByGroupId(Long groupId) {
 		// find all request of a group
 		List<ChannelRequest> channelRequests = channelRequestService.findByGroupId(groupId);
 
 		deleteChannelRequests(channelRequests);
+	}
+
+	public void refreshChannel(Long channelId) {
+		LOGGER.info("Refresh {} started", channelId);
+
+		int page = 0;
+		int size = 100;
+		boolean keep = true;
+
+		// groups list to map
+		List<Group> groups = groupService.findAll();
+		Map<Long, String> groupNames = groups.stream().collect(Collectors.toMap(Group::getId, Group::getName));
+
+		// get all requests paginated
+		while (keep) {
+			LOGGER.info("Refresh {} page {}", channelId, page);
+			Page<Request> requestPage = requestManagementService.findAll(page, size);
+
+			// forward all requests
+			List<Request> requests = requestPage.toList();
+
+			for (Request request : requests) {
+				String groupName = groupNames.get(request.getId().getGroupId());
+
+				channelForwardingQueueService.syncRequest(new SyncRequest(channelId, request.getId(), groupName));
+			}
+
+			keep = requestPage.hasNext();
+			page++;
+		}
+
+		LOGGER.info("Refresh {} ended", channelId);
+	}
+
+	private void syncRequest(SyncRequest syncRequest) {
+		Optional<Request> optional = requestManagementService.findById(syncRequest.getRequestId());
+
+		if (optional.isPresent()) {
+			syncRequest(optional.get(), syncRequest.getGroupName(), syncRequest.getChannelId());
+		}
 	}
 
 	/**
@@ -308,15 +417,12 @@ public class ChannelForwardingService {
 	 * @param groupName Name of the group of the request
 	 * @return True if the message was forwarded
 	 */
-	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public boolean syncRequest(Request request, String groupName, Long channelId) {
+	private void syncRequest(Request request, String groupName, Long channelId) {
 		// delete request from the channel
-		boolean delete = deleteRequestIfNotMatching(request, channelId);
+		deleteRequestIfNotMatching(request, channelId);
 
 		// forward request to the channel
-		boolean forward = forwardRequestToChannel(request, groupName, channelId);
-
-		return delete || forward;
+		forwardRequestToChannel(request, groupName, channelId);
 	}
 
 	private boolean deleteRequestIfNotMatching(Request request, Long channelId) {
