@@ -19,7 +19,6 @@ import com.pirasalbe.models.request.RequestStatus;
 import com.pirasalbe.models.request.Source;
 import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
-import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
 import com.pirasalbe.utils.DateUtils;
@@ -40,9 +39,6 @@ public class TelegramNextAudiobookCommandHandlerService extends AbstractTelegram
 
 	@Autowired
 	private RequestService requestService;
-
-	@Autowired
-	private GroupService groupService;
 
 	@Override
 	public boolean check(Update update) {

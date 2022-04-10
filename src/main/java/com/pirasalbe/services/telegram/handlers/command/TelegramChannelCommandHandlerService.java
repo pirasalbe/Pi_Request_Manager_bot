@@ -34,7 +34,6 @@ import com.pirasalbe.models.request.RequestStatus;
 import com.pirasalbe.models.request.Source;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.ChannelManagementService;
-import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
 import com.pirasalbe.services.telegram.TelegramBotService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
@@ -64,9 +63,6 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 
 	@Autowired
 	private ChannelManagementService channelManagementService;
-
-	@Autowired
-	private GroupService groupService;
 
 	@Autowired
 	private RequestManagementService requestManagementService;

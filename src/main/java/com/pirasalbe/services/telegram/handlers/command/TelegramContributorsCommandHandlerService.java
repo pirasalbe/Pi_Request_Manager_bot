@@ -1,10 +1,7 @@
 package com.pirasalbe.services.telegram.handlers.command;
 
-import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -25,7 +22,6 @@ import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
-import com.pirasalbe.configurations.TelegramConfiguration;
 import com.pirasalbe.models.ContributorAction;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Group;
@@ -35,12 +31,10 @@ import com.pirasalbe.models.request.RequestStatus;
 import com.pirasalbe.models.request.Source;
 import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
-import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
 import com.pirasalbe.services.RequestService;
 import com.pirasalbe.services.telegram.TelegramCommandsService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
-import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramConditionUtils;
 import com.pirasalbe.utils.TelegramUtils;
@@ -90,13 +84,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	public static final UserRole ROLE = UserRole.CONTRIBUTOR;
 
 	@Autowired
-	private TelegramConfiguration configuration;
-
-	@Autowired
 	private TelegramCommandsService commandsService;
-
-	@Autowired
-	private GroupService groupService;
 
 	@Autowired
 	private RequestService requestService;
@@ -602,90 +590,10 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 					sendMessage.parseMode(ParseMode.HTML);
 					sendMessageAndDelete(bot, sendMessage, 30, TimeUnit.SECONDS, group.isPresent());
 				} else {
-					sendRequestList(bot, chatId, group, title, requests);
+					sendRequestList(bot, chatId, group, title, requests, true);
 				}
 			}
 		};
-	}
-
-	private void sendRequestList(TelegramBot bot, Long chatId, Optional<Long> group, String title,
-			List<Request> requests) {
-		StringBuilder builder = new StringBuilder(title);
-
-		// chat name, when in PM
-		Map<Long, String> chatNames = new HashMap<>();
-		LocalDateTime now = DateUtils.getNow();
-		boolean deleteMessages = group.isPresent();
-
-		// create text foreach request
-		for (int i = 0; i < requests.size(); i++) {
-			Request request = requests.get(i);
-
-			// build request text
-			StringBuilder requestBuilder = new StringBuilder();
-			Long messageId = request.getId().getMessageId();
-			Long groupId = request.getId().getGroupId();
-
-			// request link
-			requestBuilder.append("<a href='").append(TelegramUtils.getLink(groupId.toString(), messageId.toString()))
-					.append("'>");
-
-			requestBuilder.append(i + 1).append(" ");
-			requestBuilder.append(getChatName(chatNames, groupId)).append("</a> ");
-
-			// request date
-			requestBuilder.append(RequestUtils.getTimeBetweenDates(request.getRequestDate(), now, true))
-					.append(" ago ");
-
-			// request tags
-			requestBuilder.append("#").append(request.getFormat().name().toLowerCase()).append(" #")
-					.append(request.getSource().name().toLowerCase()).append(" #").append(request.getOtherTags());
-
-			requestBuilder.append(" ");
-
-			// request actions
-			requestBuilder.append("[<a href='")
-					.append(RequestUtils.getActionsLink(configuration.getUsername(), messageId, groupId))
-					.append("'>Actions</a> for <code>").append(messageId).append("</code>]\n");
-
-			String requestText = requestBuilder.toString();
-
-			// if length is > message limit, send current text
-			if (builder.length() + requestText.length() > 4096) {
-				sendRequestListMessage(bot, chatId, builder.toString(), deleteMessages);
-				builder = new StringBuilder(title);
-			}
-			builder.append(requestText);
-			// send last message
-			if (i == requests.size() - 1) {
-				sendRequestListMessage(bot, chatId, builder.toString(), deleteMessages);
-			}
-		}
-	}
-
-	private void sendRequestListMessage(TelegramBot bot, Long chatId, String message, boolean deleteMessages) {
-		SendMessage sendMessage = new SendMessage(chatId, message);
-		sendMessage.parseMode(ParseMode.HTML);
-		sendMessage.disableWebPagePreview(true);
-		sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.MINUTES, deleteMessages);
-		TelegramUtils.cooldown(2000);
-	}
-
-	private String getChatName(Map<Long, String> chatNames, Long groupId) {
-		String chatName = null;
-		if (chatNames.containsKey(groupId)) {
-			chatName = chatNames.get(groupId);
-		} else {
-			Optional<Group> optional = groupService.findById(groupId);
-			if (optional.isPresent()) {
-				chatName = optional.get().getName();
-				chatNames.put(groupId, chatName);
-			} else {
-				chatName = "Unknown";
-			}
-		}
-
-		return chatName;
 	}
 
 	public TelegramHandler showRequest() {

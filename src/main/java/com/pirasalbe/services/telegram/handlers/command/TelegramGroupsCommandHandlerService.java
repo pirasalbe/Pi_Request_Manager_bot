@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.TelegramBot;
@@ -18,7 +17,6 @@ import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.request.Source;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
-import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramUtils;
@@ -45,9 +43,6 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 			+ "</code>";
 
 	public static final UserRole ROLE = UserRole.MANAGER;
-
-	@Autowired
-	private GroupService groupService;
 
 	private void sendMessage(TelegramBot bot, Update update, SendMessage sendMessage) {
 		sendMessageAndDelete(bot, sendMessage, 15, TimeUnit.SECONDS);

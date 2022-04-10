@@ -70,8 +70,9 @@ public class TelegramCommandsService {
 		BotCommand help = new BotCommand("help", "Shows information on how to use the bot");
 
 		BotCommand me = new BotCommand("me", "Shows user info");
+		BotCommand myRequests = new BotCommand("my_requests", "Shows open/fulfilled requests");
 
-		userCommandsPM = new SetMyCommands(start, alive, help, me);
+		userCommandsPM = new SetMyCommands(start, alive, help, me, myRequests);
 		userCommandsGroup = new SetMyCommands(me);
 
 		/*
@@ -104,8 +105,8 @@ public class TelegramCommandsService {
 
 		BotCommand stats = new BotCommand("stats", "Get statistics.");
 
-		contributorsCommandsPM = new SetMyCommands(start, alive, help, me, requests, configureChannel, disableChannel,
-				configureChannels, refreshChannel, stats);
+		contributorsCommandsPM = new SetMyCommands(start, alive, help, me, myRequests, requests, configureChannel,
+				disableChannel, configureChannels, refreshChannel, stats);
 		contributorsCommandsGroup = new SetMyCommands(start, alive, help, me, requests, show, done, sdone, pending,
 				pause, inProgress, cancel, remove, nextAudiobook);
 
@@ -129,8 +130,8 @@ public class TelegramCommandsService {
 		BotCommand noRepeat = new BotCommand("no_repeat",
 				"Define the tags whose requests can't be repeated. It accepts a list of sources.");
 
-		managersCommandsPM = new SetMyCommands(start, alive, help, me, requests, configureChannel, disableChannel,
-				configureChannels, refreshChannel, stats);
+		managersCommandsPM = new SetMyCommands(start, alive, help, me, myRequests, requests, configureChannel,
+				disableChannel, configureChannels, refreshChannel, stats);
 		managersCommandsGroup = new SetMyCommands(start, alive, help, me, groupInfo, enableGroup, disableGroup,
 				requestLimit, nonenglishAudiobooksDaysWait, englishAudiobooksDaysWait, allow, noRepeat, requests, show,
 				done, sdone, pending, pause, inProgress, cancel, remove, nextAudiobook);
@@ -142,8 +143,8 @@ public class TelegramCommandsService {
 		BotCommand adminsAdd = new BotCommand("admins_add", "Add admin");
 		BotCommand adminsRemove = new BotCommand("admins_remove", "Remove admin");
 
-		adminsCommandsPM = new SetMyCommands(start, alive, help, me, admins, adminsAdd, adminsRemove, requests,
-				configureChannel, disableChannel, configureChannels, refreshChannel, stats);
+		adminsCommandsPM = new SetMyCommands(start, alive, help, me, myRequests, admins, adminsAdd, adminsRemove,
+				requests, configureChannel, disableChannel, configureChannels, refreshChannel, stats);
 	}
 
 	public void registerCommandsAsync() {

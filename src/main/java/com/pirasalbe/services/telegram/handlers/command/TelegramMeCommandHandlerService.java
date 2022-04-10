@@ -20,7 +20,6 @@ import com.pirasalbe.models.database.RequestPK;
 import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.AdminService;
-import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
 import com.pirasalbe.services.RequestService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
@@ -41,9 +40,6 @@ public class TelegramMeCommandHandlerService extends AbstractTelegramHandlerServ
 
 	@Autowired
 	private AdminService adminService;
-
-	@Autowired
-	private GroupService groupService;
 
 	@Autowired
 	private RequestService requestService;

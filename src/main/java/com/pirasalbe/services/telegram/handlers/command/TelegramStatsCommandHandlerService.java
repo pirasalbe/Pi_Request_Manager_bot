@@ -35,7 +35,6 @@ import com.pirasalbe.models.request.RequestStatus;
 import com.pirasalbe.models.request.Source;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.AdminService;
-import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
 import com.pirasalbe.utils.DateUtils;
@@ -57,9 +56,6 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 
 	@Autowired
 	private AdminService adminService;
-
-	@Autowired
-	private GroupService groupService;
 
 	@Autowired
 	private RequestManagementService requestManagementService;
