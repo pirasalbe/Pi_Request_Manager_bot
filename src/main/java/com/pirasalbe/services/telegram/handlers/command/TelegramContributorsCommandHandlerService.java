@@ -583,6 +583,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			if (groupService.existsById(chatId) || isPrivate) {
 				deleteMessage(bot, update.message(), !isPrivate);
 
+				Optional<Long> user = TelegramConditionUtils.getUserId(text);
 				Optional<RequestStatus> status = TelegramConditionUtils.getStatus(text);
 				Optional<Format> format = TelegramConditionUtils.getFormat(text);
 				Optional<Source> source = TelegramConditionUtils.getSource(text);
@@ -591,10 +592,10 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 				boolean descendent = optionalDescendent.isPresent() && optionalDescendent.get();
 				RequestStatus requestStatus = status.orElse(RequestStatus.PENDING);
-				List<Request> requests = requestService.findRequests(group, requestStatus, source, format, otherTags,
-						descendent);
+				List<Request> requests = requestService.findRequests(group, requestStatus, user, source, format,
+						otherTags, descendent);
 
-				String title = getTitle(requestStatus, group, format, source, otherTags, descendent);
+				String title = getTitle(requestStatus, group, user, format, source, otherTags, descendent);
 
 				if (requests.isEmpty()) {
 					SendMessage sendMessage = new SendMessage(chatId, title + "No requests found");
@@ -605,20 +606,6 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				}
 			}
 		};
-	}
-
-	private Optional<Long> getGroup(Long chatId, String text, boolean isPrivate) {
-		Optional<Long> group;
-
-		if (isPrivate) {
-			// get requests in PM
-			group = TelegramConditionUtils.getGroupId(text);
-		} else {
-			// get requests of the group
-			group = Optional.of(chatId);
-		}
-
-		return group;
 	}
 
 	private void sendRequestList(TelegramBot bot, Long chatId, Optional<Long> group, String title,
@@ -844,8 +831,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		};
 	}
 
-	private String getTitle(RequestStatus requestStatus, Optional<Long> group, Optional<Format> format,
-			Optional<Source> source, Optional<String> otherTags, boolean descendent) {
+	private String getTitle(RequestStatus requestStatus, Optional<Long> group, Optional<Long> user,
+			Optional<Format> format, Optional<Source> source, Optional<String> otherTags, boolean descendent) {
 		StringBuilder title = new StringBuilder();
 		title.append("<b>Requests ").append(requestStatus.getDescription()).append("</b>");
 		if (group.isPresent()) {
@@ -853,6 +840,9 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			Optional<Group> groupOptional = groupService.findById(groupId);
 			title.append("\nGroup [").append(groupOptional.orElseThrow().getName()).append(" (<code>").append(groupId)
 					.append("</code>)]");
+		}
+		if (user.isPresent()) {
+			title.append("\nUser [").append(user.get()).append("]");
 		}
 		if (format.isPresent()) {
 			title.append("\nFormat [").append(format.get()).append("]");

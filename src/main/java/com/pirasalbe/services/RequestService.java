@@ -212,8 +212,8 @@ public class RequestService {
 		return repository.getUserEbookRequestsOfToday(userId, last24Hours);
 	}
 
-	public List<Request> findRequests(Optional<Long> groupId, RequestStatus status, Optional<Source> source,
-			Optional<Format> format, Optional<String> otherTags, boolean descendent) {
+	public List<Request> findRequests(Optional<Long> groupId, RequestStatus status, Optional<Long> userId,
+			Optional<Source> source, Optional<Format> format, Optional<String> otherTags, boolean descendent) {
 
 		CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
 		CriteriaQuery<Request> criteriaQuery = criteriaBuilder.createQuery(Request.class);
@@ -229,6 +229,11 @@ public class RequestService {
 		// group
 		if (groupId.isPresent()) {
 			predicates.add(criteriaBuilder.equal(requestRoot.get("id").get("groupId"), groupId.get()));
+		}
+
+		// user
+		if (userId.isPresent()) {
+			predicates.add(criteriaBuilder.equal(requestRoot.get("userId"), userId.get()));
 		}
 
 		// source

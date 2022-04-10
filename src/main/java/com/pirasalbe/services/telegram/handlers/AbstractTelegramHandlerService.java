@@ -1,5 +1,6 @@
 package com.pirasalbe.services.telegram.handlers;
 
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.services.SchedulerService;
+import com.pirasalbe.utils.TelegramConditionUtils;
 
 /**
  * Service with common methods
@@ -79,6 +81,20 @@ public class AbstractTelegramHandlerService {
 					(b, r) -> b.execute(new DeleteMessage(r.message().chat().id(), r.message().messageId())), response,
 					timeout, timeUnit);
 		}
+	}
+
+	protected Optional<Long> getGroup(Long chatId, String text, boolean isPrivate) {
+		Optional<Long> group;
+
+		if (isPrivate) {
+			// get requests in PM
+			group = TelegramConditionUtils.getGroupId(text);
+		} else {
+			// get requests of the group
+			group = Optional.of(chatId);
+		}
+
+		return group;
 	}
 
 }

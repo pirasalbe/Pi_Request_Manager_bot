@@ -69,17 +69,25 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 		// delete command
 		deleteMessage(bot, update.message(), update.message().chat().type() != Type.Private);
 
-		int page = 0;
-		int size = 100;
-		boolean keep = true;
+		Long chatId = update.message().chat().id();
 
 		// filters
 		String text = update.message().text();
-		Optional<Long> group = TelegramConditionUtils.getGroupId(text);
 		Optional<Format> format = TelegramConditionUtils.getFormat(text);
 		Optional<Source> source = TelegramConditionUtils.getSource(text);
 		Optional<String> otherTags = TelegramConditionUtils.getOtherTags(text);
 
+		boolean isPrivate = update.message().chat().type() == Type.Private;
+		Optional<Long> group = getGroup(chatId, text, isPrivate);
+
+		// check if the context is valid, either enabled group or PM
+		if (groupService.existsById(chatId) || isPrivate) {
+			getAndSendStats(bot, chatId, format, source, otherTags, group);
+		}
+	}
+
+	private void getAndSendStats(TelegramBot bot, Long chatId, Optional<Format> format, Optional<Source> source,
+			Optional<String> otherTags, Optional<Long> group) {
 		// count
 		AtomicLong requestCount = new AtomicLong();
 		AtomicLong filteredCount = new AtomicLong();
@@ -108,6 +116,9 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 		Map<LocalDate, MultipleCounter> requestAndFulfillmentPerDay = new HashMap<>();
 
 		// check all requests
+		int page = 0;
+		int size = 100;
+		boolean keep = true;
 		while (keep) {
 			Page<Request> requestPage = requestManagementService.findAll(page, size);
 			List<Request> requests = requestPage.toList();
@@ -149,9 +160,6 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 			keep = requestPage.hasNext();
 			page++;
 		}
-
-		// send stats
-		Long chatId = update.message().chat().id();
 
 		// send stats
 		if (filteredCount.get() != requestCount.get()) {
