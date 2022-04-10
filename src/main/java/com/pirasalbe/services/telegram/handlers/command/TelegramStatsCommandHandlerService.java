@@ -73,21 +73,23 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 
 		// filters
 		String text = update.message().text();
-		Optional<Format> format = TelegramConditionUtils.getFormat(text);
-		Optional<Source> source = TelegramConditionUtils.getSource(text);
-		Optional<String> otherTags = TelegramConditionUtils.getOtherTags(text);
 
 		boolean isPrivate = update.message().chat().type() == Type.Private;
 		Optional<Long> group = getGroup(chatId, text, isPrivate);
 
 		// check if the context is valid, either enabled group or PM
 		if (groupService.existsById(chatId) || isPrivate) {
-			getAndSendStats(bot, chatId, format, source, otherTags, group);
+			getAndSendStats(bot, chatId, group, text);
 		}
 	}
 
-	private void getAndSendStats(TelegramBot bot, Long chatId, Optional<Format> format, Optional<Source> source,
-			Optional<String> otherTags, Optional<Long> group) {
+	private void getAndSendStats(TelegramBot bot, Long chatId, Optional<Long> group, String text) {
+
+		Optional<Long> user = TelegramConditionUtils.getUserId(text);
+		Optional<Format> format = TelegramConditionUtils.getFormat(text);
+		Optional<Source> source = TelegramConditionUtils.getSource(text);
+		Optional<String> otherTags = TelegramConditionUtils.getOtherTags(text);
+
 		// count
 		AtomicLong requestCount = new AtomicLong();
 		AtomicLong filteredCount = new AtomicLong();
@@ -126,7 +128,7 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 			for (Request request : requests) {
 				requestCount.incrementAndGet();
 
-				if (checkFilters(request, group, format, source, otherTags)) {
+				if (checkFilters(request, group, user, format, source, otherTags)) {
 					filteredCount.incrementAndGet();
 
 					// status
@@ -163,7 +165,7 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 
 		// send stats
 		if (filteredCount.get() != requestCount.get()) {
-			String filters = getFilters(group, format, source, otherTags);
+			String filters = getFilters(group, user, format, source, otherTags);
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append("Sendind stats with the following filters.");
 			stringBuilder.append(filters).append("\n");
@@ -182,12 +184,15 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 		sendStatsByDate(bot, chatId, requestAndFulfillmentPerDay);
 	}
 
-	private boolean checkFilters(Request request, Optional<Long> group, Optional<Format> format,
+	private boolean checkFilters(Request request, Optional<Long> group, Optional<Long> user, Optional<Format> format,
 			Optional<Source> source, Optional<String> otherTags) {
 		boolean valid = true;
 
 		if (group.isPresent()) {
 			valid = request.getId().getGroupId().equals(group.get());
+		}
+		if (valid && user.isPresent()) {
+			valid = request.getUserId().equals(user.get());
 		}
 		if (valid && format.isPresent()) {
 			valid = request.getFormat().equals(format.get());
@@ -202,14 +207,17 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 		return valid;
 	}
 
-	private String getFilters(Optional<Long> group, Optional<Format> format, Optional<Source> source,
-			Optional<String> otherTags) {
+	private String getFilters(Optional<Long> group, Optional<Long> user, Optional<Format> format,
+			Optional<Source> source, Optional<String> otherTags) {
 		StringBuilder filters = new StringBuilder();
 		if (group.isPresent()) {
 			Long groupId = group.get();
 			Optional<Group> groupOptional = groupService.findById(groupId);
 			filters.append("\nGroup [").append(groupOptional.orElseThrow().getName()).append(" (<code>").append(groupId)
 					.append("</code>)]");
+		}
+		if (user.isPresent()) {
+			filters.append("\nUser [").append(user.get()).append("]");
 		}
 		if (format.isPresent()) {
 			filters.append("\nFormat [").append(format.get()).append("]");
