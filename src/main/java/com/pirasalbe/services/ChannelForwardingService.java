@@ -1,12 +1,14 @@
 package com.pirasalbe.services;
 
 import java.util.List;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ import com.pengrad.telegrambot.response.BaseResponse;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.configurations.TelegramConfiguration;
 import com.pirasalbe.models.ChannelRuleType;
+import com.pirasalbe.models.ForwardRequest;
 import com.pirasalbe.models.database.Channel;
 import com.pirasalbe.models.database.ChannelRequest;
 import com.pirasalbe.models.database.ChannelRule;
@@ -47,7 +50,9 @@ public class ChannelForwardingService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ChannelForwardingService.class);
 
-	private Lock lock;
+	private Queue<ForwardRequest> forwardQueue;
+
+	private Queue<RequestPK> deleteQueue;
 
 	@Autowired
 	private TelegramConfiguration configuration;
@@ -68,7 +73,8 @@ public class ChannelForwardingService {
 
 	public ChannelForwardingService(TelegramBotService telegramBotService) {
 		this.bot = telegramBotService.getBot();
-		this.lock = new ReentrantLock();
+		this.forwardQueue = new LinkedBlockingQueue<>();
+		this.deleteQueue = new LinkedBlockingQueue<>();
 	}
 
 	/**
@@ -78,19 +84,33 @@ public class ChannelForwardingService {
 	 * @param request   Request to update
 	 * @param groupName Name of the group of the request
 	 */
-	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void forwardRequest(Request request, String groupName) {
-		lock.lock();
+		forwardQueue.add(new ForwardRequest(request, groupName));
+	}
 
-		try {
-			// delete request from all channels
-			deleteForwardedRequest(request.getId().getGroupId(), request.getId().getMessageId());
+	@Scheduled(fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void consumeQueues() {
+		ForwardRequest forwardRequest = forwardQueue.poll();
 
-			// forward request to the right channels
-			forwardRequestToChannels(request, groupName);
-		} finally {
-			lock.unlock();
+		if (forwardRequest != null) {
+			forwardRequest(forwardRequest);
+		} else {
+			RequestPK requestPK = deleteQueue.poll();
+			if (requestPK != null) {
+				deleteForwardedRequest(requestPK);
+			}
 		}
+	}
+
+	private void forwardRequest(ForwardRequest forwardRequest) {
+		Request request = forwardRequest.getRequest();
+
+		// delete request from all channels
+		deleteForwardedRequest(request.getId());
+
+		// forward request to the right channels
+		forwardRequestToChannels(request, forwardRequest.getGroupName());
 	}
 
 	/**
@@ -197,19 +217,14 @@ public class ChannelForwardingService {
 	 * @param request Request to delete
 	 */
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void deleteForwardedRequest(RequestPK requestId) {
-		lock.lock();
-
-		try {
-			deleteForwardedRequest(requestId.getGroupId(), requestId.getMessageId());
-		} finally {
-			lock.unlock();
-		}
+	public void deleteRequest(RequestPK requestId) {
+		deleteQueue.add(requestId);
 	}
 
-	private void deleteForwardedRequest(Long groupId, Long messageId) {
+	private void deleteForwardedRequest(RequestPK requestId) {
 		// find all channels with the request
-		List<ChannelRequest> channelRequests = channelRequestService.findByRequest(groupId, messageId);
+		List<ChannelRequest> channelRequests = channelRequestService.findByRequest(requestId.getGroupId(),
+				requestId.getMessageId());
 
 		deleteChannelRequests(channelRequests);
 	}
@@ -281,14 +296,6 @@ public class ChannelForwardingService {
 	public void deleteForwardedRequestsByGroupId(Long groupId) {
 		// find all request of a group
 		List<ChannelRequest> channelRequests = channelRequestService.findByGroupId(groupId);
-
-		deleteChannelRequests(channelRequests);
-	}
-
-	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void deleteForwardedRequestsByChannelId(Long channelId) {
-		// find all channels requests
-		List<ChannelRequest> channelRequests = channelRequestService.findByChannelId(channelId);
 
 		deleteChannelRequests(channelRequests);
 	}

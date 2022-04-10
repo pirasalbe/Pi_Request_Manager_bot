@@ -49,9 +49,6 @@ public class RequestManagementService {
 
 	private static final long HOURS_BEFORE_REPEATING_REQUEST = 48l;
 
-	private static final int DELETE_CHANNEL_TIMEOUT = 10;
-	private static final int FORWARD_CHANNEL_TIMEOUT = 10;
-
 	@Autowired
 	private RequestService requestService;
 
@@ -75,7 +72,7 @@ public class RequestManagementService {
 
 		// delete forwarded messages
 		for (Request request : oldRequests) {
-			channelForwardingService.deleteForwardedRequest(request.getId());
+			channelForwardingService.deleteRequest(request.getId());
 		}
 	}
 
@@ -325,8 +322,7 @@ public class RequestManagementService {
 		Request update = requestService.update(messageId, group.getId(), link, content, format, source, otherTags,
 				requestDate);
 
-		schedulerService.schedule(() -> channelForwardingService.forwardRequest(update, group.getName()),
-				FORWARD_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
+		channelForwardingService.forwardRequest(update, group.getName());
 	}
 
 	private void insertRequest(Long messageId, Group group, String link, String content, Format format, Source source,
@@ -334,8 +330,7 @@ public class RequestManagementService {
 		Request insert = requestService.insert(messageId, group.getId(), link, content, format, source, otherTags,
 				userId, requestDate);
 
-		schedulerService.schedule(() -> channelForwardingService.forwardRequest(insert, group.getName()),
-				FORWARD_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
+		channelForwardingService.forwardRequest(insert, group.getName());
 	}
 
 	private RequestResult repeatRequest(Request request, Group group, Long newMessageId, Long userId, String link,
@@ -408,8 +403,8 @@ public class RequestManagementService {
 	public void deleteGroupRequests(Long groupId) {
 		requestService.deleteByGroupId(groupId);
 
-		schedulerService.schedule(() -> channelForwardingService.deleteForwardedRequestsByGroupId(groupId),
-				DELETE_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
+		schedulerService.schedule(() -> channelForwardingService.deleteForwardedRequestsByGroupId(groupId), 10,
+				TimeUnit.MILLISECONDS);
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
@@ -418,9 +413,7 @@ public class RequestManagementService {
 
 		if (deleted) {
 			// delete forwarded messages
-			schedulerService.schedule(
-					() -> channelForwardingService.deleteForwardedRequest(new RequestPK(messageId, groupId)),
-					DELETE_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
+			channelForwardingService.deleteRequest(new RequestPK(messageId, groupId));
 		}
 
 		return deleted;
@@ -487,8 +480,7 @@ public class RequestManagementService {
 			Long contributor) {
 		Request update = requestService.updateStatus(request, status, resolvedMessageId, contributor);
 
-		schedulerService.schedule(() -> channelForwardingService.forwardRequest(update, group.getName()),
-				FORWARD_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
+		channelForwardingService.forwardRequest(update, group.getName());
 	}
 
 	public Page<Request> findAll(int page, int size) {
