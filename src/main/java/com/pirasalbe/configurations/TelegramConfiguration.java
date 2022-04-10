@@ -17,6 +17,8 @@ public class TelegramConfiguration {
 
 	private String apiHash;
 
+	private Long backupChat;
+
 	public String getUsername() {
 		return username;
 	}
@@ -55,6 +57,14 @@ public class TelegramConfiguration {
 
 	public void setApiHash(String apiHash) {
 		this.apiHash = apiHash;
+	}
+
+	public Long getBackupChat() {
+		return backupChat;
+	}
+
+	public void setBackupChat(Long backupChat) {
+		this.backupChat = backupChat;
 	}
 
 }

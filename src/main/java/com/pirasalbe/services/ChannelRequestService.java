@@ -6,6 +6,9 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +33,10 @@ public class ChannelRequestService {
 
 	@PersistenceContext
 	private EntityManager entityManager;
+
+	public Page<ChannelRequest> findAll(int page, int size) {
+		return repository.findAll(PageRequest.of(page, size).withSort(Direction.ASC, "id.channelId", "id.messageId"));
+	}
 
 	public boolean existsById(Long channelId, Long messageId) {
 		ChannelRequestPK id = new ChannelRequestPK(channelId, messageId);
