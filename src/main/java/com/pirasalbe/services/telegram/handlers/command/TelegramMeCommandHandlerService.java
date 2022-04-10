@@ -79,8 +79,6 @@ public class TelegramMeCommandHandlerService extends AbstractTelegramHandlerServ
 	}
 
 	private void checkRequests(StringBuilder stringBuilder, Long userId, Long chatId) {
-		Optional<Group> group = groupService.findById(chatId);
-
 		Request ebookRequest = requestService.getLastEbookRequestOfUser(userId);
 		if (ebookRequest != null) {
 			stringBuilder.append("\n")
@@ -100,6 +98,7 @@ public class TelegramMeCommandHandlerService extends AbstractTelegramHandlerServ
 					audiobookResolved.getResolvedDate(), "Last audiobook received"));
 		}
 
+		Optional<Group> group = groupService.findById(chatId);
 		if (group.isPresent()) {
 			LocalDateTime now = DateUtils.getNow();
 
