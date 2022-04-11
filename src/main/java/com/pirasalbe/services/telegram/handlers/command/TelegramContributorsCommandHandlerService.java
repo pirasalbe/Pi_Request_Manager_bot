@@ -590,7 +590,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 					sendMessage.parseMode(ParseMode.HTML);
 					sendMessageAndDelete(bot, sendMessage, 30, TimeUnit.SECONDS, group.isPresent());
 				} else {
-					sendRequestList(bot, chatId, group, title, requests, true);
+					sendRequestList(chatId, group, title, requests, true);
 				}
 			}
 		};

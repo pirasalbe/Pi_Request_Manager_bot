@@ -3,6 +3,7 @@ package com.pirasalbe.services.telegram.handlers.command;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -38,8 +40,8 @@ import com.pirasalbe.services.AdminService;
 import com.pirasalbe.services.RequestManagementService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
 import com.pirasalbe.utils.DateUtils;
+import com.pirasalbe.utils.StringUtils;
 import com.pirasalbe.utils.TelegramConditionUtils;
-import com.pirasalbe.utils.TelegramUtils;
 
 /**
  * Service to manage /me
@@ -75,11 +77,14 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 
 		// check if the context is valid, either enabled group or PM
 		if (groupService.existsById(chatId) || isPrivate) {
-			getAndSendStats(bot, chatId, group, text);
+			SendMessage sendMessage = new SendMessage(chatId, "Preparing stats..");
+			sendMessageAndDelete(bot, sendMessage, 10, TimeUnit.SECONDS);
+
+			getAndSendStats(chatId, group, text);
 		}
 	}
 
-	private void getAndSendStats(TelegramBot bot, Long chatId, Optional<Long> group, String text) {
+	private void getAndSendStats(Long chatId, Optional<Long> group, String text) {
 
 		Optional<Long> user = TelegramConditionUtils.getUserId(text);
 		Optional<Format> format = TelegramConditionUtils.getFormat(text);
@@ -113,6 +118,9 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 		// request&fulfillment per day
 		Map<LocalDate, MultipleCounter> requestAndFulfillmentPerDay = new HashMap<>();
 
+		// multiple requests
+		Map<String, List<Request>> requestsByLink = new HashMap<>();
+
 		// check all requests
 		int page = 0;
 		int size = 100;
@@ -139,6 +147,11 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 
 					// group
 					increaseCount(requestByGroup, request.getId().getGroupId());
+
+					// link
+					if (group.isEmpty() && request.getStatus() != RequestStatus.RESOLVED) {
+						addRequest(requestsByLink, request.getLink(), request);
+					}
 
 					// day
 					increaseMultipleCount(requestAndFulfillmentPerDay, request.getRequestDate().toLocalDate(),
@@ -167,17 +180,22 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 			stringBuilder.append(filters).append("\n");
 			stringBuilder.append("<code>Matching requests</code>: ").append(filteredCount.get()).append(" / ")
 					.append(requestCount.get());
-			sendMessage(bot, chatId, stringBuilder.toString());
+			sendMessage(chatId, stringBuilder.toString());
 		}
-		sendStats(bot, chatId, "Requests by Status", requestByStatus, RequestStatus::name, filteredCount);
-		sendStats(bot, chatId, "Requests by Format", requestByFormat, Format::name, filteredCount);
-		sendStats(bot, chatId, "Requests by Source", requestBySource, Source::name, filteredCount);
+		sendStats(chatId, "Requests by Status", requestByStatus, r -> StringUtils.firstToUpperCase(r.getDescription()),
+				filteredCount);
+		sendStats(chatId, "Requests by Format", requestByFormat, Format::name, filteredCount);
+		sendStats(chatId, "Requests by Source", requestBySource, Source::name, filteredCount);
 
-		sendStats(bot, chatId, "Requests by Language", requestByLanguage, s -> s, filteredCount);
-		sendStats(bot, chatId, "Requests by Group", requestByGroup, groupNames::get, filteredCount);
-		sendStats(bot, chatId, "Contributions", requestByContributors, adminNames::get, filteredCount);
+		sendStats(chatId, "Requests by Language", requestByLanguage, StringUtils::firstToUpperCase, filteredCount);
+		sendStats(chatId, "Requests by Group", requestByGroup, groupNames::get, filteredCount);
+		sendStats(chatId, "Contributions", requestByContributors, adminNames::get, filteredCount);
 
-		sendStatsByDate(bot, chatId, requestAndFulfillmentPerDay);
+		sendStatsByDate(chatId, requestAndFulfillmentPerDay);
+
+		if (group.isEmpty()) {
+			sendMultipleRequests(chatId, requestsByLink, groupNames);
+		}
 	}
 
 	private boolean checkFilters(Request request, Optional<Long> group, Optional<Long> user, Optional<Format> format,
@@ -228,8 +246,8 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 		return filters.toString();
 	}
 
-	private <K> void sendStats(TelegramBot bot, Long chatId, String title, Map<K, AtomicLong> map,
-			Function<K, String> keyToString, AtomicLong totalRequests) {
+	private <K> void sendStats(Long chatId, String title, Map<K, AtomicLong> map, Function<K, String> keyToString,
+			AtomicLong totalRequests) {
 
 		StringBuilder headerBuilder = new StringBuilder();
 		headerBuilder.append("<b>").append(title).append("</b>\n\n");
@@ -252,21 +270,18 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 
 			// if length is > message limit, send current text
 			if (builder.length() + requestText.length() > 4096) {
-				sendMessage(bot, chatId, builder.toString());
+				sendMessage(chatId, builder.toString());
 				builder = new StringBuilder(header);
 			}
 			builder.append(requestText);
 			// send last message
 			if (i == orderedEntries.size() - 1) {
-				sendMessage(bot, chatId, builder.toString());
+				sendMessage(chatId, builder.toString());
 			}
 		}
-
-		TelegramUtils.cooldown(1000);
-
 	}
 
-	private <K> void sendStatsByDate(TelegramBot bot, Long chatId, Map<LocalDate, MultipleCounter> map) {
+	private void sendStatsByDate(Long chatId, Map<LocalDate, MultipleCounter> map) {
 
 		StringBuilder headerBuilder = new StringBuilder();
 		headerBuilder.append("<b>").append("Requests requested/fulfilled per day").append("</b>\n\n");
@@ -290,22 +305,68 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 
 			// if length is > message limit, send current text
 			if (builder.length() + requestText.length() > 4096) {
-				sendMessage(bot, chatId, builder.toString());
+				sendMessage(chatId, builder.toString());
 				builder = new StringBuilder(header);
 			}
 			builder.append(requestText);
 			// send last message
 			if (!iterator.hasNext()) {
-				sendMessage(bot, chatId, builder.toString());
+				sendMessage(chatId, builder.toString());
 			}
 		}
 
 	}
 
-	private void sendMessage(TelegramBot bot, Long chatId, String message) {
+	private void sendMultipleRequests(Long chatId, Map<String, List<Request>> map, Map<Long, String> groupNames) {
+
+		StringBuilder headerBuilder = new StringBuilder();
+		headerBuilder.append("<b>").append("Links in multiple requests").append("</b>\n");
+		sendMessage(chatId, headerBuilder.toString());
+
+		List<Entry<String, List<Request>>> entrySet = new ArrayList<>(map.entrySet());
+		entrySet.sort((a, b) -> {
+			Integer aSize = a.getValue().size();
+			Integer bSize = b.getValue().size();
+
+			return bSize.compareTo(aSize);
+		});
+
+		LocalDateTime now = DateUtils.getNow();
+
+		Iterator<Entry<String, List<Request>>> iterator = entrySet.iterator();
+		boolean keep = iterator.hasNext();
+		while (keep) {
+			Entry<String, List<Request>> entry = iterator.next();
+
+			List<Request> value = entry.getValue();
+			if (value.size() > 1) {
+
+				StringBuilder builder = new StringBuilder();
+				builder.append(value.get(0).getContent()).append("\n\n");
+				builder.append("<b>Occurrences</b>:\n");
+
+				for (int i = 0; i < value.size(); i++) {
+					Request request = value.get(i);
+
+					builder.append("- ").append(getRequestText(request, i, groupNames, now, true));
+				}
+				builder.append("\n");
+
+				sendMessage(chatId, builder.toString());
+			}
+
+			// send last message
+			keep = iterator.hasNext() && entry.getValue().size() > 1;
+		}
+
+	}
+
+	private void sendMessage(Long chatId, String message) {
 		SendMessage sendMessage = new SendMessage(chatId, message);
 		sendMessage.parseMode(ParseMode.HTML);
-		bot.execute(sendMessage);
+		sendMessage.disableWebPagePreview(true);
+
+		botQueue.add(bot -> bot.execute(sendMessage));
 	}
 
 	private <K> List<Entry<K, AtomicLong>> getOrderedEntries(Map<K, AtomicLong> map) {
@@ -349,6 +410,18 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 		}
 
 		consumer.accept(multipleCounter);
+	}
+
+	private void addRequest(Map<String, List<Request>> map, String key, Request request) {
+		List<Request> requests = null;
+		if (map.containsKey(key)) {
+			requests = map.get(key);
+		} else {
+			requests = new ArrayList<>();
+			map.put(key, requests);
+		}
+
+		requests.add(request);
 	}
 
 }

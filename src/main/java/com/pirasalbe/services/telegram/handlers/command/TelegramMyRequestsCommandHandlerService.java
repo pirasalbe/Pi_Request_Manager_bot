@@ -55,7 +55,7 @@ public class TelegramMyRequestsCommandHandlerService extends AbstractTelegramHan
 			sendMessage.parseMode(ParseMode.HTML);
 			bot.execute(sendMessage);
 		} else {
-			sendRequestList(bot, chatId, Optional.empty(), title, requests, false);
+			sendRequestList(chatId, Optional.empty(), title, requests, false);
 		}
 	}
 

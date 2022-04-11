@@ -5,9 +5,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.TelegramBot;
@@ -21,6 +27,7 @@ import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.database.Request;
 import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.SchedulerService;
+import com.pirasalbe.services.telegram.TelegramBotService;
 import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramConditionUtils;
@@ -35,6 +42,8 @@ import com.pirasalbe.utils.TelegramUtils;
 @Component
 public class AbstractTelegramHandlerService {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractTelegramHandlerService.class);
+
 	@Autowired
 	protected TelegramConfiguration configuration;
 
@@ -43,6 +52,26 @@ public class AbstractTelegramHandlerService {
 
 	@Autowired
 	protected GroupService groupService;
+
+	@Autowired
+	private TelegramBotService telegramBotService;
+
+	protected Queue<Consumer<TelegramBot>> botQueue;
+
+	protected AbstractTelegramHandlerService() {
+		this.botQueue = new LinkedBlockingQueue<>();
+	}
+
+	@Scheduled(fixedDelay = 2, timeUnit = TimeUnit.SECONDS)
+	public void consumeQueues() {
+		Consumer<TelegramBot> consumer = botQueue.poll();
+
+		if (consumer != null) {
+			consumer.accept(telegramBotService.getBot());
+
+			LOGGER.info("Executed a bot operation. {} left", botQueue.size());
+		}
+	}
 
 	/**
 	 * Delete a message
@@ -115,8 +144,8 @@ public class AbstractTelegramHandlerService {
 		return group;
 	}
 
-	protected void sendRequestList(TelegramBot bot, Long chatId, Optional<Long> group, String title,
-			List<Request> requests, boolean actions) {
+	protected void sendRequestList(Long chatId, Optional<Long> group, String title, List<Request> requests,
+			boolean actions) {
 		StringBuilder builder = new StringBuilder(title);
 
 		// chat name, when in PM
@@ -128,58 +157,62 @@ public class AbstractTelegramHandlerService {
 		for (int i = 0; i < requests.size(); i++) {
 			Request request = requests.get(i);
 
-			// build request text
-			StringBuilder requestBuilder = new StringBuilder();
-			Long messageId = request.getId().getMessageId();
-			Long groupId = request.getId().getGroupId();
-
-			// request link
-			requestBuilder.append("<a href='").append(TelegramUtils.getLink(groupId.toString(), messageId.toString()))
-					.append("'>");
-
-			requestBuilder.append(i + 1).append(" ");
-			requestBuilder.append(getChatName(chatNames, groupId)).append("</a> ");
-
-			// request date
-			requestBuilder.append(RequestUtils.getTimeBetweenDates(request.getRequestDate(), now, true))
-					.append(" ago ");
-
-			// request tags
-			requestBuilder.append("#").append(request.getFormat().name().toLowerCase()).append(" #")
-					.append(request.getSource().name().toLowerCase()).append(" #").append(request.getOtherTags());
-
-			requestBuilder.append(" ");
-
-			// request actions
-			if (actions) {
-				requestBuilder.append("[<a href='")
-						.append(RequestUtils.getActionsLink(configuration.getUsername(), messageId, groupId))
-						.append("'>Actions</a> for <code>").append(messageId).append("</code>]");
-			}
-
-			requestBuilder.append("\n");
-
-			String requestText = requestBuilder.toString();
+			String requestText = getRequestText(request, i, chatNames, now, actions);
 
 			// if length is > message limit, send current text
 			if (builder.length() + requestText.length() > 4096) {
-				sendRequestListMessage(bot, chatId, builder.toString(), deleteMessages);
+				sendRequestListMessage(chatId, builder.toString(), deleteMessages);
 				builder = new StringBuilder(title);
 			}
 			builder.append(requestText);
 			// send last message
 			if (i == requests.size() - 1) {
-				sendRequestListMessage(bot, chatId, builder.toString(), deleteMessages);
+				sendRequestListMessage(chatId, builder.toString(), deleteMessages);
 			}
 		}
 	}
 
-	private void sendRequestListMessage(TelegramBot bot, Long chatId, String message, boolean deleteMessages) {
+	protected String getRequestText(Request request, int i, Map<Long, String> chatNames, LocalDateTime now,
+			boolean actions) {
+		// build request text
+		StringBuilder requestBuilder = new StringBuilder();
+		Long messageId = request.getId().getMessageId();
+		Long groupId = request.getId().getGroupId();
+
+		// request link
+		requestBuilder.append("<a href='").append(TelegramUtils.getLink(groupId.toString(), messageId.toString()))
+				.append("'>");
+
+		requestBuilder.append(i + 1).append(" ");
+		requestBuilder.append(getChatName(chatNames, groupId)).append("</a> ");
+
+		// request date
+		requestBuilder.append(RequestUtils.getTimeBetweenDates(request.getRequestDate(), now, true)).append(" ago ");
+
+		// request tags
+		requestBuilder.append("#").append(request.getFormat().name().toLowerCase()).append(" #")
+				.append(request.getSource().name().toLowerCase()).append(" #").append(request.getOtherTags());
+
+		requestBuilder.append(" ");
+
+		// request actions
+		if (actions) {
+			requestBuilder.append("[<a href='")
+					.append(RequestUtils.getActionsLink(configuration.getUsername(), messageId, groupId))
+					.append("'>Actions</a> for <code>").append(messageId).append("</code>]");
+		}
+
+		requestBuilder.append("\n");
+
+		return requestBuilder.toString();
+	}
+
+	private void sendRequestListMessage(Long chatId, String message, boolean deleteMessages) {
 		SendMessage sendMessage = new SendMessage(chatId, message);
 		sendMessage.parseMode(ParseMode.HTML);
 		sendMessage.disableWebPagePreview(true);
-		sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.MINUTES, deleteMessages);
-		TelegramUtils.cooldown(2000);
+
+		botQueue.add(b -> sendMessageAndDelete(b, sendMessage, 5, TimeUnit.MINUTES, deleteMessages));
 	}
 
 	private String getChatName(Map<Long, String> chatNames, Long groupId) {
