@@ -52,9 +52,7 @@ public class ChannelForwardingQueueService {
 	 * @param request Request to update
 	 */
 	public void forwardRequest(RequestPK requestId) {
-		if (!forwardQueue.contains(requestId)) {
-			forwardQueue.add(requestId);
-		}
+		forwardQueue.add(requestId);
 	}
 
 	/**
