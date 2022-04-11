@@ -494,8 +494,8 @@ public class RequestManagementService {
 
 		List<Request> requests = requestService.findByContent(groupId, sanitizedName, sanitizedCaption, format);
 
-		LOGGER.info("Found requests with content by group=[{}] and content like [{}] or [{}] and format=[{}]", groupId,
-				sanitizedName, sanitizedCaption, format);
+		LOGGER.info("Found {} requests with content by group=[{}] and content like [{}] or [{}] and format=[{}]",
+				requests.size(), groupId, sanitizedName, sanitizedCaption, format);
 
 		return requests;
 	}
