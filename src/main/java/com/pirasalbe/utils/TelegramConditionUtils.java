@@ -26,7 +26,8 @@ public class TelegramConditionUtils {
 	public static final String SOURCE_CONDITION = "source=";
 	public static final String OTHER_CONDITION = "other=";
 	public static final String ORDER_CONDITION = "order=";
-	public static final String REFRESH_SHOW_CONDITION = "refresh_show=";
+	public static final String REFRESH_SHOW_MESSAGE_CONDITION = "rm=";
+	public static final String REFRESH_SHOW_CHAT_CONDITION = "rc=";
 
 	public static final String ORDER_CONDITION_OLD = "OLD";
 	public static final String ORDER_CONDITION_NEW = "NEW";
@@ -76,11 +77,15 @@ public class TelegramConditionUtils {
 	}
 
 	public static Optional<ContributorAction> getAction(String text) {
-		return getCondition(text, ACTION_CONDITION, ContributorAction::valueOf);
+		return getCondition(text, ACTION_CONDITION, ContributorAction::getByCode);
 	}
 
-	public static Optional<Integer> getRefreshShow(String text) {
-		return getCondition(text, REFRESH_SHOW_CONDITION, Integer::parseInt);
+	public static Optional<Integer> getRefreshShowMessage(String text) {
+		return getCondition(text, REFRESH_SHOW_MESSAGE_CONDITION, Integer::parseInt);
+	}
+
+	public static Optional<Long> getRefreshShowChat(String text) {
+		return getCondition(text, REFRESH_SHOW_CHAT_CONDITION, Long::parseLong);
 	}
 
 	public static Optional<RequestStatus> getStatus(String text) {

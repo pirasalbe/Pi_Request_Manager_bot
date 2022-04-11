@@ -123,7 +123,7 @@ public class AbstractTelegramHandlerService {
 		SendResponse response = bot.execute(sendMessage);
 
 		// schedule delete
-		if (delete) {
+		if (delete && response.isOk()) {
 			schedulerService.schedule(
 					(b, r) -> b.execute(new DeleteMessage(r.message().chat().id(), r.message().messageId())), response,
 					timeout, timeUnit);

@@ -317,6 +317,9 @@ public class TelegramService {
 				contributorsCommandHandlerService.replyToMessageWithFileCondition(), contributorRoleCondition),
 				contributorsCommandHandlerService.markDoneWithFile());
 
+		bot.register(Arrays.asList(groupChatCondition, contributorsCommandHandlerService.fileCondition(),
+				contributorRoleCondition), contributorsCommandHandlerService.lookupWithFile());
+
 		bot.register(
 				Arrays.asList(groupChatCondition,
 						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_DONE),

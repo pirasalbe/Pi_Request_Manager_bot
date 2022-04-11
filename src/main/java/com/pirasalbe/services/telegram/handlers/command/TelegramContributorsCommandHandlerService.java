@@ -1,9 +1,12 @@
 package com.pirasalbe.services.telegram.handlers.command;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -23,6 +26,7 @@ import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.models.ContributorAction;
+import com.pirasalbe.models.LookupInfo;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.database.Request;
@@ -52,19 +56,25 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			"document/x-m4b", "audio/x-m4b", "audio/mpeg", "application/epub+zip", "application/vnd.amazon.mobi8-ebook",
 			"application/vnd.amazon.ebook", "application/x-mobipocket-ebook", "application/pdf", "image/vnd.djvu",
 			"application/octet-stream");
-	private static final List<String> VALID_EXTENSIONS = Arrays.asList(".zip", ".rar", ".mobi", ".pdf", ".epub",
-			".azw3", ".azw", ".txt", ".doc", ".docx", ".rtf", ".cbz", ".cbr", ".djvu", ".chm", ".fb2", ".mp3", ".m4b",
-			".opus");
+	private static final List<String> VALID_COMMON_EXTENSIONS = Arrays.asList(".zip", ".rar");
+	private static final List<String> VALID_EBOOKS_EXTENSIONS = Arrays.asList(".mobi", ".pdf", ".epub", ".azw3", ".azw",
+			".txt", ".doc", ".docx", ".rtf", ".cbz", ".cbr", ".djvu", ".chm", ".fb2");
+	private static final List<String> VALID_AUDIOBOOKS_EXTENSIONS = Arrays.asList(".mp3", ".m4b", ".opus");
+	private static final List<String> VALID_EXTENSIONS = Stream
+			.of(VALID_COMMON_EXTENSIONS, VALID_EBOOKS_EXTENSIONS, VALID_AUDIOBOOKS_EXTENSIONS)
+			.flatMap(Collection::stream).collect(Collectors.toList());
 
 	private static final String START_PAYLOAD_SHOW = "^\\/start show_message=[0-9]+_group=[+-]?[0-9]+$";
 	private static final String MESSAGE_INFO_CALLBACK = TelegramConditionUtils.MESSAGE_CONDITION + "[0-9]+ "
 			+ TelegramConditionUtils.GROUP_CONDITION + "[+-]?[0-9]+";
-	public static final String CONFIRM_CALLBACK = "^" + ContributorAction.CONFIRM + " " + MESSAGE_INFO_CALLBACK + " "
-			+ TelegramConditionUtils.ACTION_CONDITION + "[a-zA-Z]+$";
-	public static final String CHANGE_STATUS_CALLBACK = "^(" + ContributorAction.PENDING + "|"
-			+ ContributorAction.IN_PROGRESS + "|" + ContributorAction.PAUSE + "|" + ContributorAction.DONE + "|"
-			+ ContributorAction.CANCEL + "|" + ContributorAction.REMOVE + ") " + MESSAGE_INFO_CALLBACK + "( "
-			+ TelegramConditionUtils.REFRESH_SHOW_CONDITION + "[0-9]+)?$";
+	public static final String CONFIRM_CALLBACK = "^" + ContributorAction.CONFIRM.getCode() + " "
+			+ MESSAGE_INFO_CALLBACK + " " + TelegramConditionUtils.ACTION_CONDITION + "[a-zA-Z]+$";
+	public static final String CHANGE_STATUS_CALLBACK = "^(" + ContributorAction.PENDING.getCode() + "|"
+			+ ContributorAction.IN_PROGRESS.getCode() + "|" + ContributorAction.PAUSE.getCode() + "|"
+			+ ContributorAction.DONE.getCode() + "|" + ContributorAction.CANCEL.getCode() + "|"
+			+ ContributorAction.REMOVE.getCode() + ") " + MESSAGE_INFO_CALLBACK + "( "
+			+ TelegramConditionUtils.REFRESH_SHOW_MESSAGE_CONDITION + "[0-9]+ "
+			+ TelegramConditionUtils.REFRESH_SHOW_CHAT_CONDITION + "[+-]?[0-9]+)?$";
 
 	public static final String COMMAND_REFRESH_COMMANDS = "/refresh_commands";
 
@@ -217,10 +227,11 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 			Optional<Long> optionalGroupId = TelegramConditionUtils.getGroupId(text);
 			Optional<Long> optionalMessageId = TelegramConditionUtils.getMessageId(text);
-			Optional<Integer> optionalShowMessageId = TelegramConditionUtils.getRefreshShow(text);
+			Optional<Integer> optionalShowMessageId = TelegramConditionUtils.getRefreshShowMessage(text);
+			Optional<Long> optionalShowChatId = TelegramConditionUtils.getRefreshShowChat(text);
 
 			String actionString = text.substring(0, text.indexOf(' '));
-			ContributorAction action = ContributorAction.valueOf(actionString);
+			ContributorAction action = ContributorAction.getByCode(actionString);
 
 			String result = null;
 			if (optionalGroupId.isPresent() && optionalMessageId.isPresent()) {
@@ -229,9 +240,9 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 				result = performAction(bot, action, messageId, groupId, update.callbackQuery().from());
 
-				if (optionalShowMessageId.isPresent()) {
+				if (optionalShowMessageId.isPresent() && optionalShowChatId.isPresent()) {
 					// delete original messsage and send it again
-					DeleteMessage deleteMessage = new DeleteMessage(update.callbackQuery().from().id(),
+					DeleteMessage deleteMessage = new DeleteMessage(optionalShowChatId.get(),
 							optionalShowMessageId.get());
 					bot.execute(deleteMessage);
 				}
@@ -276,34 +287,14 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 			Optional<Request> optional = requestService.findById(messageId, groupId);
 
-			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.append("Hey there 👋 Here's your requested book. Happy ");
+			Long resolvedMessageId = notifyDone(bot, groupId, messageId, contributor, optional);
 
-			if (optional.isPresent() && optional.get().getFormat() == Format.AUDIOBOOK) {
-				stringBuilder.append("Listening");
-			} else {
-				stringBuilder.append("Reading");
-			}
-
-			stringBuilder.append("!\n");
-			stringBuilder.append("Request fulfilled by <code>").append(TelegramUtils.getUserName(contributor))
-					.append("</code>");
-			SendMessage sendMessage = new SendMessage(groupId, stringBuilder.toString());
-			sendMessage.parseMode(ParseMode.HTML);
-			sendMessage.replyToMessageId(messageId.intValue());
-			SendResponse response = bot.execute(sendMessage);
-
-			Long resolvedMessageId = messageId;
-			if (response.isOk()) {
-				resolvedMessageId = response.message().messageId().longValue();
-			}
-
-			result = changeRequestStatus(action, messageId, groupId, resolvedMessageId, contributor.id());
+			result = changeRequestStatus(action, groupId, messageId, resolvedMessageId, contributor.id());
 
 		} else if (action == ContributorAction.CANCEL || action == ContributorAction.PAUSE
 				|| action == ContributorAction.PENDING || action == ContributorAction.IN_PROGRESS) {
 
-			result = changeRequestStatus(action, messageId, groupId, contributor.id());
+			result = changeRequestStatus(action, groupId, messageId, contributor.id());
 
 		} else {
 			result = "Nothing to do";
@@ -312,11 +303,38 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		return result;
 	}
 
-	private String changeRequestStatus(ContributorAction action, Long messageId, Long groupId, Long contributorId) {
-		return changeRequestStatus(action, messageId, groupId, null, contributorId);
+	private Long notifyDone(TelegramBot bot, Long groupId, Long messageId, User contributor,
+			Optional<Request> optional) {
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.append("Hey there 👋 Here's your requested book. Happy ");
+
+		if (optional.isPresent() && optional.get().getFormat() == Format.AUDIOBOOK) {
+			stringBuilder.append("Listening");
+		} else {
+			stringBuilder.append("Reading");
+		}
+
+		stringBuilder.append("!\n");
+		stringBuilder.append("Request fulfilled by <code>").append(TelegramUtils.getUserName(contributor))
+				.append("</code>");
+		SendMessage sendMessage = new SendMessage(groupId, stringBuilder.toString());
+		sendMessage.parseMode(ParseMode.HTML);
+		sendMessage.replyToMessageId(messageId.intValue());
+		SendResponse response = bot.execute(sendMessage);
+
+		Long resolvedMessageId = messageId;
+		if (response.isOk()) {
+			resolvedMessageId = response.message().messageId().longValue();
+		}
+
+		return resolvedMessageId;
 	}
 
-	private String changeRequestStatus(ContributorAction action, Long messageId, Long groupId, Long resolvedMessageId,
+	private String changeRequestStatus(ContributorAction action, Long groupId, Long messageId, Long contributorId) {
+		return changeRequestStatus(action, groupId, messageId, null, contributorId);
+	}
+
+	private String changeRequestStatus(ContributorAction action, Long groupId, Long messageId, Long resolvedMessageId,
 			Long contributorId) {
 		String result;
 		RequestStatus newStatus = null;
@@ -425,8 +443,15 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	}
 
 	public TelegramCondition replyToMessageWithFileCondition() {
-		return update -> replyToMessage(update)
-				&& (isValidDocument(update.message().document()) || isValidAudio(update.message().audio()));
+		return update -> replyToMessage(update) && isFile(update);
+	}
+
+	public TelegramCondition fileCondition() {
+		return this::isFile;
+	}
+
+	private boolean isFile(Update update) {
+		return isValidDocument(update.message().document()) || isValidAudio(update.message().audio());
 	}
 
 	private boolean isValidDocument(Document document) {
@@ -444,11 +469,15 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	}
 
 	private boolean isValidExtension(String filename) {
+		return isValidExtension(VALID_EXTENSIONS, filename);
+	}
+
+	private boolean isValidExtension(List<String> extensions, String filename) {
 		boolean valid = false;
 
 		String lowerFileName = filename.toLowerCase();
-		for (int i = 0; i < VALID_EXTENSIONS.size() && !valid; i++) {
-			String extension = VALID_EXTENSIONS.get(i);
+		for (int i = 0; i < extensions.size() && !valid; i++) {
+			String extension = extensions.get(i);
 
 			valid = lowerFileName.endsWith(extension);
 		}
@@ -477,6 +506,95 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.SECONDS);
 			}
 		};
+	}
+
+	public TelegramHandler lookupWithFile() {
+		return (bot, update) -> {
+			Long chatId = TelegramUtils.getChatId(update);
+
+			Optional<Group> optional = groupService.findById(chatId);
+
+			if (optional.isPresent()) {
+
+				// get data from document
+				LookupInfo lookupInfo = getLookupInfo(update);
+
+				// if valid data look for matching request
+				if (lookupInfo.isValid()) {
+					Request request = requestManagementService.lookup(chatId, lookupInfo.getName(),
+							lookupInfo.getCaption(), lookupInfo.getFormat());
+
+					if (request != null) {
+						Long groupId = request.getId().getGroupId();
+						Long messageId = request.getId().getMessageId();
+						User contributor = update.message().from();
+
+						// notify user
+						Long doneMessageId = notifyDone(bot, groupId, messageId, contributor, Optional.of(request));
+
+						// change status
+						Long resolvedMessageId = update.message().messageId().longValue();
+						changeRequestStatus(ContributorAction.DONE, groupId, messageId, resolvedMessageId,
+								contributor.id());
+
+						// send request to contributor
+						sendLookupConfirmation(bot, contributor.id(), groupId, messageId, resolvedMessageId,
+								doneMessageId);
+					}
+				}
+			}
+		};
+	}
+
+	private LookupInfo getLookupInfo(Update update) {
+		boolean valid = false;
+		Format format = null;
+		String name = null;
+		String caption = update.message().caption();
+		if (update.message().document() != null) {
+			name = update.message().document().fileName();
+			if (isValidExtension(VALID_AUDIOBOOKS_EXTENSIONS, update.message().document().fileName())) {
+				format = Format.AUDIOBOOK;
+				valid = true;
+			} else if (isValidExtension(VALID_EBOOKS_EXTENSIONS, update.message().document().fileName())) {
+				format = Format.EBOOK;
+				valid = true;
+			} else if (isValidExtension(VALID_COMMON_EXTENSIONS, update.message().document().fileName())) {
+				valid = true;
+			}
+		} else if (update.message().audio() != null
+				&& isValidExtension(VALID_AUDIOBOOKS_EXTENSIONS, update.message().audio().fileName())) {
+			name = update.message().audio().fileName();
+			format = Format.AUDIOBOOK;
+			valid = true;
+		}
+
+		return new LookupInfo(valid, name, caption, format);
+	}
+
+	private void sendLookupConfirmation(TelegramBot bot, Long chatId, Long groupId, Long messageId,
+			Long resolvedMessageId, Long doneMessageId) {
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.append("<a href='").append(TelegramUtils.getLink(groupId, messageId))
+				.append("'>This request</a>");
+		stringBuilder.append(" matched <a href='").append(TelegramUtils.getLink(groupId, resolvedMessageId))
+				.append("'>the file you uploaded</a>.\n");
+		stringBuilder.append("Click the button below to undo.\n");
+		stringBuilder.append("<i>This message will disappear in 2 minute.</i>");
+		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+		sendMessage.parseMode(ParseMode.HTML);
+
+		// button
+		InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
+		InlineKeyboardButton undoButton = new InlineKeyboardButton("🔙 Undo")
+				.callbackData(RequestUtils.getActionCallback(messageId, groupId, ContributorAction.PENDING,
+						Optional.of(doneMessageId), Optional.of(groupId)));
+
+		inlineKeyboard.addRow(undoButton);
+
+		sendMessage.replyMarkup(inlineKeyboard);
+
+		sendMessageAndDelete(bot, sendMessage, 2, TimeUnit.MINUTES);
 	}
 
 	public TelegramHandler markCancelled() {
@@ -721,14 +839,16 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 				// get previous message
 				Long showRequestMessageId = null;
+				Long showRequestChatId = null;
 				if (isCallbackMessageFromPM(update)) {
 					showRequestMessageId = update.callbackQuery().message().messageId().longValue();
+					showRequestChatId = update.callbackQuery().from().id();
 				}
 
 				InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
-				InlineKeyboardButton yesButton = new InlineKeyboardButton("✔️ Yes")
-						.callbackData(RequestUtils.getActionCallback(optionalMessageId.get(), optionalGroupId.get(),
-								action, Optional.ofNullable(showRequestMessageId)));
+				InlineKeyboardButton yesButton = new InlineKeyboardButton("✔️ Yes").callbackData(
+						RequestUtils.getActionCallback(optionalMessageId.get(), optionalGroupId.get(), action,
+								Optional.ofNullable(showRequestMessageId), Optional.ofNullable(showRequestChatId)));
 
 				inlineKeyboard.addRow(yesButton);
 

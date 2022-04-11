@@ -488,4 +488,61 @@ public class RequestManagementService {
 		return requestService.findAll(page, size);
 	}
 
+	public Request lookup(Long groupId, String name, String caption, Format format) {
+		String sanitizedName = sanitizeForLikeByContent(removeExtension(name));
+		String sanitizedCaption = sanitizeForLikeByContent(caption);
+
+		Request request = requestService.findByContent(groupId, sanitizedName, sanitizedCaption, format);
+
+		LOGGER.info("Found a request with content [{}] by group=[{}] and content like [{}] or [{}] and format=[{}]",
+				request != null ? request.getContent() : null, groupId, sanitizedName, sanitizedCaption, format);
+
+		return request;
+	}
+
+	private String removeExtension(String name) {
+		String result = null;
+
+		if (name != null && !name.isEmpty()) {
+			int dotIndex = name.lastIndexOf('.');
+
+			if (dotIndex < 4) {
+				dotIndex = name.length();
+			}
+
+			result = name.substring(0, dotIndex);
+		}
+
+		return result;
+	}
+
+	private String sanitizeForLikeByContent(String string) {
+		String result = null;
+
+		// manage only valid requests
+		if (string != null && !string.isEmpty()) {
+			// take only the first part (the title possibly)
+			String[] parts = string.split("-");
+			String firstPart = parts[0];
+			parts = firstPart.split("by");
+			firstPart = parts[0];
+
+			// split each word
+			String[] words = firstPart.replace("_", " ").replace(":", " ").replace("\n", " ").replace(".", " ")
+					.replace("(", " ").replace(")", " ").replace(",", " ").split(" ");
+
+			// keep only useful words
+			StringBuilder builder = new StringBuilder("%");
+			for (String word : words) {
+				if (!word.startsWith("#") && !word.startsWith("@")) {
+					builder.append(word).append("%");
+				}
+			}
+
+			result = builder.toString();
+		}
+
+		return result;
+	}
+
 }
