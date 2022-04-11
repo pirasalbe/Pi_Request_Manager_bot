@@ -322,7 +322,9 @@ public class RequestManagementService {
 		Request update = requestService.update(messageId, group.getId(), link, content, format, source, otherTags,
 				requestDate);
 
-		channelForwardingQueueService.forwardRequest(update.getId());
+		if (update != null) {
+			channelForwardingQueueService.forwardRequest(update.getId());
+		}
 	}
 
 	private void insertRequest(Long messageId, Group group, String link, String content, Format format, Source source,
