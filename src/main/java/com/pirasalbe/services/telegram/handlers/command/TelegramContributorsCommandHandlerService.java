@@ -521,10 +521,10 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 				// if valid data look for matching request
 				if (lookupInfo.isValid()) {
-					Request request = requestManagementService.lookup(chatId, lookupInfo.getName(),
+					List<Request> requests = requestManagementService.lookup(chatId, lookupInfo.getName(),
 							lookupInfo.getCaption(), lookupInfo.getFormat());
 
-					if (request != null) {
+					for (Request request : requests) {
 						Long groupId = request.getId().getGroupId();
 						Long messageId = request.getId().getMessageId();
 						User contributor = update.message().from();
@@ -538,7 +538,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 								contributor.id());
 
 						// send request to contributor
-						sendLookupConfirmation(bot, contributor.id(), groupId, messageId, resolvedMessageId,
+						sendLookupConfirmation(bot, contributor.id(), request, optional.get(), resolvedMessageId,
 								doneMessageId);
 					}
 				}
@@ -572,15 +572,21 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		return new LookupInfo(valid, name, caption, format);
 	}
 
-	private void sendLookupConfirmation(TelegramBot bot, Long chatId, Long groupId, Long messageId,
+	private void sendLookupConfirmation(TelegramBot bot, Long chatId, Request request, Group group,
 			Long resolvedMessageId, Long doneMessageId) {
+		Long groupId = request.getId().getGroupId();
+		Long messageId = request.getId().getMessageId();
+
 		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.append(RequestUtils.getRequestInfo(bot, group.getName(), request)).append("\n\n");
+
 		stringBuilder.append("<a href='").append(TelegramUtils.getLink(groupId, messageId))
 				.append("'>This request</a>");
-		stringBuilder.append(" matched <a href='").append(TelegramUtils.getLink(groupId, resolvedMessageId))
+		stringBuilder.append(" matched <a href='").append(TelegramUtils.getLink(group.getId(), resolvedMessageId))
 				.append("'>the file you uploaded</a>.\n");
 		stringBuilder.append("Click the button below to undo.\n");
-		stringBuilder.append("<i>This message will disappear in 2 minute.</i>");
+		stringBuilder.append("<i>This message will disappear in 5 minutes.</i>");
+
 		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 		sendMessage.parseMode(ParseMode.HTML);
 
@@ -594,7 +600,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 		sendMessage.replyMarkup(inlineKeyboard);
 
-		sendMessageAndDelete(bot, sendMessage, 2, TimeUnit.MINUTES);
+		sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.MINUTES);
 	}
 
 	public TelegramHandler markCancelled() {

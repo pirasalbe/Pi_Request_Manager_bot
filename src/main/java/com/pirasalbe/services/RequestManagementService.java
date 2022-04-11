@@ -488,16 +488,18 @@ public class RequestManagementService {
 		return requestService.findAll(page, size);
 	}
 
-	public Request lookup(Long groupId, String name, String caption, Format format) {
+	public List<Request> lookup(Long groupId, String name, String caption, Format format) {
 		String sanitizedName = sanitizeForLikeByContent(removeExtension(name));
 		String sanitizedCaption = sanitizeForLikeByContent(caption);
 
-		Request request = requestService.findByContent(groupId, sanitizedName, sanitizedCaption, format);
+		List<Request> requests = requestService.findByContent(groupId, sanitizedName, sanitizedCaption, format);
 
-		LOGGER.info("Found a request with content [{}] by group=[{}] and content like [{}] or [{}] and format=[{}]",
-				request != null ? request.getContent() : null, groupId, sanitizedName, sanitizedCaption, format);
+		if (LOGGER.isInfoEnabled()) {
+			LOGGER.info("Found a request with content [{}] by group=[{}] and content like [{}] or [{}] and format=[{}]",
+					requests.stream().map(Request::getContent), groupId, sanitizedName, sanitizedCaption, format);
+		}
 
-		return request;
+		return requests;
 	}
 
 	private String removeExtension(String name) {
@@ -529,7 +531,8 @@ public class RequestManagementService {
 
 			// split each word
 			String[] words = firstPart.replace("_", " ").replace(":", " ").replace("\n", " ").replace(".", " ")
-					.replace("(", " ").replace(")", " ").replace(",", " ").split(" ");
+					.replace("(", " ").replace(")", " ").replace(",", " ").replace("&", " ").replace("/", " ")
+					.split(" ");
 
 			// keep only useful words
 			StringBuilder builder = new StringBuilder("%");
@@ -539,7 +542,7 @@ public class RequestManagementService {
 				}
 			}
 
-			result = builder.toString();
+			result = builder.toString().toLowerCase();
 		}
 
 		return result;
