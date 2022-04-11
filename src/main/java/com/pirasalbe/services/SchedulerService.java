@@ -25,20 +25,19 @@ public class SchedulerService {
 
 	private TelegramBot bot;
 
+	private ScheduledExecutorService scheduledExecutorService;
+
 	public SchedulerService(TelegramBotService telegramBotService) {
 		this.bot = telegramBotService.getBot();
+		this.scheduledExecutorService = Executors.newScheduledThreadPool(10);
 	}
 
 	public <T> void schedule(BiConsumer<TelegramBot, T> consumer, T obj, long timeout, TimeUnit timeUnit) {
-		ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
 		scheduledExecutorService.schedule(() -> consumer.accept(bot, obj), timeout, timeUnit);
-		scheduledExecutorService.shutdown();
 	}
 
 	public void schedule(Runnable runnable, long timeout, TimeUnit timeUnit) {
-		ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
 		scheduledExecutorService.schedule(getSafeRunnable(runnable), timeout, timeUnit);
-		scheduledExecutorService.shutdown();
 	}
 
 	private Runnable getSafeRunnable(Runnable runnable) {

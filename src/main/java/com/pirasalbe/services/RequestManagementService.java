@@ -2,10 +2,7 @@ package com.pirasalbe.services;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.pengrad.telegrambot.model.Message;
 import com.pirasalbe.models.LastRequestInfo;
 import com.pirasalbe.models.LastRequestInfo.Type;
+import com.pirasalbe.models.NextValidRequest;
 import com.pirasalbe.models.RequestResult;
 import com.pirasalbe.models.RequestResult.Result;
 import com.pirasalbe.models.UpdateRequestAction;
@@ -29,6 +27,7 @@ import com.pirasalbe.models.database.RequestPK;
 import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.request.RequestStatus;
 import com.pirasalbe.models.request.Source;
+import com.pirasalbe.services.channels.ChannelForwardingQueueService;
 import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.StringUtils;
@@ -48,19 +47,18 @@ public class RequestManagementService {
 
 	private static final long HOURS_BEFORE_REPEATING_REQUEST = 48l;
 
-	private static final int DELETE_CHANNEL_TIMEOUT = 10;
-	private static final int FORWARD_CHANNEL_TIMEOUT = 10;
-
 	@Autowired
 	private RequestService requestService;
 
 	@Autowired
-	private SchedulerService schedulerService;
+	private ChannelForwardingQueueService channelForwardingQueueService;
 
-	@Autowired
-	private ChannelManagementService channelManagementService;
+	public Optional<Request> findById(RequestPK id) {
+		return requestService.findById(id);
 
-	@Scheduled(cron = "0 0 0 1-3 * ?")
+	}
+
+	@Scheduled(cron = "0 0 0 1-10 * ?")
 	public void deleteOldRequests() {
 		LOGGER.info("Start scheduled cleaning");
 
@@ -74,7 +72,7 @@ public class RequestManagementService {
 
 		// delete forwarded messages
 		for (Request request : oldRequests) {
-			channelManagementService.deleteForwardedRequest(request.getId());
+			channelForwardingQueueService.deleteRequest(request.getId());
 		}
 	}
 
@@ -87,8 +85,9 @@ public class RequestManagementService {
 	 * @param requestTime Time of the request
 	 * @return Validation
 	 */
-	public Validation canRequest(Group group, Long userId, Format format, LocalDateTime requestTime) {
-		Validation validation = isFormatAllowed(group.isAllowEbooks(), group.isAllowAudiobooks(), format);
+	public Validation<NextValidRequest> canRequest(Group group, Long userId, Format format, LocalDateTime requestTime) {
+		Validation<NextValidRequest> validation = isFormatAllowed(group.isAllowEbooks(), group.isAllowAudiobooks(),
+				format);
 
 		// check format allowed
 		if (validation.isValid()) {
@@ -111,13 +110,14 @@ public class RequestManagementService {
 		return validation;
 	}
 
-	private Validation isFormatAllowed(boolean ebooksAllowed, boolean audiobooksAllowed, Format format) {
-		Validation validation = Validation.valid();
+	private Validation<NextValidRequest> isFormatAllowed(boolean ebooksAllowed, boolean audiobooksAllowed,
+			Format format) {
+		Validation<NextValidRequest> validation = Validation.valid();
 
 		if (!ebooksAllowed && format.equals(Format.EBOOK)) {
-			validation = Validation.invalid("Ebooks are not allowed");
+			validation = Validation.invalid(new NextValidRequest("Ebooks are not allowed"));
 		} else if (!audiobooksAllowed && format.equals(Format.AUDIOBOOK)) {
-			validation = Validation.invalid("Audiobooks are not allowed");
+			validation = Validation.invalid(new NextValidRequest("Audiobooks are not allowed"));
 		}
 
 		return validation;
@@ -147,9 +147,9 @@ public class RequestManagementService {
 		return builder.toString();
 	}
 
-	private Validation isValidAudiobookRequest(Long userId, Integer audiobooksDaysWait,
+	private Validation<NextValidRequest> isValidAudiobookRequest(Long userId, Integer audiobooksDaysWait,
 			Integer englishAudiobooksDaysWait, Request pendingRequest, Request resolvedRequest) {
-		Validation validation = Validation.valid();
+		Validation<NextValidRequest> validation = Validation.valid();
 
 		LastRequestInfo requestInfo = getLastRequestInfo(pendingRequest, resolvedRequest);
 
@@ -173,7 +173,7 @@ public class RequestManagementService {
 						.append(getRequestLink(requestInfo.getRequest(), "request", "received audiobook"))
 						.append(".\n");
 				stringBuilder.append(RequestUtils.getComeBackAgain(DateUtils.getNow(), nextValidRequest));
-				validation = Validation.invalid(stringBuilder.toString());
+				validation = Validation.invalid(new NextValidRequest(nextValidRequest, stringBuilder.toString()));
 			}
 		}
 
@@ -199,8 +199,9 @@ public class RequestManagementService {
 		return requestInfo;
 	}
 
-	private Validation isValidEbookRequest(Long userId, Integer requestLimit, LocalDateTime requestTime) {
-		Validation validation = Validation.valid();
+	private Validation<NextValidRequest> isValidEbookRequest(Long userId, Integer requestLimit,
+			LocalDateTime requestTime) {
+		Validation<NextValidRequest> validation = Validation.valid();
 
 		LocalDateTime last24Hours = requestTime.minusHours(24);
 		List<Request> requests = requestService.getUserEbookRequestsOfToday(userId, last24Hours);
@@ -209,6 +210,8 @@ public class RequestManagementService {
 		if (requestCount >= requestLimit) {
 			Request lastRequest = requests.get(0);
 			LocalDateTime lastRequestDate = lastRequest.getRequestDate();
+			LocalDateTime nextValidRequest = lastRequestDate.plusHours(24);
+
 			LOGGER.warn("User {}, new request {}, {} ebook requested since {}", userId, requestTime, requestCount,
 					lastRequestDate);
 
@@ -217,8 +220,8 @@ public class RequestManagementService {
 			stringBuilder.append(requestLimit).append(" book").append(StringUtils.getPlural(requestLimit));
 			stringBuilder.append(" every 24 hours");
 			stringBuilder.append(" ").append(getRequestLink(lastRequest, "request", "received ebook")).append(".\n");
-			stringBuilder.append(RequestUtils.getComeBackAgain(requestTime, lastRequestDate.plusHours(24)));
-			validation = Validation.invalid(stringBuilder.toString());
+			stringBuilder.append(RequestUtils.getComeBackAgain(requestTime, nextValidRequest));
+			validation = Validation.invalid(new NextValidRequest(nextValidRequest, stringBuilder.toString()));
 		}
 
 		return validation;
@@ -319,8 +322,9 @@ public class RequestManagementService {
 		Request update = requestService.update(messageId, group.getId(), link, content, format, source, otherTags,
 				requestDate);
 
-		schedulerService.schedule(() -> channelManagementService.forwardRequest(update, group.getName()),
-				FORWARD_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
+		if (update != null) {
+			channelForwardingQueueService.forwardRequest(update.getId());
+		}
 	}
 
 	private void insertRequest(Long messageId, Group group, String link, String content, Format format, Source source,
@@ -328,8 +332,7 @@ public class RequestManagementService {
 		Request insert = requestService.insert(messageId, group.getId(), link, content, format, source, otherTags,
 				userId, requestDate);
 
-		schedulerService.schedule(() -> channelManagementService.forwardRequest(insert, group.getName()),
-				FORWARD_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
+		channelForwardingQueueService.forwardRequest(insert.getId());
 	}
 
 	private RequestResult repeatRequest(Request request, Group group, Long newMessageId, Long userId, String link,
@@ -402,8 +405,7 @@ public class RequestManagementService {
 	public void deleteGroupRequests(Long groupId) {
 		requestService.deleteByGroupId(groupId);
 
-		schedulerService.schedule(() -> channelManagementService.deleteForwardedRequestsByGroupId(groupId),
-				DELETE_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
+		channelForwardingQueueService.deleteForwardedRequestsByGroupId(groupId);
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
@@ -412,9 +414,7 @@ public class RequestManagementService {
 
 		if (deleted) {
 			// delete forwarded messages
-			schedulerService.schedule(
-					() -> channelManagementService.deleteForwardedRequest(new RequestPK(messageId, groupId)),
-					DELETE_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
+			channelForwardingQueueService.deleteRequest(new RequestPK(messageId, groupId));
 		}
 
 		return deleted;
@@ -481,41 +481,68 @@ public class RequestManagementService {
 			Long contributor) {
 		Request update = requestService.updateStatus(request, status, resolvedMessageId, contributor);
 
-		schedulerService.schedule(() -> channelManagementService.forwardRequest(update, group.getName()),
-				FORWARD_CHANNEL_TIMEOUT, TimeUnit.MILLISECONDS);
+		channelForwardingQueueService.forwardRequest(update.getId());
 	}
 
-	public void refreshChannel(Long channelId, List<Group> groups) {
-		LOGGER.info("Refresh {} started", channelId);
+	public Page<Request> findAll(int page, int size) {
+		return requestService.findAll(page, size);
+	}
 
-		int page = 0;
-		int size = 100;
-		int requestCount = 0;
-		boolean keep = true;
+	public Request lookup(Long groupId, String name, String caption, Format format) {
+		String sanitizedName = sanitizeForLikeByContent(removeExtension(name));
+		String sanitizedCaption = sanitizeForLikeByContent(caption);
 
-		// groups list to map
-		Map<Long, String> groupNames = groups.stream().collect(Collectors.toMap(Group::getId, Group::getName));
+		Request request = requestService.findByContent(groupId, sanitizedName, sanitizedCaption, format);
 
-		// get all requests paginated
-		while (keep) {
-			LOGGER.info("Refresh {} page {}", channelId, page);
-			Page<Request> requestPage = requestService.findAll(page, size);
+		LOGGER.info("Found a request with content [{}] by group=[{}] and content like [{}] or [{}] and format=[{}]",
+				request != null ? request.getContent() : null, groupId, sanitizedName, sanitizedCaption, format);
 
-			// forward all requests
-			List<Request> requests = requestPage.toList();
+		return request;
+	}
 
-			for (Request request : requests) {
-				String groupName = groupNames.get(request.getId().getGroupId());
-				boolean forwardRequest = channelManagementService.syncRequest(request, groupName, channelId);
+	private String removeExtension(String name) {
+		String result = null;
 
-				requestCount = TelegramUtils.checkRequestLimitSameGroup(requestCount, forwardRequest);
+		if (name != null && !name.isEmpty()) {
+			int dotIndex = name.lastIndexOf('.');
+
+			if (dotIndex < 4) {
+				dotIndex = name.length();
 			}
 
-			keep = requestPage.hasNext();
-			page++;
+			result = name.substring(0, dotIndex);
 		}
 
-		LOGGER.info("Refresh {} ended", channelId);
+		return result;
+	}
+
+	private String sanitizeForLikeByContent(String string) {
+		String result = null;
+
+		// manage only valid requests
+		if (string != null && !string.isEmpty()) {
+			// take only the first part (the title possibly)
+			String[] parts = string.split("-");
+			String firstPart = parts[0];
+			parts = firstPart.split("by");
+			firstPart = parts[0];
+
+			// split each word
+			String[] words = firstPart.replace("_", " ").replace(":", " ").replace("\n", " ").replace(".", " ")
+					.replace("(", " ").replace(")", " ").replace(",", " ").split(" ");
+
+			// keep only useful words
+			StringBuilder builder = new StringBuilder("%");
+			for (String word : words) {
+				if (!word.startsWith("#") && !word.startsWith("@")) {
+					builder.append(word).append("%");
+				}
+			}
+
+			result = builder.toString();
+		}
+
+		return result;
 	}
 
 }

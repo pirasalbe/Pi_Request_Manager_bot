@@ -54,7 +54,11 @@ public class RequestService {
 	}
 
 	public Optional<Request> findById(Long messageId, Long groupId) {
-		return repository.findById(new RequestPK(messageId, groupId));
+		return findById(new RequestPK(messageId, groupId));
+	}
+
+	public Optional<Request> findById(RequestPK id) {
+		return repository.findById(id);
 	}
 
 	public Page<Request> findAll(int page, int size) {
@@ -111,6 +115,7 @@ public class RequestService {
 		request.setOtherTags(otherTags);
 		request.setUserId(userId);
 		request.setRequestDate(requestDate);
+		request.setRepetitions(1l);
 
 		return save(request);
 	}
@@ -142,6 +147,7 @@ public class RequestService {
 
 			if (requestDate != null) {
 				request.setRequestDate(requestDate);
+				request.setRepetitions(request.getRepetitions() + 1);
 			}
 
 			requestCopy = save(request);
@@ -212,8 +218,8 @@ public class RequestService {
 		return repository.getUserEbookRequestsOfToday(userId, last24Hours);
 	}
 
-	public List<Request> findRequests(Optional<Long> groupId, RequestStatus status, Optional<Source> source,
-			Optional<Format> format, Optional<String> otherTags, boolean descendent) {
+	public List<Request> findRequests(Optional<Long> groupId, RequestStatus status, Optional<Long> userId,
+			Optional<Source> source, Optional<Format> format, Optional<String> otherTags, boolean descendent) {
 
 		CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
 		CriteriaQuery<Request> criteriaQuery = criteriaBuilder.createQuery(Request.class);
@@ -229,6 +235,11 @@ public class RequestService {
 		// group
 		if (groupId.isPresent()) {
 			predicates.add(criteriaBuilder.equal(requestRoot.get("id").get("groupId"), groupId.get()));
+		}
+
+		// user
+		if (userId.isPresent()) {
+			predicates.add(criteriaBuilder.equal(requestRoot.get("userId"), userId.get()));
 		}
 
 		// source
@@ -258,6 +269,58 @@ public class RequestService {
 		TypedQuery<Request> query = entityManager.createQuery(criteriaQuery);
 
 		return query.getResultList();
+	}
+
+	public Request findByContent(Long groupId, String name, String caption, Format format) {
+		CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
+		CriteriaQuery<Request> criteriaQuery = criteriaBuilder.createQuery(Request.class);
+		Root<Request> requestRoot = criteriaQuery.from(Request.class);
+
+		criteriaQuery.select(requestRoot);
+
+		List<Predicate> predicates = new ArrayList<>();
+
+		// status
+		predicates.add(criteriaBuilder.notEqual(requestRoot.get("status"), RequestStatus.RESOLVED));
+
+		// group
+		predicates.add(criteriaBuilder.equal(requestRoot.get("id").get("groupId"), groupId));
+
+		// format
+		if (format != null) {
+			predicates.add(criteriaBuilder.equal(requestRoot.get("format"), format));
+		}
+
+		// content
+		Predicate likeName = criteriaBuilder.like(requestRoot.get("content"), name);
+		Predicate likeCaption = criteriaBuilder.like(requestRoot.get("content"), caption);
+
+		if (name != null && caption != null) {
+			predicates.add(criteriaBuilder.or(likeName, likeCaption));
+		} else if (name != null) {
+			predicates.add(likeName);
+		} else {
+			predicates.add(likeCaption);
+		}
+
+		// where
+		criteriaQuery.where(predicates.toArray(new Predicate[0]));
+
+		// order by
+		criteriaQuery.orderBy(criteriaBuilder.desc(requestRoot.get(REQUEST_DATE)));
+
+		TypedQuery<Request> query = entityManager.createQuery(criteriaQuery);
+		query.setMaxResults(1);
+
+		// get results
+		List<Request> requests = query.getResultList();
+
+		Request request = null;
+		if (!requests.isEmpty()) {
+			request = requests.get(0);
+		}
+
+		return request;
 	}
 
 }

@@ -6,31 +6,31 @@ package com.pirasalbe.models;
  * @author pirasalbe
  *
  */
-public class Validation {
+public class Validation<T> {
 
 	private boolean valid;
 
-	private String reason;
+	private T reason;
 
-	private Validation(boolean valid, String reason) {
+	private Validation(boolean valid, T reason) {
 		super();
 		this.valid = valid;
 		this.reason = reason;
 	}
 
-	public static Validation valid() {
-		return new Validation(true, null);
+	public static <T> Validation<T> valid() {
+		return new Validation<>(true, null);
 	}
 
-	public static Validation invalid(String reason) {
-		return new Validation(false, reason);
+	public static <T> Validation<T> invalid(T reason) {
+		return new Validation<>(false, reason);
 	}
 
 	public boolean isValid() {
 		return valid;
 	}
 
-	public String getReason() {
+	public T getReason() {
 		return reason;
 	}
 

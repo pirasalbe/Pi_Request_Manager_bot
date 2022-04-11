@@ -28,8 +28,6 @@ public class Admin {
 	@Enumerated(EnumType.STRING)
 	private UserRole role;
 
-	private boolean backup;
-
 	public Admin() {
 		super();
 	}
@@ -56,14 +54,6 @@ public class Admin {
 
 	public void setRole(UserRole role) {
 		this.role = role;
-	}
-
-	public boolean isBackup() {
-		return backup;
-	}
-
-	public void setBackup(boolean backup) {
-		this.backup = backup;
 	}
 
 }

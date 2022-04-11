@@ -265,6 +265,10 @@ public class RequestUtils {
 		messageBuilder.append(" | ");
 		messageBuilder.append("🕔 ").append(getTimeBetweenDates(request.getRequestDate(), DateUtils.getNow(), true));
 
+		// repetitions
+		messageBuilder.append(" | ");
+		messageBuilder.append("🔢 ").append(request.getRepetitions());
+
 		// status info
 		messageBuilder.append(" | ");
 		messageBuilder.append(request.getStatus().getIcon()).append(" ")
@@ -371,30 +375,32 @@ public class RequestUtils {
 	private static String getConfirmActionCallback(Long messageId, Long groupId, ContributorAction action) {
 		StringBuilder callbackBuilder = new StringBuilder();
 
-		callbackBuilder.append(ContributorAction.CONFIRM);
+		callbackBuilder.append(ContributorAction.CONFIRM.getCode());
 		callbackBuilder.append(" ");
 		callbackBuilder.append(getCallbackRequestData(messageId, groupId));
 		callbackBuilder.append(" ");
-		callbackBuilder.append(TelegramConditionUtils.ACTION_CONDITION).append(action);
+		callbackBuilder.append(TelegramConditionUtils.ACTION_CONDITION).append(action.getCode());
 
 		return callbackBuilder.toString();
 	}
 
 	private static String getActionCallback(Long messageId, Long groupId, ContributorAction action) {
-		return getActionCallback(messageId, groupId, action, Optional.empty());
+		return getActionCallback(messageId, groupId, action, Optional.empty(), Optional.empty());
 	}
 
 	public static String getActionCallback(Long messageId, Long groupId, ContributorAction action,
-			Optional<Long> refreshMessage) {
+			Optional<Long> refreshMessage, Optional<Long> refreshChat) {
 		StringBuilder callbackBuilder = new StringBuilder();
 
-		callbackBuilder.append(action);
+		callbackBuilder.append(action.getCode());
 		callbackBuilder.append(" ");
 		callbackBuilder.append(getCallbackRequestData(messageId, groupId));
 
-		if (refreshMessage.isPresent()) {
+		if (refreshMessage.isPresent() && refreshChat.isPresent()) {
 			callbackBuilder.append(" ");
-			callbackBuilder.append(TelegramConditionUtils.REFRESH_SHOW_CONDITION).append(refreshMessage.get());
+			callbackBuilder.append(TelegramConditionUtils.REFRESH_SHOW_MESSAGE_CONDITION).append(refreshMessage.get());
+			callbackBuilder.append(" ");
+			callbackBuilder.append(TelegramConditionUtils.REFRESH_SHOW_CHAT_CONDITION).append(refreshChat.get());
 		}
 
 		return callbackBuilder.toString();

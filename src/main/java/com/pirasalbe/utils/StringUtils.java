@@ -22,4 +22,14 @@ public class StringUtils {
 		return result;
 	}
 
+	public static String firstToUpperCase(String string) {
+		String result = null;
+
+		if (string != null && string.length() > 1) {
+			result = string.substring(0, 1).toUpperCase() + string.substring(1);
+		}
+
+		return result;
+	}
+
 }

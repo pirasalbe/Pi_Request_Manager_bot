@@ -27,6 +27,12 @@ public class DateUtils {
 		return LocalDateTime.ofInstant(Instant.ofEpochSecond(timestampUnix), ZONE_ID);
 	}
 
+	public static Integer localDateTimeToInteger(LocalDateTime dateTime) {
+		Long seconds = dateTime.atZone(ZONE_ID).toEpochSecond();
+
+		return seconds.intValue();
+	}
+
 	public static LocalDateTime getNow() {
 		return LocalDateTime.now(ZONE_ID);
 	}
@@ -40,6 +46,10 @@ public class DateUtils {
 
 	public static String formatDate(LocalDateTime localDateTime) {
 		return localDateTime.format(DateTimeFormatter.ofPattern("dd LLL uuuu"));
+	}
+
+	public static String formatDate(LocalDate localDate) {
+		return localDate.format(DateTimeFormatter.ofPattern("EEE dd LLL uuuu"));
 	}
 
 	public static long getDays(LocalDateTime from, LocalDateTime to) {
@@ -56,6 +66,10 @@ public class DateUtils {
 		long minutes = ChronoUnit.MINUTES.between(from, to);
 
 		return minutes - (hours + days * 24) * 60;
+	}
+
+	public static long getSeconds(LocalDateTime from, LocalDateTime to) {
+		return ChronoUnit.SECONDS.between(from, to);
 	}
 
 }

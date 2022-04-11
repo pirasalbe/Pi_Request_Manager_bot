@@ -12,6 +12,7 @@ import com.pengrad.telegrambot.model.Chat.Type;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pirasalbe.models.NextValidRequest;
 import com.pirasalbe.models.Validation;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.database.Request;
@@ -19,7 +20,6 @@ import com.pirasalbe.models.database.RequestPK;
 import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.AdminService;
-import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
 import com.pirasalbe.services.RequestService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
@@ -40,9 +40,6 @@ public class TelegramMeCommandHandlerService extends AbstractTelegramHandlerServ
 
 	@Autowired
 	private AdminService adminService;
-
-	@Autowired
-	private GroupService groupService;
 
 	@Autowired
 	private RequestService requestService;
@@ -78,8 +75,6 @@ public class TelegramMeCommandHandlerService extends AbstractTelegramHandlerServ
 	}
 
 	private void checkRequests(StringBuilder stringBuilder, Long userId, Long chatId) {
-		Optional<Group> group = groupService.findById(chatId);
-
 		Request ebookRequest = requestService.getLastEbookRequestOfUser(userId);
 		if (ebookRequest != null) {
 			stringBuilder.append("\n")
@@ -99,6 +94,7 @@ public class TelegramMeCommandHandlerService extends AbstractTelegramHandlerServ
 					audiobookResolved.getResolvedDate(), "Last audiobook received"));
 		}
 
+		Optional<Group> group = groupService.findById(chatId);
 		if (group.isPresent()) {
 			LocalDateTime now = DateUtils.getNow();
 
@@ -112,14 +108,15 @@ public class TelegramMeCommandHandlerService extends AbstractTelegramHandlerServ
 	}
 
 	private String checkRequestLimit(Long userId, Group group, Format format, LocalDateTime requestDate) {
-		Validation validation = requestManagementService.canRequest(group, userId, format, requestDate);
+		Validation<NextValidRequest> validation = requestManagementService.canRequest(group, userId, format,
+				requestDate);
 
 		String result = null;
 
 		if (validation.isValid()) {
 			result = "You are allowed to request an " + format.name().toLowerCase();
 		} else {
-			result = validation.getReason();
+			result = validation.getReason().getMessage();
 		}
 
 		return result;

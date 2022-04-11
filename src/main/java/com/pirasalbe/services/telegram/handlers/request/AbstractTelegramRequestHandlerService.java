@@ -8,12 +8,16 @@ import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.ChatPermissions;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.DeleteMessage;
+import com.pengrad.telegrambot.request.RestrictChatMember;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.response.BaseResponse;
 import com.pirasalbe.configurations.ErrorConfiguration;
+import com.pirasalbe.models.NextValidRequest;
 import com.pirasalbe.models.RequestResult;
 import com.pirasalbe.models.Validation;
 import com.pirasalbe.models.database.Group;
@@ -23,6 +27,7 @@ import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
+import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramUtils;
 
@@ -44,9 +49,6 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 
 	protected static final List<String> KNOWN_TAGS = Arrays.asList(REQUEST_TAG, EBOOK_TAG, AUDIOBOOK_TAG, KU_TAG,
 			ARCHIVE_TAG, STORYTEL_TAG, SCRIBD_TAG);
-
-	protected static final List<String> BUMPS = Arrays.asList("bump", "update", "can i get", "need", "please help",
-			"send", "thank");
 
 	@Autowired
 	protected ErrorConfiguration errorConfiguration;
@@ -87,23 +89,6 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		return text != null && text.toLowerCase().contains(REQUEST_TAG);
 	}
 
-	protected boolean isBump(String text) {
-		boolean result = false;
-
-		if (text != null) {
-			text = text.toLowerCase();
-
-			for (int i = 0; i < BUMPS.size() && !result; i++) {
-				String bump = BUMPS.get(i);
-
-				// message has bump keyword
-				result = text.contains(bump);
-			}
-		}
-
-		return result;
-	}
-
 	protected void newRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,
 			LocalDateTime requestTime, Group group) {
 		String content = RequestUtils.getContent(message.text(), message.entities());
@@ -135,19 +120,53 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		Format format = getFormat(content);
 
 		// check if user can request
-		Validation validation = requestManagementService.canRequest(group, userId, format, requestTime);
+		Validation<NextValidRequest> validation = requestManagementService.canRequest(group, userId, format,
+				requestTime);
 		if (validation.isValid()) {
 			// create request
 			manageRequest(bot, message, chatId, messageId, requestTime, group, content, link, format);
 		} else {
+			NextValidRequest nextValidRequest = validation.getReason();
+
+			// mute user
+			boolean muted = muteUser(bot, chatId, userId, nextValidRequest);
+
 			// notify user of the error
 			DeleteMessage deleteMessage = new DeleteMessage(chatId, messageId);
-			SendMessage sendMessage = new SendMessage(chatId, TelegramUtils.tagUser(message) + validation.getReason());
-			sendMessage.parseMode(ParseMode.HTML);
-
 			bot.execute(deleteMessage);
+
+			StringBuilder builder = new StringBuilder(TelegramUtils.tagUser(message));
+			builder.append(nextValidRequest.getMessage());
+			if (muted) {
+				builder.append("\n").append("You have been muted until then.");
+			}
+
+			SendMessage sendMessage = new SendMessage(chatId, builder.toString());
+			sendMessage.parseMode(ParseMode.HTML);
 			bot.execute(sendMessage);
+
 		}
+	}
+
+	private boolean muteUser(TelegramBot bot, Long chatId, Long userId, NextValidRequest nextValidRequest) {
+		boolean restricted = false;
+
+		LocalDateTime nextRequestDate = nextValidRequest.getNextRequest();
+
+		// mute if a date has been provided and it's more than 30 seconds
+		if (nextRequestDate != null && DateUtils.getSeconds(DateUtils.getNow(), nextRequestDate) > 60) {
+			Integer muteUntil = DateUtils.localDateTimeToInteger(nextRequestDate);
+
+			ChatPermissions chatPermissions = new ChatPermissions();
+			chatPermissions.canSendMessages(false);
+			RestrictChatMember restrictChatMember = new RestrictChatMember(chatId, userId, chatPermissions);
+			restrictChatMember.untilDate(muteUntil);
+
+			BaseResponse response = bot.execute(restrictChatMember);
+			restricted = response.isOk();
+		}
+
+		return restricted;
 	}
 
 	private void manageRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,
@@ -195,7 +214,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 			String part = parts[i].toLowerCase();
 
 			// if the word is a tag and is unknown
-			if (Pattern.matches("^#.*", part) && !KNOWN_TAGS.contains(part)) {
+			if (Pattern.matches("^#[a-zA-Z]*", part) && !KNOWN_TAGS.contains(part)) {
 				otherTags = part.substring(1);
 				found = true;
 			}

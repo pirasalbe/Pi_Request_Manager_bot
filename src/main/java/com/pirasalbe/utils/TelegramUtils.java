@@ -281,24 +281,31 @@ public class TelegramUtils {
 	public static int checkRequestLimitSameGroup(int requestCount, boolean newRequest) {
 		int result = requestCount;
 
-		// if tr
 		if (newRequest) {
 			result = requestCount + 1;
 		}
 
 		// if request count greater then the limit, sleep and reset count
-		if (result >= 10) {
-			LOGGER.info("Cooldown due to the Telegram limits");
-			try {
-				Thread.sleep(120000);
-				result = 0;
-			} catch (InterruptedException e) {
-				LOGGER.warn("Could not sleep to prevent request limit", e);
-			}
-			LOGGER.info("End cooldown period");
+		if (result >= 12) {
+			cooldown();
+			result = 0;
 		}
 
 		return result;
+	}
+
+	public static void cooldown() {
+		cooldown(120000);
+	}
+
+	public static void cooldown(int milliseconds) {
+		LOGGER.debug("Cooldown of {} ms due to the Telegram limits", milliseconds);
+		try {
+			Thread.sleep(milliseconds);
+		} catch (InterruptedException e) {
+			LOGGER.warn("Could not sleep to prevent request limit", e);
+		}
+		LOGGER.debug("End cooldown period");
 	}
 
 }

@@ -1,4 +1,4 @@
-package com.pirasalbe.services;
+package com.pirasalbe.services.channels;
 
 import java.util.List;
 
@@ -24,6 +24,10 @@ public class ChannelRuleService {
 
 	@Autowired
 	private ChannelRuleRepository repository;
+
+	public List<ChannelRule> findAll() {
+		return repository.findAll();
+	}
 
 	public boolean existsById(Long channelId, ChannelRuleType type, String value) {
 		ChannelRulePK id = new ChannelRulePK(channelId, type, value);
