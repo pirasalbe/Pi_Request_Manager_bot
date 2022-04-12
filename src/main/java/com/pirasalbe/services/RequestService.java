@@ -310,6 +310,7 @@ public class RequestService {
 		criteriaQuery.orderBy(criteriaBuilder.desc(requestRoot.get(REQUEST_DATE)));
 
 		TypedQuery<Request> query = entityManager.createQuery(criteriaQuery);
+		query.setMaxResults(1);
 
 		return query.getResultList();
 	}

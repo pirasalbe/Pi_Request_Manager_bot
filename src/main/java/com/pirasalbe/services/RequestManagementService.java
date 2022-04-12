@@ -522,7 +522,7 @@ public class RequestManagementService {
 		// manage only valid requests
 		if (string != null && !string.isEmpty()) {
 			// take only the first part (the title possibly)
-			String[] parts = string.split("-");
+			String[] parts = string.split(" - ");
 			String firstPart = parts[0];
 			parts = firstPart.split("by");
 			firstPart = parts[0];
