@@ -23,6 +23,7 @@ import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import com.pengrad.telegrambot.request.DeleteMessage;
+import com.pengrad.telegrambot.request.EditMessageReplyMarkup;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.models.ContributorAction;
@@ -545,12 +546,18 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 						User contributor = update.message().from();
 
 						// notify user
-						notifyDone(bot, groupId, messageId, contributor, Optional.of(request), true);
+						Long doneMessageId = notifyDone(bot, groupId, messageId, contributor, Optional.of(request),
+								true);
 
 						// change status
 						Long resolvedMessageId = update.message().messageId().longValue();
 						changeRequestStatus(ContributorAction.DONE, groupId, messageId, resolvedMessageId,
 								contributor.id());
+
+						// remove button after some time
+						EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup(groupId,
+								doneMessageId.intValue());
+						schedulerService.schedule((b, m) -> b.execute(m), editMessageReplyMarkup, 5, TimeUnit.MINUTES);
 					}
 				}
 			}
