@@ -1,6 +1,7 @@
 package com.pirasalbe.services;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -492,7 +493,13 @@ public class RequestManagementService {
 		String sanitizedName = sanitizeForLikeByContent(removeExtension(name));
 		String sanitizedCaption = sanitizeForLikeByContent(caption);
 
-		List<Request> requests = requestService.findByContent(groupId, sanitizedName, sanitizedCaption, format);
+		List<Request> requests = null;
+
+		if (sanitizedName != null || sanitizedCaption != null) {
+			requests = requestService.findByContent(groupId, sanitizedName, sanitizedCaption, format);
+		} else {
+			requests = Arrays.asList();
+		}
 
 		LOGGER.info("Found {} requests with content by group=[{}] and content like [{}] or [{}] and format=[{}]",
 				requests.size(), groupId, sanitizedName, sanitizedCaption, format);
@@ -522,7 +529,7 @@ public class RequestManagementService {
 		// manage only valid requests
 		if (string != null && !string.isEmpty()) {
 			// take only the first part (the title possibly)
-			String[] parts = string.split(" - ");
+			String[] parts = string.toLowerCase().split(" - ");
 			String firstPart = parts[0];
 			parts = firstPart.split("by");
 			firstPart = parts[0];
@@ -530,7 +537,7 @@ public class RequestManagementService {
 			// split each word
 			String[] words = firstPart.replace("_", " ").replace(":", " ").replace("\n", " ").replace(".", " ")
 					.replace("(", " ").replace(")", " ").replace(",", " ").replace("&", " ").replace("/", " ")
-					.split(" ");
+					.replace("books", "").split(" ");
 
 			// keep only useful words
 			StringBuilder builder = new StringBuilder("%");
@@ -540,7 +547,10 @@ public class RequestManagementService {
 				}
 			}
 
-			result = builder.toString().toLowerCase();
+			String likeValue = builder.toString().replaceAll("%+", "%").trim();
+			if (!likeValue.equals("%") && !likeValue.isEmpty()) {
+				result = likeValue;
+			}
 		}
 
 		return result;
