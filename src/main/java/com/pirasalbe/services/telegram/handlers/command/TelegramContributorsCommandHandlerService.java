@@ -74,7 +74,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			+ ContributorAction.DONE.getCode() + "|" + ContributorAction.CANCEL.getCode() + "|"
 			+ ContributorAction.REMOVE.getCode() + ") " + MESSAGE_INFO_CALLBACK + "( "
 			+ TelegramConditionUtils.REFRESH_SHOW_MESSAGE_CONDITION + "[0-9]+ "
-			+ TelegramConditionUtils.REFRESH_SHOW_CHAT_CONDITION + "[+-]?[0-9]+)?$";
+			+ TelegramConditionUtils.REFRESH_SHOW_CHAT_CONDITION + "[+-]?[0-9]+)?" + "( "
+			+ ContributorAction.FORCE_DELETE + ")?$";
 
 	public static final String COMMAND_REFRESH_COMMANDS = "/refresh_commands";
 
@@ -260,8 +261,9 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			bot.execute(answerCallbackQuery);
 
 			// delete previous message if in private
-			if (isCallbackMessageFromPM(update)) {
-				DeleteMessage deleteMessage = new DeleteMessage(update.callbackQuery().from().id(),
+			if (isCallbackMessageFromPM(update)
+					|| update.callbackQuery().data().endsWith(ContributorAction.FORCE_DELETE)) {
+				DeleteMessage deleteMessage = new DeleteMessage(update.callbackQuery().message().chat().id(),
 						update.callbackQuery().message().messageId());
 				bot.execute(deleteMessage);
 			}
@@ -287,7 +289,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 			Optional<Request> optional = requestService.findById(messageId, groupId);
 
-			Long resolvedMessageId = notifyDone(bot, groupId, messageId, contributor, optional);
+			Long resolvedMessageId = notifyDone(bot, groupId, messageId, contributor, optional, false);
 
 			result = changeRequestStatus(action, groupId, messageId, resolvedMessageId, contributor.id());
 
@@ -303,8 +305,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		return result;
 	}
 
-	private Long notifyDone(TelegramBot bot, Long groupId, Long messageId, User contributor,
-			Optional<Request> optional) {
+	private Long notifyDone(TelegramBot bot, Long groupId, Long messageId, User contributor, Optional<Request> optional,
+			boolean showUndo) {
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append("Hey there 👋 Here's your requested book. Happy ");
 
@@ -320,6 +322,18 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		SendMessage sendMessage = new SendMessage(groupId, stringBuilder.toString());
 		sendMessage.parseMode(ParseMode.HTML);
 		sendMessage.replyToMessageId(messageId.intValue());
+
+		// undo button
+		if (showUndo) {
+			InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
+			InlineKeyboardButton undoButton = new InlineKeyboardButton("🔙 Undo")
+					.callbackData(RequestUtils.getActionCallback(messageId, groupId, ContributorAction.PENDING, true));
+
+			inlineKeyboard.addRow(undoButton);
+
+			sendMessage.replyMarkup(inlineKeyboard);
+		}
+
 		SendResponse response = bot.execute(sendMessage);
 
 		Long resolvedMessageId = messageId;
@@ -451,7 +465,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	}
 
 	private boolean isFile(Update update) {
-		return isValidDocument(update.message().document()) || isValidAudio(update.message().audio());
+		return update.message() != null
+				&& (isValidDocument(update.message().document()) || isValidAudio(update.message().audio()));
 	}
 
 	private boolean isValidDocument(Document document) {
@@ -530,16 +545,12 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 						User contributor = update.message().from();
 
 						// notify user
-						Long doneMessageId = notifyDone(bot, groupId, messageId, contributor, Optional.of(request));
+						notifyDone(bot, groupId, messageId, contributor, Optional.of(request), true);
 
 						// change status
 						Long resolvedMessageId = update.message().messageId().longValue();
 						changeRequestStatus(ContributorAction.DONE, groupId, messageId, resolvedMessageId,
 								contributor.id());
-
-						// send request to contributor
-						sendLookupConfirmation(bot, contributor.id(), request, optional.get(), resolvedMessageId,
-								doneMessageId);
 					}
 				}
 			}
@@ -570,37 +581,6 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		}
 
 		return new LookupInfo(valid, name, caption, format);
-	}
-
-	private void sendLookupConfirmation(TelegramBot bot, Long chatId, Request request, Group group,
-			Long resolvedMessageId, Long doneMessageId) {
-		Long groupId = request.getId().getGroupId();
-		Long messageId = request.getId().getMessageId();
-
-		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.append(RequestUtils.getRequestInfo(bot, group.getName(), request)).append("\n\n");
-
-		stringBuilder.append("<a href='").append(TelegramUtils.getLink(groupId, messageId))
-				.append("'>This request</a>");
-		stringBuilder.append(" matched <a href='").append(TelegramUtils.getLink(group.getId(), resolvedMessageId))
-				.append("'>the file you uploaded</a>.\n");
-		stringBuilder.append("Click the button below to undo.\n");
-		stringBuilder.append("<i>This message will disappear in 5 minutes.</i>");
-
-		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
-		sendMessage.parseMode(ParseMode.HTML);
-
-		// button
-		InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
-		InlineKeyboardButton undoButton = new InlineKeyboardButton("🔙 Undo")
-				.callbackData(RequestUtils.getActionCallback(messageId, groupId, ContributorAction.PENDING,
-						Optional.of(doneMessageId), Optional.of(groupId)));
-
-		inlineKeyboard.addRow(undoButton);
-
-		sendMessage.replyMarkup(inlineKeyboard);
-
-		sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.MINUTES);
 	}
 
 	public TelegramHandler markCancelled() {
