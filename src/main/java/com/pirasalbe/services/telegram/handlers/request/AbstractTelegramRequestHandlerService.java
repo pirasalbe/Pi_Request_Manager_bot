@@ -139,6 +139,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 		sendMessage.replyToMessageId(message.messageId());
 		sendMessage.parseMode(ParseMode.HTML);
+		sendMessage.disableWebPagePreview(true);
 
 		bot.execute(sendMessage);
 	}
