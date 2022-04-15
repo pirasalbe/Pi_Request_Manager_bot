@@ -27,9 +27,9 @@ import com.pirasalbe.services.telegram.handlers.command.TelegramMyRequestsComman
 import com.pirasalbe.services.telegram.handlers.command.TelegramNextAudiobookCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramStatsCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramSuperAdminCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.request.TelegramAcceptRequestHandlerService;
 import com.pirasalbe.services.telegram.handlers.request.TelegramBumpRequestHandlerService;
 import com.pirasalbe.services.telegram.handlers.request.TelegramNewRequestHandlerService;
-import com.pirasalbe.services.telegram.handlers.request.TelegramUpdateRequestHandlerService;
 
 /**
  * Service to manage the telegram logic
@@ -95,7 +95,7 @@ public class TelegramService {
 	private TelegramNewRequestHandlerService newRequestHandlerService;
 
 	@Autowired
-	private TelegramUpdateRequestHandlerService updateRequestHandlerService;
+	private TelegramAcceptRequestHandlerService acceptRequestHandlerService;
 
 	@Autowired
 	private TelegramBumpRequestHandlerService bumpRequestHandlerService;
@@ -294,9 +294,16 @@ public class TelegramService {
 	}
 
 	private void registerRequestsHandlers() {
+		TelegramCondition contributorRoleCondition = roleConditionFactory
+				.onRole(TelegramAcceptRequestHandlerService.ROLE);
+
 		bot.register(newRequestHandlerService.getCondition(), newRequestHandlerService);
-		bot.register(updateRequestHandlerService.getCondition(), updateRequestHandlerService);
 		bot.register(bumpRequestHandlerService.getCondition(), bumpRequestHandlerService);
+
+		bot.register(
+				Arrays.asList(commandConditionFactory.onCommand(TelegramAcceptRequestHandlerService.COMMAND),
+						acceptRequestHandlerService.getCondition(), contributorRoleCondition),
+				acceptRequestHandlerService);
 	}
 
 	private void registerContributorsHandlers() {

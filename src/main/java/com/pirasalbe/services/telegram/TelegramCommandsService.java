@@ -87,6 +87,7 @@ public class TelegramCommandsService {
 		BotCommand sdone = new BotCommand("sdone", "Marks the request as done.");
 
 		BotCommand pending = new BotCommand("pending", "Marks a request as pending.");
+		BotCommand acceptRequest = new BotCommand("accept_request", "Accept a manual request.");
 		BotCommand pause = new BotCommand("pause", "Marks a request as paused.");
 		BotCommand inProgress = new BotCommand("in_progress", "Marks a request as in progress.");
 
@@ -108,7 +109,7 @@ public class TelegramCommandsService {
 		contributorsCommandsPM = new SetMyCommands(start, alive, help, me, myRequests, requests, configureChannel,
 				disableChannel, configureChannels, refreshChannel, stats);
 		contributorsCommandsGroup = new SetMyCommands(start, alive, help, me, requests, show, done, sdone, pending,
-				pause, inProgress, cancel, remove, nextAudiobook);
+				acceptRequest, pause, inProgress, cancel, remove, nextAudiobook);
 
 		/*
 		 * Manager commands
@@ -134,7 +135,7 @@ public class TelegramCommandsService {
 				disableChannel, configureChannels, refreshChannel, stats);
 		managersCommandsGroup = new SetMyCommands(start, alive, help, me, groupInfo, enableGroup, disableGroup,
 				requestLimit, nonenglishAudiobooksDaysWait, englishAudiobooksDaysWait, allow, noRepeat, requests, show,
-				done, sdone, pending, pause, inProgress, cancel, remove, nextAudiobook);
+				done, sdone, pending, acceptRequest, pause, inProgress, cancel, remove, nextAudiobook);
 
 		/*
 		 * Admin commands

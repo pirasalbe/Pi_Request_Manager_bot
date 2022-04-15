@@ -11,12 +11,14 @@ import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.ChatPermissions;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
+import com.pengrad.telegrambot.model.User;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.RestrictChatMember;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.BaseResponse;
 import com.pirasalbe.configurations.ErrorConfiguration;
+import com.pirasalbe.configurations.TelegramConfiguration;
 import com.pirasalbe.models.NextValidRequest;
 import com.pirasalbe.models.RequestResult;
 import com.pirasalbe.models.Validation;
@@ -49,6 +51,9 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 
 	protected static final List<String> KNOWN_TAGS = Arrays.asList(REQUEST_TAG, EBOOK_TAG, AUDIOBOOK_TAG, KU_TAG,
 			ARCHIVE_TAG, STORYTEL_TAG, SCRIBD_TAG);
+
+	@Autowired
+	protected TelegramConfiguration telegramConfiguration;
 
 	@Autowired
 	protected ErrorConfiguration errorConfiguration;
@@ -91,21 +96,46 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 
 	protected void newRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,
 			LocalDateTime requestTime, Group group) {
+		newRequest(bot, message, chatId, messageId, requestTime, group, false);
+	}
+
+	protected void newRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,
+			LocalDateTime requestTime, Group group, boolean acceptManual) {
 		String content = RequestUtils.getContent(message.text(), message.entities());
 		String link = RequestUtils.getLink(message.text(), message.entities());
 
-		if (link != null) {
-			newRequest(bot, message, chatId, messageId, requestTime, group, content, link);
+		if (link == null) {
+			manageWrongRequest(bot, message, chatId, errorConfiguration.getIncompleteRequest());
+		} else if (!acceptManual && !isBotRequest(message)) {
+			manageWrongRequest(bot, message, chatId, errorConfiguration.getNonBotRequest());
 		} else {
-			manageIncompleteRequest(bot, message, chatId);
+			processNewRequest(bot, message, chatId, messageId, requestTime, group, content, link);
 		}
 	}
 
-	protected void manageIncompleteRequest(TelegramBot bot, Message message, Long chatId) {
+	protected boolean isBotRequest(Message message) {
+		User bot = null;
+
+		if (message.viaBot() != null) {
+			bot = message.viaBot();
+		} else if (message.forwardFrom() != null && message.forwardFrom().isBot()) {
+			bot = message.forwardFrom();
+		}
+
+		boolean botRequest = false;
+
+		if (bot != null) {
+			botRequest = telegramConfiguration.getRequestGenerators().contains(bot.username());
+		}
+
+		return botRequest;
+	}
+
+	protected void manageWrongRequest(TelegramBot bot, Message message, Long chatId, String errorMessage) {
 		// notify user of the error
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append(TelegramUtils.tagUser(message));
-		stringBuilder.append(errorConfiguration.getIncompleteRequest());
+		stringBuilder.append(errorMessage);
 		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 		sendMessage.replyToMessageId(message.messageId());
 		sendMessage.parseMode(ParseMode.HTML);
@@ -113,7 +143,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		bot.execute(sendMessage);
 	}
 
-	protected void newRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,
+	protected void processNewRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,
 			LocalDateTime requestTime, Group group, String content, String link) {
 		Long userId = message.from().id();
 
