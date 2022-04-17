@@ -106,7 +106,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 
 		if (link == null) {
 			manageWrongRequest(bot, message, chatId, errorConfiguration.getIncompleteRequest());
-		} else if (!acceptManual && !isBotRequest(message)) {
+		} else if (!acceptManual && !isBotRequest(message) && !hasBotFormat(message)) {
 			manageWrongRequest(bot, message, chatId, errorConfiguration.getNonBotRequest());
 		} else {
 			processNewRequest(bot, message, chatId, messageId, requestTime, group, content, link);
@@ -129,6 +129,32 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		}
 
 		return botRequest;
+	}
+
+	protected boolean hasBotFormat(Message message) {
+		String content = RequestUtils.getContent(message.text(), message.entities());
+
+		// search 2 monospace lines
+		int monospace = 0;
+		boolean monospaceSearch = true;
+		int firstMonospace = 0;
+		while (monospaceSearch) {
+			// get begin and end
+			int monospaceBegin = content.indexOf("<code>", firstMonospace);
+			int monospaceEnd = content.indexOf("</code>", firstMonospace);
+
+			if (monospaceBegin > -1 && monospaceEnd > -1) {
+				// if \n there are 2 lines, otherwise one
+				String monospaceText = content.substring(monospaceBegin, monospaceEnd);
+				monospace += monospaceText.contains("\n") ? 2 : 1;
+
+				firstMonospace = monospaceEnd + 1;
+			} else {
+				monospaceSearch = false;
+			}
+		}
+
+		return monospace > 1 && content.contains("<i>") && content.contains("<a href");
 	}
 
 	protected void manageWrongRequest(TelegramBot bot, Message message, Long chatId, String errorMessage) {
