@@ -528,16 +528,10 @@ public class RequestManagementService {
 
 		// manage only valid requests
 		if (string != null && !string.isEmpty()) {
-			// take only the first part (the title possibly)
-			String[] parts = string.toLowerCase().split(" - ");
-			String firstPart = parts[0];
-			parts = firstPart.split("by");
-			firstPart = parts[0];
-
 			// split each word
-			String[] words = firstPart.replace("_", " ").replace(":", " ").replace("\n", " ").replace(".", " ")
-					.replace("(", " ").replace(")", " ").replace(",", " ").replace("&", " ").replace("/", " ")
-					.replace("books", "").split(" ");
+			String[] words = string.toLowerCase().replace("_", " ").replace("-", " ").replace("by", " ")
+					.replace(":", " ").replace("\n", " ").replace(".", " ").replace("(", " ").replace(")", " ")
+					.replace(",", " ").replace("&", " ").replace("/", " ").replace("books", "").split(" ");
 
 			// keep only useful words
 			StringBuilder builder = new StringBuilder("%");
