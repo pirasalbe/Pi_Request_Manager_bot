@@ -58,6 +58,7 @@ public class GroupService {
 			group.setRequestLimit(1);
 			group.setAudiobooksDaysWait(15);
 			group.setEnglishAudiobooksDaysWait(8);
+			group.setRepeatHoursWait(48);
 			group.setAllowEbooks(true);
 			group.setAllowAudiobooks(true);
 
