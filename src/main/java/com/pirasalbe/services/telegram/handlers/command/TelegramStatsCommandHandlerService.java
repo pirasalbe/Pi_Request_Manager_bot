@@ -149,7 +149,8 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 					increaseCount(requestByGroup, request.getId().getGroupId());
 
 					// link
-					if (group.isEmpty() && request.getStatus() == RequestStatus.PENDING) {
+					if (group.isEmpty() && (request.getStatus() == RequestStatus.PENDING
+							|| request.getStatus() == RequestStatus.PAUSED)) {
 						addRequest(requestsByLink, request.getLink(), request);
 					}
 
