@@ -149,7 +149,7 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 					increaseCount(requestByGroup, request.getId().getGroupId());
 
 					// link
-					if (group.isEmpty() && request.getStatus() != RequestStatus.RESOLVED) {
+					if (group.isEmpty() && request.getStatus() == RequestStatus.PENDING) {
 						addRequest(requestsByLink, request.getLink(), request);
 					}
 
@@ -193,7 +193,7 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 
 		sendStatsByDate(chatId, requestAndFulfillmentPerDay);
 
-		if (group.isEmpty()) {
+		if (group.isEmpty() && !requestsByLink.isEmpty()) {
 			sendMultipleRequests(chatId, requestsByLink, groupNames);
 		}
 	}
