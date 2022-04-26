@@ -250,4 +250,12 @@ http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibas
 		</dropColumn>
 	</changeSet>
 
+	<changeSet id="27 - Add column REPEAT_HOURS_WAIT to Groups" author="pirasalbe">
+		<addColumn tableName="GROUPS">
+			<column name="REPEAT_HOURS_WAIT" type="smallint" defaultValue="48">
+				<constraints nullable="false" />
+			</column>
+		</addColumn>
+	</changeSet>
+
 </databaseChangeLog>

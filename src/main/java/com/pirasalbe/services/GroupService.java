@@ -136,6 +136,26 @@ public class GroupService {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public boolean updateRepeatHoursWait(Long id, int hoursWait) {
+		boolean updated = false;
+
+		// update
+		Optional<Group> optional = repository.findById(id);
+		boolean present = optional.isPresent();
+		if (present) {
+			// add
+			Group group = optional.get();
+			group.setRepeatHoursWait(hoursWait);
+
+			repository.save(group);
+			updated = true;
+			LOGGER.info("Update group: [{}] Repeat hours wait [{}]", id, hoursWait);
+		}
+
+		return updated;
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public boolean updateAllow(Long id, FormatAllowed allowed) {
 		boolean updated = false;
 

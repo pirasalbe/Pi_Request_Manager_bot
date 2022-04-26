@@ -127,6 +127,8 @@ public class TelegramCommandsService {
 				"Define the days to wait after the last audiobook requests/received not in English before requesting a new audiobook to [number of days to wait].");
 		BotCommand englishAudiobooksDaysWait = new BotCommand("english_audiobooks_days_wait",
 				"Define the days to wait after the last English audiobook requests/received before requesting a new audiobook to [number of days to wait].");
+		BotCommand repeatHoursWait = new BotCommand("/repeat_hours_wait",
+				"Define the hours to wait before repeating a request to [number of hours to wait].");
 		BotCommand allow = new BotCommand("allow", "Define what can be requested between ebooks, audiobooks, both.");
 		BotCommand noRepeat = new BotCommand("no_repeat",
 				"Define the tags whose requests can't be repeated. It accepts a list of sources.");
@@ -134,8 +136,8 @@ public class TelegramCommandsService {
 		managersCommandsPM = new SetMyCommands(start, alive, help, me, myRequests, requests, configureChannel,
 				disableChannel, configureChannels, refreshChannel, stats);
 		managersCommandsGroup = new SetMyCommands(start, alive, help, me, groupInfo, enableGroup, disableGroup,
-				requestLimit, nonenglishAudiobooksDaysWait, englishAudiobooksDaysWait, allow, noRepeat, requests, show,
-				done, sdone, pending, acceptRequest, pause, inProgress, cancel, remove, nextAudiobook);
+				requestLimit, nonenglishAudiobooksDaysWait, englishAudiobooksDaysWait, repeatHoursWait, allow, noRepeat,
+				requests, show, done, sdone, pending, acceptRequest, pause, inProgress, cancel, remove, nextAudiobook);
 
 		/*
 		 * Admin commands

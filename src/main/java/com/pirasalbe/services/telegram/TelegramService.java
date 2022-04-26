@@ -251,6 +251,13 @@ public class TelegramService {
 						TelegramGroupsCommandHandlerService.COMMAND_ENGLISH_AUDIOBOOK_DAYS_WAIT),
 				groupRoleCondition), groupsCommandHandlerService.updateEnglishAudiobooksDaysWait());
 
+		bot.register(
+				Arrays.asList(groupChatCondition,
+						commandConditionFactory.onCommand(
+								TelegramGroupsCommandHandlerService.COMMAND_REPEAT_HOURS_WAIT),
+						groupRoleCondition),
+				groupsCommandHandlerService.updateRepeatHoursWait());
+
 		bot.register(Arrays.asList(groupChatCondition,
 				commandConditionFactory.onCommand(TelegramGroupsCommandHandlerService.COMMAND_ALLOW),
 				groupRoleCondition), groupsCommandHandlerService.updateAllow());

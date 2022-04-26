@@ -46,8 +46,6 @@ public class RequestManagementService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RequestManagementService.class);
 
-	private static final long HOURS_BEFORE_REPEATING_REQUEST = 48l;
-
 	@Autowired
 	private RequestService requestService;
 
@@ -344,7 +342,7 @@ public class RequestManagementService {
 		LocalDateTime previousRequestDate = request.getRequestDate();
 
 		// new request date should be after a cooldown period
-		LocalDateTime minDateForNewRequest = previousRequestDate.plusHours(HOURS_BEFORE_REPEATING_REQUEST);
+		LocalDateTime minDateForNewRequest = previousRequestDate.plusHours(group.getRepeatHoursWait());
 
 		boolean specialTags = hasSpecialTags(group, request.getSource());
 		boolean isCancelled = request.getStatus() == RequestStatus.CANCELLED;
