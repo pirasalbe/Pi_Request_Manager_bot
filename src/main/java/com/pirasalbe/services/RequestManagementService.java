@@ -270,7 +270,7 @@ public class RequestManagementService {
 			String otherTags, Long userId, Group group, LocalDateTime requestDate) {
 		RequestResult result = null;
 
-		Request request = requestService.findByUniqueKey(group.getId(), userId, link);
+		Request request = requestService.findByUniqueKey(userId, link);
 		if (request == null) {
 			// request doesn't exists
 			insertRequest(messageId, group, link, content, format, source, otherTags, userId, requestDate);
@@ -464,7 +464,7 @@ public class RequestManagementService {
 		boolean success = false;
 
 		if (link != null) {
-			Request request = requestService.findByUniqueKey(message.chat().id(), message.from().id(), link);
+			Request request = requestService.findByUniqueKey(message.from().id(), link);
 			if (request != null) {
 				// update status
 				updateStatus(request, group, status, resolvedMessageId, contributor);

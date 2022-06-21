@@ -49,8 +49,8 @@ public class RequestService {
 	@PersistenceContext
 	private EntityManager entityManager;
 
-	public Request findByUniqueKey(Long groupId, Long userId, String link) {
-		return repository.findByUniqueKey(groupId, userId, link);
+	public Request findByUniqueKey(Long userId, String link) {
+		return repository.findByUniqueKey(userId, link);
 	}
 
 	public Optional<Request> findById(Long messageId, Long groupId) {

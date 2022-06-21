@@ -21,8 +21,8 @@ import com.pirasalbe.models.request.RequestStatus;
  */
 public interface RequestRepository extends JpaRepository<Request, RequestPK> {
 
-	@Query("SELECT r FROM Request r WHERE r.id.groupId = :groupId AND r.userId = :userId AND r.link = :link")
-	Request findByUniqueKey(@Param("groupId") Long groupId, @Param("userId") Long userId, @Param("link") String link);
+	@Query("SELECT r FROM Request r WHERE r.userId = :userId AND r.link = :link")
+	Request findByUniqueKey(@Param("userId") Long userId, @Param("link") String link);
 
 	@Query("SELECT r " + "FROM Request r "
 			+ "WHERE r.userId = :userId AND r.requestDate >= :from AND r.format = 'EBOOK' "
