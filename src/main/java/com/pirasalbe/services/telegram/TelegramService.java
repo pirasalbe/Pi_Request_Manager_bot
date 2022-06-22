@@ -25,8 +25,9 @@ import com.pirasalbe.services.telegram.handlers.command.TelegramHelpCommandHandl
 import com.pirasalbe.services.telegram.handlers.command.TelegramMeCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramMyRequestsCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramNextAudiobookCommandHandlerService;
-import com.pirasalbe.services.telegram.handlers.command.TelegramStatsCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramSuperAdminCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.command.stats.TelegramStatsCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.command.stats.TelegramTrendingCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.request.TelegramAcceptRequestHandlerService;
 import com.pirasalbe.services.telegram.handlers.request.TelegramBumpRequestHandlerService;
 import com.pirasalbe.services.telegram.handlers.request.TelegramNewRequestHandlerService;
@@ -110,6 +111,9 @@ public class TelegramService {
 	private TelegramStatsCommandHandlerService statsCommandHandlerService;
 
 	@Autowired
+	private TelegramTrendingCommandHandlerService trendingCommandHandlerService;
+
+	@Autowired
 	private TelegramDeleteCommandHandlerService deleteCommandHandlerService;
 
 	@PostConstruct
@@ -152,12 +156,7 @@ public class TelegramService {
 		registerContributorsHandlers();
 
 		// stats
-		bot.register(
-				Arrays.asList(
-						chatConditionFactory.onChatTypes(Arrays.asList(Type.Private, Type.group, Type.supergroup)),
-						commandConditionFactory.onCommand(TelegramStatsCommandHandlerService.COMMAND),
-						roleConditionFactory.onRole(TelegramStatsCommandHandlerService.ROLE)),
-				statsCommandHandlerService);
+		registerStatsHandlers();
 
 		// remove all commands
 		bot.register(deleteCommandHandlerService, deleteCommandHandlerService);
@@ -298,6 +297,22 @@ public class TelegramService {
 		bot.register(Arrays.asList(privateChatCondition,
 				commandConditionFactory.onCommand(TelegramChannelCommandHandlerService.COMMAND_REFRESH),
 				channelRoleCondition), channelCommandHandlerService.refreshChannel());
+	}
+
+	private void registerStatsHandlers() {
+		TelegramCondition chatTypes = chatConditionFactory
+				.onChatTypes(Arrays.asList(Type.Private, Type.group, Type.supergroup));
+
+		bot.register(
+				Arrays.asList(chatTypes, commandConditionFactory.onCommand(TelegramStatsCommandHandlerService.COMMAND),
+						roleConditionFactory.onRole(TelegramStatsCommandHandlerService.ROLE)),
+				statsCommandHandlerService);
+
+		bot.register(
+				Arrays.asList(chatTypes,
+						commandConditionFactory.onCommand(TelegramTrendingCommandHandlerService.COMMAND),
+						roleConditionFactory.onRole(TelegramTrendingCommandHandlerService.ROLE)),
+				trendingCommandHandlerService);
 	}
 
 	private void registerRequestsHandlers() {

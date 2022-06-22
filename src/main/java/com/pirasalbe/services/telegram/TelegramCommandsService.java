@@ -105,9 +105,10 @@ public class TelegramCommandsService {
 				"Checks all requests in the database and sync them with the one in the channel.");
 
 		BotCommand stats = new BotCommand("stats", "Get statistics.");
+		BotCommand trending = new BotCommand("trending", "Get trending requests.");
 
 		contributorsCommandsPM = new SetMyCommands(start, alive, help, me, myRequests, requests, configureChannel,
-				disableChannel, configureChannels, refreshChannel, stats);
+				disableChannel, configureChannels, refreshChannel, stats, trending);
 		contributorsCommandsGroup = new SetMyCommands(start, alive, help, me, requests, show, done, sdone, pending,
 				acceptRequest, pause, inProgress, cancel, remove, nextAudiobook);
 
@@ -134,7 +135,7 @@ public class TelegramCommandsService {
 				"Define the tags whose requests can't be repeated. It accepts a list of sources.");
 
 		managersCommandsPM = new SetMyCommands(start, alive, help, me, myRequests, requests, configureChannel,
-				disableChannel, configureChannels, refreshChannel, stats);
+				disableChannel, configureChannels, refreshChannel, stats, trending);
 		managersCommandsGroup = new SetMyCommands(start, alive, help, me, groupInfo, enableGroup, disableGroup,
 				requestLimit, nonenglishAudiobooksDaysWait, englishAudiobooksDaysWait, repeatHoursWait, allow, noRepeat,
 				requests, show, done, sdone, pending, acceptRequest, pause, inProgress, cancel, remove, nextAudiobook);
@@ -147,7 +148,7 @@ public class TelegramCommandsService {
 		BotCommand adminsRemove = new BotCommand("admins_remove", "Remove admin");
 
 		adminsCommandsPM = new SetMyCommands(start, alive, help, me, myRequests, admins, adminsAdd, adminsRemove,
-				requests, configureChannel, disableChannel, configureChannels, refreshChannel, stats);
+				requests, configureChannel, disableChannel, configureChannels, refreshChannel, stats, trending);
 	}
 
 	public void registerCommandsAsync() {

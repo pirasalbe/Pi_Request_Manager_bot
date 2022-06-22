@@ -1,9 +1,8 @@
-package com.pirasalbe.services.telegram.handlers.command;
+package com.pirasalbe.services.telegram.handlers.command.stats;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -12,23 +11,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 
-import com.pengrad.telegrambot.TelegramBot;
-import com.pengrad.telegrambot.model.Chat.Type;
-import com.pengrad.telegrambot.model.Update;
-import com.pengrad.telegrambot.model.request.ParseMode;
-import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.MultipleCounter;
-import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.database.Admin;
 import com.pirasalbe.models.database.Group;
 import com.pirasalbe.models.database.Request;
@@ -36,55 +27,24 @@ import com.pirasalbe.models.request.Format;
 import com.pirasalbe.models.request.RequestStatus;
 import com.pirasalbe.models.request.Source;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
-import com.pirasalbe.services.AdminService;
-import com.pirasalbe.services.RequestManagementService;
-import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
 import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.StringUtils;
 import com.pirasalbe.utils.TelegramConditionUtils;
 
 /**
- * Service to manage /me
+ * Service to manage /stats
  *
  * @author pirasalbe
  *
  */
 @Component
-public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerService implements TelegramHandler {
+public class TelegramStatsCommandHandlerService extends AbstractTelegramStatsCommandHandlerService
+		implements TelegramHandler {
 
 	public static final String COMMAND = "/stats";
 
-	public static final UserRole ROLE = UserRole.CONTRIBUTOR;
-
-	@Autowired
-	private AdminService adminService;
-
-	@Autowired
-	private RequestManagementService requestManagementService;
-
 	@Override
-	public void handle(TelegramBot bot, Update update) {
-		// delete command
-		deleteMessage(bot, update.message(), update.message().chat().type() != Type.Private);
-
-		Long chatId = update.message().chat().id();
-
-		// filters
-		String text = update.message().text();
-
-		boolean isPrivate = update.message().chat().type() == Type.Private;
-		Optional<Long> group = getGroup(chatId, text, isPrivate);
-
-		// check if the context is valid, either enabled group or PM
-		if (groupService.existsById(chatId) || isPrivate) {
-			SendMessage sendMessage = new SendMessage(chatId, "Preparing stats..");
-			sendMessageAndDelete(bot, sendMessage, 10, TimeUnit.SECONDS);
-
-			getAndSendStats(chatId, group, text);
-		}
-	}
-
-	private void getAndSendStats(Long chatId, Optional<Long> group, String text) {
+	protected void getAndSendStats(Long chatId, Optional<Long> group, String text) {
 
 		Optional<Long> user = TelegramConditionUtils.getUserId(text);
 		Optional<Format> format = TelegramConditionUtils.getFormat(text);
@@ -118,9 +78,6 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 		// request&fulfillment per day
 		Map<LocalDate, MultipleCounter> requestAndFulfillmentPerDay = new HashMap<>();
 
-		// multiple requests
-		Map<String, List<Request>> requestsByLink = new HashMap<>();
-
 		// check all requests
 		int page = 0;
 		int size = 100;
@@ -147,12 +104,6 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 
 					// group
 					increaseCount(requestByGroup, request.getId().getGroupId());
-
-					// link
-					if (group.isEmpty() && (request.getStatus() == RequestStatus.PENDING
-							|| request.getStatus() == RequestStatus.PAUSED)) {
-						addRequest(requestsByLink, request.getLink(), request);
-					}
 
 					// day
 					increaseMultipleCount(requestAndFulfillmentPerDay, request.getRequestDate().toLocalDate(),
@@ -193,58 +144,6 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 		sendStats(chatId, "Contributions", requestByContributors, adminNames::get, filteredCount);
 
 		sendStatsByDate(chatId, requestAndFulfillmentPerDay);
-
-		if (group.isEmpty() && !requestsByLink.isEmpty()) {
-			sendMultipleRequests(chatId, requestsByLink, groupNames);
-		}
-	}
-
-	private boolean checkFilters(Request request, Optional<Long> group, Optional<Long> user, Optional<Format> format,
-			Optional<Source> source, Optional<String> otherTags) {
-		boolean valid = true;
-
-		if (group.isPresent()) {
-			valid = request.getId().getGroupId().equals(group.get());
-		}
-		if (valid && user.isPresent()) {
-			valid = request.getUserId().equals(user.get());
-		}
-		if (valid && format.isPresent()) {
-			valid = request.getFormat().equals(format.get());
-		}
-		if (valid && source.isPresent()) {
-			valid = request.getSource().equals(source.get());
-		}
-		if (valid && otherTags.isPresent()) {
-			valid = request.getOtherTags().equals(otherTags.get());
-		}
-
-		return valid;
-	}
-
-	private String getFilters(Optional<Long> group, Optional<Long> user, Optional<Format> format,
-			Optional<Source> source, Optional<String> otherTags) {
-		StringBuilder filters = new StringBuilder();
-		if (group.isPresent()) {
-			Long groupId = group.get();
-			Optional<Group> groupOptional = groupService.findById(groupId);
-			filters.append("\nGroup [").append(groupOptional.orElseThrow().getName()).append(" (<code>").append(groupId)
-					.append("</code>)]");
-		}
-		if (user.isPresent()) {
-			filters.append("\nUser [<code>").append(user.get()).append("</code>]");
-		}
-		if (format.isPresent()) {
-			filters.append("\nFormat [").append(format.get()).append("]");
-		}
-		if (source.isPresent()) {
-			filters.append("\nSource [").append(source.get()).append("]");
-		}
-		if (otherTags.isPresent()) {
-			filters.append("\nOther [").append(otherTags.get()).append("]");
-		}
-
-		return filters.toString();
 	}
 
 	private <K> void sendStats(Long chatId, String title, Map<K, AtomicLong> map, Function<K, String> keyToString,
@@ -318,58 +217,6 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 
 	}
 
-	private void sendMultipleRequests(Long chatId, Map<String, List<Request>> map, Map<Long, String> groupNames) {
-
-		StringBuilder headerBuilder = new StringBuilder();
-		headerBuilder.append("<b>").append("Links in multiple requests").append("</b>\n");
-		sendMessage(chatId, headerBuilder.toString());
-
-		List<Entry<String, List<Request>>> entrySet = new ArrayList<>(map.entrySet());
-		entrySet.sort((a, b) -> {
-			Integer aSize = a.getValue().size();
-			Integer bSize = b.getValue().size();
-
-			return bSize.compareTo(aSize);
-		});
-
-		LocalDateTime now = DateUtils.getNow();
-
-		Iterator<Entry<String, List<Request>>> iterator = entrySet.iterator();
-		boolean keep = iterator.hasNext();
-		while (keep) {
-			Entry<String, List<Request>> entry = iterator.next();
-
-			List<Request> value = entry.getValue();
-			if (value.size() > 1) {
-
-				StringBuilder builder = new StringBuilder();
-				builder.append(value.get(0).getContent()).append("\n\n");
-				builder.append("<b>Occurrences</b>:\n");
-
-				for (int i = 0; i < value.size(); i++) {
-					Request request = value.get(i);
-
-					builder.append("- ").append(getRequestText(request, i, groupNames, now, true));
-				}
-				builder.append("\n");
-
-				sendMessage(chatId, builder.toString());
-			}
-
-			// send last message
-			keep = iterator.hasNext() && entry.getValue().size() > 1;
-		}
-
-	}
-
-	private void sendMessage(Long chatId, String message) {
-		SendMessage sendMessage = new SendMessage(chatId, message);
-		sendMessage.parseMode(ParseMode.HTML);
-		sendMessage.disableWebPagePreview(true);
-
-		botQueue.add(bot -> bot.execute(sendMessage));
-	}
-
 	private <K> List<Entry<K, AtomicLong>> getOrderedEntries(Map<K, AtomicLong> map) {
 		List<Entry<K, AtomicLong>> entryList = new ArrayList<>(map.entrySet());
 
@@ -411,18 +258,6 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramHandlerS
 		}
 
 		consumer.accept(multipleCounter);
-	}
-
-	private void addRequest(Map<String, List<Request>> map, String key, Request request) {
-		List<Request> requests = null;
-		if (map.containsKey(key)) {
-			requests = map.get(key);
-		} else {
-			requests = new ArrayList<>();
-			map.put(key, requests);
-		}
-
-		requests.add(request);
 	}
 
 }
