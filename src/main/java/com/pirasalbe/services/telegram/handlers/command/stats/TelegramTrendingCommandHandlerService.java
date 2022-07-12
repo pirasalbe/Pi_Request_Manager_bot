@@ -42,6 +42,7 @@ public class TelegramTrendingCommandHandlerService extends AbstractTelegramStats
 		Optional<Format> format = TelegramConditionUtils.getFormat(text);
 		Optional<Source> source = TelegramConditionUtils.getSource(text);
 		Optional<String> otherTags = TelegramConditionUtils.getOtherTags(text);
+		Optional<Long> limit = TelegramConditionUtils.getLimit(text);
 
 		// count
 		AtomicLong requestCount = new AtomicLong();
@@ -91,11 +92,12 @@ public class TelegramTrendingCommandHandlerService extends AbstractTelegramStats
 		}
 
 		if (!requestsByLink.isEmpty()) {
-			sendMultipleRequests(chatId, requestsByLink, groupNames);
+			sendMultipleRequests(chatId, requestsByLink, groupNames, limit.orElse(-1l));
 		}
 	}
 
-	private void sendMultipleRequests(Long chatId, Map<String, List<Request>> map, Map<Long, String> groupNames) {
+	private void sendMultipleRequests(Long chatId, Map<String, List<Request>> map, Map<Long, String> groupNames,
+			long limit) {
 
 		StringBuilder headerBuilder = new StringBuilder();
 		headerBuilder.append("<b>").append("Links in multiple requests").append("</b>\n");
@@ -113,6 +115,7 @@ public class TelegramTrendingCommandHandlerService extends AbstractTelegramStats
 
 		Iterator<Entry<String, List<Request>>> iterator = entrySet.iterator();
 		boolean keep = iterator.hasNext();
+		long count = 0l;
 		while (keep) {
 			Entry<String, List<Request>> entry = iterator.next();
 
@@ -131,10 +134,12 @@ public class TelegramTrendingCommandHandlerService extends AbstractTelegramStats
 				builder.append("\n");
 
 				sendMessage(chatId, builder.toString());
+				count++;
 			}
 
-			// send last message
-			keep = iterator.hasNext() && entry.getValue().size() > 1;
+			// continue if there are more links, the last link as at least 2 requests, and
+			// it sent less than limit messages or the limit is negative
+			keep = iterator.hasNext() && value.size() > 1 && (count < limit || limit < 0);
 		}
 
 	}
