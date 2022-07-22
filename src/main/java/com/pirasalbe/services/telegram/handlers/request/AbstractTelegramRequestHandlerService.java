@@ -245,6 +245,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		switch (requestResult.getResult()) {
 		case CANNOT_REPEAT_REQUEST:
 		case REQUEST_REPEATED_TOO_EARLY:
+		case DIFFERENT_GROUP:
 			// notify user of the error
 			DeleteMessage deleteMessage = new DeleteMessage(chatId, messageId);
 			StringBuilder stringBuilder = new StringBuilder();

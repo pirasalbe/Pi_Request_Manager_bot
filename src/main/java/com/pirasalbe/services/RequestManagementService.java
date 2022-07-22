@@ -46,6 +46,8 @@ public class RequestManagementService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RequestManagementService.class);
 
+	private static final String RECEIVED_BOOK = "received book";
+
 	@Autowired
 	private RequestService requestService;
 
@@ -346,7 +348,16 @@ public class RequestManagementService {
 
 		boolean specialTags = hasSpecialTags(group, request.getSource());
 		boolean isCancelled = request.getStatus() == RequestStatus.CANCELLED;
-		if (isCancelled || (!specialTags && minDateForNewRequest.isBefore(requestDate))) {
+
+		if (!request.getId().getGroupId().equals(group.getId())) {
+			// repeated request in different group
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append("You requested this title on ");
+			stringBuilder.append(DateUtils.formatDate(previousRequestDate));
+			stringBuilder.append(" ").append(getRequestLink(request, "request", RECEIVED_BOOK)).append(".\n");
+			stringBuilder.append("Please keep your request to one place only.");
+			result = new RequestResult(Result.DIFFERENT_GROUP, stringBuilder.toString());
+		} else if (isCancelled || (!specialTags && minDateForNewRequest.isBefore(requestDate))) {
 			// allow repeating cancelled requests
 			// allow repeating no special tags after 48 hours
 			updateOrDeleteInsertRequest(request, group, newMessageId, link, content, format, source, otherTags,
@@ -357,7 +368,7 @@ public class RequestManagementService {
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append("You already requested this title on ");
 			stringBuilder.append(DateUtils.formatDate(previousRequestDate));
-			stringBuilder.append(" ").append(getRequestLink(request, "request", "received book")).append(".\n");
+			stringBuilder.append(" ").append(getRequestLink(request, "request", RECEIVED_BOOK)).append(".\n");
 			stringBuilder.append("No need to bump requests with special hashtags.");
 			result = new RequestResult(Result.CANNOT_REPEAT_REQUEST, stringBuilder.toString());
 		} else {
@@ -368,7 +379,7 @@ public class RequestManagementService {
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append("You already requested this title on ")
 					.append(DateUtils.formatDate(previousRequestDate));
-			stringBuilder.append(" ").append(getRequestLink(request, "request", "received book")).append(".\n");
+			stringBuilder.append(" ").append(getRequestLink(request, "request", RECEIVED_BOOK)).append(".\n");
 			stringBuilder.append(RequestUtils.getComeBackAgain(requestDate, minDateForNewRequest)).append("\n");
 			stringBuilder.append(
 					"If you have requested it many times and still haven't received the book, then it's most likely that the book is not available as of now. It's better if you request again after a month or so.");
