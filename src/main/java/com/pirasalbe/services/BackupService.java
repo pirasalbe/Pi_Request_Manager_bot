@@ -99,7 +99,7 @@ public class BackupService {
 
 		StringBuilder builder = new StringBuilder();
 		builder.append(
-				"ID,NAME,REQUEST_LIMIT, ENGLISH_AUDIOBOOKS, NONENGLISH_AUDIOBOOKS,NO_REPEAT_ALLOW_EBOOKS,ALLOW_AUDIOBOOKS\n");
+				"ID;NAME;REQUEST_LIMIT;ENGLISH_AUDIOBOOKS;NONENGLISH_AUDIOBOOKS;NO_REPEAT;REPEAT_HOURS_WAIT;ALLOW_EBOOKS;ALLOW_AUDIOBOOKS\n");
 
 		for (Group group : groups) {
 			builder.append(group.getId());
@@ -113,6 +113,8 @@ public class BackupService {
 			builder.append(group.getAudiobooksDaysWait());
 			builder.append(";");
 			builder.append(group.getNoRepeat());
+			builder.append(";");
+			builder.append(group.getRepeatHoursWait());
 			builder.append(";");
 			builder.append(group.isAllowEbooks());
 			builder.append(";");
