@@ -19,6 +19,7 @@ import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.BaseResponse;
 import com.pirasalbe.configurations.ErrorConfiguration;
 import com.pirasalbe.configurations.TelegramConfiguration;
+import com.pirasalbe.models.LogEvent;
 import com.pirasalbe.models.NextValidRequest;
 import com.pirasalbe.models.RequestResult;
 import com.pirasalbe.models.Validation;
@@ -29,6 +30,7 @@ import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
+import com.pirasalbe.services.telegram.TelegramLogService;
 import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramUtils;
@@ -57,6 +59,9 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 
 	@Autowired
 	protected ErrorConfiguration errorConfiguration;
+
+	@Autowired
+	private TelegramLogService logService;
 
 	@Autowired
 	protected RequestManagementService requestManagementService;
@@ -185,6 +190,8 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		} else {
 			NextValidRequest nextValidRequest = validation.getReason();
 
+			logService.log(new LogEvent(userId, chatId, content, nextValidRequest.getMessage()));
+
 			// mute user
 			boolean muted = muteUser(bot, chatId, userId, nextValidRequest);
 
@@ -236,11 +243,11 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		RequestResult requestResult = requestManagementService.manageRequest(messageId.longValue(), content, link,
 				format, source, otherTags, userId, group, requestTime);
 
-		manageRequestResult(bot, message, chatId, messageId, requestResult);
+		manageRequestResult(bot, message, chatId, messageId, requestResult, content);
 	}
 
 	private void manageRequestResult(TelegramBot bot, Message message, Long chatId, Integer messageId,
-			RequestResult requestResult) {
+			RequestResult requestResult, String content) {
 
 		switch (requestResult.getResult()) {
 		case CANNOT_REPEAT_REQUEST:
@@ -259,6 +266,10 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 			break;
 		default:
 			break;
+		}
+
+		if (!requestResult.getResult().isOk()) {
+			logService.log(new LogEvent(message.from().id(), chatId, content, requestResult.getReason()));
 		}
 	}
 

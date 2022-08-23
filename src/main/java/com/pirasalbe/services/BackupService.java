@@ -15,6 +15,7 @@ import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.request.SendDocument;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.configurations.TelegramConfiguration;
+import com.pirasalbe.models.LogEvent;
 import com.pirasalbe.models.database.Admin;
 import com.pirasalbe.models.database.Channel;
 import com.pirasalbe.models.database.ChannelRequest;
@@ -25,6 +26,7 @@ import com.pirasalbe.services.channels.ChannelRequestService;
 import com.pirasalbe.services.channels.ChannelRuleService;
 import com.pirasalbe.services.channels.ChannelService;
 import com.pirasalbe.services.telegram.TelegramBotService;
+import com.pirasalbe.services.telegram.TelegramLogService;
 import com.pirasalbe.utils.DateUtils;
 
 /**
@@ -40,6 +42,9 @@ public class BackupService {
 	private static final Logger LOGGER = LoggerFactory.getLogger(BackupService.class);
 
 	private TelegramBot bot;
+
+	@Autowired
+	private TelegramLogService logService;
 
 	@Autowired
 	private TelegramConfiguration configuration;
@@ -255,8 +260,14 @@ public class BackupService {
 		SendResponse execute = bot.execute(sendDocument);
 
 		if (!execute.isOk() && LOGGER.isErrorEnabled()) {
-			LOGGER.error("Could not send backup [{}] with error: {} - {}", name, execute.errorCode(),
-					execute.description());
+			StringBuilder builder = new StringBuilder();
+			builder.append("Could not send backup [").append(name).append("] with error: ");
+			builder.append(execute.errorCode()).append(" - ").append(execute.description());
+			String reason = builder.toString();
+
+			LOGGER.error(reason);
+
+			logService.log(new LogEvent(reason));
 		}
 	}
 }

@@ -300,13 +300,12 @@ public class RequestUtils {
 		return messageBuilder.toString();
 	}
 
-	private static String getUser(TelegramBot bot, Long groupId, Long userId) {
+	public static String getUser(TelegramBot bot, Long groupId, Long userId) {
 		String username = null;
 
 		if (userNames.containsKey(userId)) {
 			username = userNames.get(userId);
 		} else {
-
 			GetChatMember getChatMember = new GetChatMember(groupId, userId);
 			GetChatMemberResponse member = bot.execute(getChatMember);
 

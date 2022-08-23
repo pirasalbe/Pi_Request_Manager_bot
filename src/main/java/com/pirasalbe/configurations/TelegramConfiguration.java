@@ -21,6 +21,8 @@ public class TelegramConfiguration {
 
 	private Long backupChat;
 
+	private Long logChat;
+
 	private List<String> requestGenerators;
 
 	public String getUsername() {
@@ -69,6 +71,14 @@ public class TelegramConfiguration {
 
 	public void setBackupChat(Long backupChat) {
 		this.backupChat = backupChat;
+	}
+
+	public Long getLogChat() {
+		return logChat;
+	}
+
+	public void setLogChat(Long logChat) {
+		this.logChat = logChat;
 	}
 
 	public List<String> getRequestGenerators() {

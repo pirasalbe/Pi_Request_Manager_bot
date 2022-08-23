@@ -237,6 +237,13 @@ public class TelegramUtils {
 		return getLink(groupId.toString(), messageId.toString());
 	}
 
+	private static String fixGroupId(String groupId) {
+		if (groupId.startsWith("-100")) {
+			groupId = groupId.substring(4);
+		}
+		return groupId;
+	}
+
 	/**
 	 * Get a link to a message
 	 *
@@ -245,11 +252,31 @@ public class TelegramUtils {
 	 * @return link
 	 */
 	public static String getLink(String groupId, String messageId) {
-		if (groupId.startsWith("-100")) {
-			groupId = groupId.substring(4);
-		}
+		groupId = fixGroupId(groupId);
 
 		return "https://t.me/c/" + groupId + "/" + messageId;
+	}
+
+	/**
+	 * Get a link to a chat
+	 *
+	 * @param groupId Chat to link
+	 * @return link
+	 */
+	public static String getLink(Long groupId) {
+		return getLink(groupId.toString());
+	}
+
+	/**
+	 * Get a link to a chat
+	 *
+	 * @param groupId Chat to link
+	 * @return link
+	 */
+	public static String getLink(String groupId) {
+		groupId = fixGroupId(groupId);
+
+		return "https://t.me/c/" + groupId;
 	}
 
 	/**
