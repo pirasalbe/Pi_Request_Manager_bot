@@ -302,8 +302,10 @@ public class ChannelForwardingService {
 
 			StringBuilder builder = new StringBuilder("Error forwarding ");
 			builder.append(getLogRequestLink(request.getId().getGroupId(), request.getId().getMessageId()));
-			builder.append(" to channel [").append(channelId);
-			builder.append("]: ").append(responseDescription);
+			builder.append(" to ");
+			builder.append("<a href='").append(TelegramUtils.getLink(channelId, 1l)).append("'>channel</a> ");
+			builder.append("[<code>").append(channelId);
+			builder.append("</code>]: ").append(responseDescription);
 			logService.log(new LogEvent(builder.toString()));
 		}
 

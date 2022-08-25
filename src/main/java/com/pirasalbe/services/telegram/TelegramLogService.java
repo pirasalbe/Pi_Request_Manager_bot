@@ -74,14 +74,16 @@ public class TelegramLogService {
 		if (userId != null && groupId != null) {
 			String user = RequestUtils.getUser(bot, groupId, userId);
 
-			messageBuilder.append("<b>User</b>: ").append(user).append("\n");
+			messageBuilder.append("<b>User</b>: ").append(user).append(" (<code>").append(userId).append("</code>)")
+					.append("\n");
 
-			messageBuilder.append("<b>Group</b>: ").append(getGroupName(groupId)).append("\n");
-		}
-		if (log.getOriginalMessage() != null) {
-			messageBuilder.append("<b>Original message</b>:\n").append(log.getOriginalMessage()).append("\n");
+			messageBuilder.append("<b>Group</b>: ").append(getGroupName(groupId)).append(" (<code>").append(groupId)
+					.append("</code>)").append("\n");
 		}
 		messageBuilder.append("<b>Reason</b>: ").append(log.getReason());
+		if (log.getOriginalMessage() != null) {
+			messageBuilder.append("\n\n<b>Original message</b>:\n").append(log.getOriginalMessage());
+		}
 
 		String message = messageBuilder.toString();
 
@@ -108,7 +110,7 @@ public class TelegramLogService {
 
 		StringBuilder linkBuilder = new StringBuilder();
 		linkBuilder.append("<a href='");
-		linkBuilder.append(TelegramUtils.getLink(groupId));
+		linkBuilder.append(TelegramUtils.getLink(groupId, 1l));
 		linkBuilder.append("'>");
 		linkBuilder.append(groupName);
 		linkBuilder.append("</a>");

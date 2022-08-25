@@ -258,28 +258,6 @@ public class TelegramUtils {
 	}
 
 	/**
-	 * Get a link to a chat
-	 *
-	 * @param groupId Chat to link
-	 * @return link
-	 */
-	public static String getLink(Long groupId) {
-		return getLink(groupId.toString());
-	}
-
-	/**
-	 * Get a link to a chat
-	 *
-	 * @param groupId Chat to link
-	 * @return link
-	 */
-	public static String getLink(String groupId) {
-		groupId = fixGroupId(groupId);
-
-		return "https://t.me/c/" + groupId;
-	}
-
-	/**
 	 * Get message from update
 	 *
 	 * @param update Update
