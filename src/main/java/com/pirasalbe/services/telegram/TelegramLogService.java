@@ -72,7 +72,7 @@ public class TelegramLogService {
 		Long groupId = log.getGroupId();
 		Long userId = log.getUserId();
 		if (userId != null && groupId != null) {
-			String user = RequestUtils.getUser(bot, groupId, userId);
+			String user = RequestUtils.getUser(bot, groupId, userId).trim();
 
 			messageBuilder.append("<b>User</b>: ").append(user).append(" (<code>").append(userId).append("</code>)")
 					.append("\n");
