@@ -50,10 +50,19 @@ curl localhost:8080/actuator/health
 
 #### Required Variables
 
-- `bot.token`: Create a bot using [@BotFather](https://telegram.dog/BotFather), and get the Telegram API token.
-- `bot.username`: Bot username (without @).
-- `spring.datasource.url`: url to connect to the PostgreSQL instance
-- `spring.datasource.username`: username to authenticate to the PostgreSQL instance
-- `spring.datasource.password`: password to authenticate to the PostgreSQL instance
+- `bot.token`: create a bot using [@BotFather](https://telegram.dog/BotFather), and get the Telegram API token.
+- `bot.username`: bot username (without @).
+- `bot.number`: user bot number with country code.
+- `bot.api-id`: Telegram API ID for the user bot.
+- `bot.api-hash`: Telegram API Hash for the user bot.
+- `bot.backup-chat`: chat id where the bot will send the backups.
+- `bot.log-chat`: chat id where the bot will the logs when errors happen.
+- `spring.datasource.url`: url to connect to the PostgreSQL instance.
+- `spring.datasource.username`: username to authenticate to the PostgreSQL instance.
+- `spring.datasource.password`: password to authenticate to the PostgreSQL instance.
 
 #### Optional Variables
+
+- `bot.request-generators`: list of bots' username, comma separated, whose messages are always valid if link is provided.
+- `error.incomplete-request`: custom message for incomplete requests.
+- `error.non-bot-request`: custom message for invalid requests.
