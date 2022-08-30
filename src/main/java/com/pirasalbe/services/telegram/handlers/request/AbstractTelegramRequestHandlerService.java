@@ -110,9 +110,9 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		String link = RequestUtils.getLink(message.text(), message.entities());
 
 		if (link == null) {
-			manageWrongRequest(bot, message, chatId, errorConfiguration.getIncompleteRequest());
+			manageWrongRequest(bot, message, chatId, content, errorConfiguration.getIncompleteRequest());
 		} else if (!acceptManual && !isBotRequest(message) && !hasBotFormat(message)) {
-			manageWrongRequest(bot, message, chatId, errorConfiguration.getNonBotRequest());
+			manageWrongRequest(bot, message, chatId, content, errorConfiguration.getNonBotRequest());
 		} else {
 			processNewRequest(bot, message, chatId, messageId, requestTime, group, content, link);
 		}
@@ -162,7 +162,8 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		return monospace > 1 && content.contains("<i>") && content.contains("<a href");
 	}
 
-	protected void manageWrongRequest(TelegramBot bot, Message message, Long chatId, String errorMessage) {
+	protected void manageWrongRequest(TelegramBot bot, Message message, Long chatId, String content,
+			String errorMessage) {
 		// notify user of the error
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append(TelegramUtils.tagUser(message));
@@ -172,7 +173,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		sendMessage.parseMode(ParseMode.HTML);
 		sendMessage.disableWebPagePreview(true);
 
-		logService.log(new LogEvent(message.from().id(), chatId, errorMessage));
+		logService.log(new LogEvent(message.from().id(), chatId, content, errorMessage));
 
 		bot.execute(sendMessage);
 	}
