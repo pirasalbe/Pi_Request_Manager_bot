@@ -172,6 +172,8 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		sendMessage.parseMode(ParseMode.HTML);
 		sendMessage.disableWebPagePreview(true);
 
+		logService.log(new LogEvent(message.from().id(), chatId, errorMessage));
+
 		bot.execute(sendMessage);
 	}
 
