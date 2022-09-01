@@ -20,6 +20,7 @@ import com.pengrad.telegrambot.response.BaseResponse;
 import com.pirasalbe.configurations.ErrorConfiguration;
 import com.pirasalbe.configurations.TelegramConfiguration;
 import com.pirasalbe.models.LogEvent;
+import com.pirasalbe.models.LogEventMessage;
 import com.pirasalbe.models.NextValidRequest;
 import com.pirasalbe.models.RequestResult;
 import com.pirasalbe.models.Validation;
@@ -173,7 +174,8 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		sendMessage.parseMode(ParseMode.HTML);
 		sendMessage.disableWebPagePreview(true);
 
-		logService.log(new LogEvent(message.from().id(), chatId, content, errorMessage));
+		logService.log(new LogEvent(message.from().id(), chatId, new LogEventMessage(message.messageId(), content),
+				errorMessage));
 
 		bot.execute(sendMessage);
 	}
@@ -193,7 +195,8 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		} else {
 			NextValidRequest nextValidRequest = validation.getReason();
 
-			logService.log(new LogEvent(userId, chatId, content, nextValidRequest.getMessage()));
+			logService.log(new LogEvent(userId, chatId, new LogEventMessage(messageId, content),
+					nextValidRequest.getMessage()));
 
 			// mute user
 			boolean muted = muteUser(bot, chatId, userId, nextValidRequest);
@@ -272,7 +275,8 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		}
 
 		if (!requestResult.getResult().isOk()) {
-			logService.log(new LogEvent(message.from().id(), chatId, content, requestResult.getReason()));
+			logService.log(new LogEvent(message.from().id(), chatId, new LogEventMessage(messageId, content),
+					requestResult.getReason()));
 		}
 	}
 

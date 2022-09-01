@@ -80,9 +80,11 @@ public class TelegramLogService {
 			messageBuilder.append("<b>Group</b>: ").append(getGroupName(groupId)).append(" (<code>").append(groupId)
 					.append("</code>)").append("\n");
 		}
+
 		messageBuilder.append("<b>Reason</b>: ").append(log.getReason());
+
 		if (log.getOriginalMessage() != null) {
-			messageBuilder.append("\n\n<b>Original message</b>:\n").append(log.getOriginalMessage());
+			appendMessageLink(log, messageBuilder);
 		}
 
 		String message = messageBuilder.toString();
@@ -116,6 +118,27 @@ public class TelegramLogService {
 		linkBuilder.append("</a>");
 
 		return linkBuilder.toString();
+	}
+
+	private void appendMessageLink(LogEvent log, StringBuilder messageBuilder) {
+		Long groupId = log.getGroupId();
+
+		messageBuilder.append("\n\n<b>Original ");
+
+		if (groupId != null) {
+			messageBuilder.append("<a href='");
+			messageBuilder.append(TelegramUtils.getLink(groupId, log.getOriginalMessage().getMessageId().longValue()));
+			messageBuilder.append("'>");
+		}
+
+		messageBuilder.append("message");
+
+		if (groupId != null) {
+			messageBuilder.append("</a>");
+		}
+
+		messageBuilder.append("</b>:\n");
+		messageBuilder.append(log.getOriginalMessage().getContent());
 	}
 
 	/**

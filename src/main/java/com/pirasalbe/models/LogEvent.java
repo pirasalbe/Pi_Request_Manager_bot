@@ -16,7 +16,7 @@ public class LogEvent {
 
 	private Long groupId;
 
-	private String originalMessage;
+	private LogEventMessage originalMessage;
 
 	private String reason;
 
@@ -24,7 +24,7 @@ public class LogEvent {
 		this(null, null, reason);
 	}
 
-	public LogEvent(String originalMessage, String reason) {
+	public LogEvent(LogEventMessage originalMessage, String reason) {
 		this(null, null, originalMessage, reason);
 	}
 
@@ -32,7 +32,7 @@ public class LogEvent {
 		this(userId, groupId, null, reason);
 	}
 
-	public LogEvent(Long userId, Long groupId, String originalMessage, String reason) {
+	public LogEvent(Long userId, Long groupId, LogEventMessage originalMessage, String reason) {
 		super();
 		this.userId = userId;
 		this.groupId = groupId;
@@ -53,7 +53,7 @@ public class LogEvent {
 		return reason;
 	}
 
-	public String getOriginalMessage() {
+	public LogEventMessage getOriginalMessage() {
 		return originalMessage;
 	}
 
