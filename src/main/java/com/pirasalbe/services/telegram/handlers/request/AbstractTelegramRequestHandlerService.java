@@ -112,7 +112,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 
 		if (link == null) {
 			manageWrongRequest(bot, message, chatId, content, errorConfiguration.getIncompleteRequest());
-		} else if (!acceptManual && !isBotRequest(message) && !hasBotFormat(message)) {
+		} else if (!acceptManual && !isBotRequest(message) /* && !hasBotFormat(message) */) {
 			manageWrongRequest(bot, message, chatId, content, errorConfiguration.getNonBotRequest());
 		} else {
 			processNewRequest(bot, message, chatId, messageId, requestTime, group, content, link);
