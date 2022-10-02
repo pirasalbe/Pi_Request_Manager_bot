@@ -22,6 +22,7 @@ import com.pirasalbe.services.telegram.handlers.command.TelegramContributorsComm
 import com.pirasalbe.services.telegram.handlers.command.TelegramDeleteCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramGroupsCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramHelpCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.command.TelegramInfoCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramMeCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramMyRequestsCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramNextAudiobookCommandHandlerService;
@@ -76,6 +77,9 @@ public class TelegramService {
 
 	@Autowired
 	private TelegramAliveCommandHandlerService aliveCommandHandlerService;
+
+	@Autowired
+	private TelegramInfoCommandHandlerService infoCommandHandlerService;
 
 	@Autowired
 	private TelegramMeCommandHandlerService meCommandHandlerService;
@@ -168,6 +172,11 @@ public class TelegramService {
 		TelegramCondition superAdminChatCondition = chatConditionFactory.onChatType(Type.Private);
 		TelegramCondition superAdminRoleCondition = roleConditionFactory
 				.onRole(TelegramSuperAdminCommandHandlerService.ROLE);
+
+		// info
+		bot.register(Arrays.asList(superAdminChatCondition,
+				commandConditionFactory.onCommand(TelegramInfoCommandHandlerService.COMMAND, false),
+				superAdminRoleCondition), infoCommandHandlerService);
 
 		// main command
 		bot.register(Arrays.asList(superAdminChatCondition,

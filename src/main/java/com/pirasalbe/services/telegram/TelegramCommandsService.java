@@ -147,7 +147,9 @@ public class TelegramCommandsService {
 		BotCommand adminsAdd = new BotCommand("admins_add", "Add admin");
 		BotCommand adminsRemove = new BotCommand("admins_remove", "Remove admin");
 
-		adminsCommandsPM = new SetMyCommands(start, alive, help, me, myRequests, admins, adminsAdd, adminsRemove,
+		BotCommand info = new BotCommand("info", "Provides bot information");
+
+		adminsCommandsPM = new SetMyCommands(start, alive, info, help, me, myRequests, admins, adminsAdd, adminsRemove,
 				requests, configureChannel, disableChannel, configureChannels, refreshChannel, stats, trending);
 	}
 
