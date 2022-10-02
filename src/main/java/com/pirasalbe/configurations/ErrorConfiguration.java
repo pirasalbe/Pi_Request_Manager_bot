@@ -11,6 +11,8 @@ public class ErrorConfiguration {
 
 	private String nonBotRequest;
 
+	private String quoteBotRequest;
+
 	public String getIncompleteRequest() {
 		return incompleteRequest;
 	}
@@ -25,6 +27,14 @@ public class ErrorConfiguration {
 
 	public void setNonBotRequest(String nonBotRequest) {
 		this.nonBotRequest = nonBotRequest;
+	}
+
+	public String getQuoteBotRequest() {
+		return quoteBotRequest;
+	}
+
+	public void setQuoteBotRequest(String quoteBotRequest) {
+		this.quoteBotRequest = quoteBotRequest;
 	}
 
 }
