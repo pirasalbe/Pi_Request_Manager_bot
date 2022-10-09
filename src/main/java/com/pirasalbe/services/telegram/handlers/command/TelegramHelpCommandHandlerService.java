@@ -97,7 +97,9 @@ public class TelegramHelpCommandHandlerService extends AbstractTelegramHandlerSe
 			message.append(TelegramSuperAdminCommandHandlerService.COMMAND_ADD).append(" [id name <code>")
 					.append(UserRole.getRoles()).append("</code>]").append(" - ").append("Add admin\n");
 			message.append(TelegramSuperAdminCommandHandlerService.COMMAND_REMOVE).append(" [id]").append(" - ")
-					.append("Remove admin");
+					.append("Remove admin\n\n");
+
+			message.append(TelegramInfoCommandHandlerService.COMMAND).append(" - ").append("Show bot info");
 		} else {
 			message.append("Go in PM to see your available commands.");
 		}
