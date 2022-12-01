@@ -32,7 +32,7 @@ public class TelegramBumpRequestHandlerService extends AbstractTelegramRequestHa
 
 	protected static final List<String> BUMPS = Arrays.asList("bump", "update", "can i get", "can i have", "need",
 			"please help", "send", "thank", "repost", "news", "anyone", "hope", "this one", "not received", "status",
-			"any luck", "any chance", "available", "do you", "please anybody", "check");
+			"any luck", "any chance", "available", "do you", "please anybody", "check", "help", "anything");
 
 	@Autowired
 	private SchedulerService schedulerService;
