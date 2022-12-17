@@ -49,7 +49,7 @@ dependencies {
 	implementation 'com.querydsl:querydsl-core'
 	implementation 'org.liquibase:liquibase-core'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
-	implementation 'com.github.pengrad:java-telegram-bot-api:5.7.0'
+	implementation 'com.github.pengrad:java-telegram-bot-api:6.3.0'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	
 	// tdlib
