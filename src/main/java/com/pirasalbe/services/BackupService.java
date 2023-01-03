@@ -143,7 +143,7 @@ public class BackupService {
 			builder.append("\n");
 		}
 
-		sendBackup("Channel", builder.toString());
+		sendBackup("Channels", builder.toString());
 	}
 
 	private void sendChannelRulesBackup() {
