@@ -120,7 +120,12 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	}
 
 	private boolean replyToMessage(Update update) {
-		return update.message() != null && update.message().replyToMessage() != null;
+		return update.message() != null && update.message().replyToMessage() != null
+				&& !isThreadMessage(update.message().replyToMessage());
+	}
+
+	private boolean isThreadMessage(Message message) {
+		return message.messageId().equals(message.messageThreadId());
 	}
 
 	private String getErrorMessage(String command) {
