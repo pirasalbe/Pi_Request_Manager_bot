@@ -107,6 +107,7 @@ public class TelegramBumpRequestHandlerService extends AbstractTelegramRequestHa
 		bumpBuilder.append("'>your request</a>.");
 
 		SendMessage sendMessage = new SendMessage(chatId, bumpBuilder.toString());
+		TelegramUtils.setMessageThreadId(sendMessage, message);
 		sendMessage.replyToMessageId(message.messageId());
 		sendMessage.parseMode(ParseMode.HTML);
 

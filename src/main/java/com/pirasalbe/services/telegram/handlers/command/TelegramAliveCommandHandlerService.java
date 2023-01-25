@@ -13,6 +13,7 @@ import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
+import com.pirasalbe.utils.TelegramUtils;
 
 /**
  * Service to manage /alive and /start
@@ -30,6 +31,7 @@ public class TelegramAliveCommandHandlerService extends AbstractTelegramHandlerS
 		Long chatId = update.message().chat().id();
 
 		SendMessage sendMessage = new SendMessage(chatId, "Bot up!");
+		TelegramUtils.setMessageThreadId(sendMessage, update.message());
 
 		boolean delete = update.message().chat().type() != Type.Private;
 		if (!delete) {

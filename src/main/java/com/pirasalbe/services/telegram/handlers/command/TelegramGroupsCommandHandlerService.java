@@ -58,6 +58,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 
 			SendMessage sendMessage = new SendMessage(chatId,
 					optional.isPresent() ? optional.get().toString() : ENABLE_THE_GROUP_FIRST);
+			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 
 			sendMessage(bot, update, sendMessage);
@@ -70,6 +71,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 
 			groupService.insertIfNotExists(chatId, update.message().chat().title());
 			SendMessage sendMessage = new SendMessage(chatId, "Group enabled");
+			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 
 			sendMessage(bot, update, sendMessage);
 		};
@@ -81,6 +83,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 
 			groupService.deleteIfExists(chatId);
 			SendMessage sendMessage = new SendMessage(chatId, "Group disabled");
+			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 
 			sendMessage(bot, update, sendMessage);
 		};
@@ -120,6 +123,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 			}
 
 			SendMessage sendMessage = new SendMessage(chatId, message);
+			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 
 			sendMessage(bot, update, sendMessage);
@@ -148,6 +152,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 			}
 
 			SendMessage sendMessage = new SendMessage(chatId, message);
+			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 
 			sendMessage(bot, update, sendMessage);
@@ -176,6 +181,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 			}
 
 			SendMessage sendMessage = new SendMessage(chatId, message);
+			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 
 			sendMessage(bot, update, sendMessage);
@@ -204,6 +210,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 			}
 
 			SendMessage sendMessage = new SendMessage(chatId, message);
+			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 
 			sendMessage(bot, update, sendMessage);
@@ -233,6 +240,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 			}
 
 			SendMessage sendMessage = new SendMessage(chatId, message);
+			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 
 			sendMessage(bot, update, sendMessage);
@@ -264,6 +272,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 			}
 
 			SendMessage sendMessage = new SendMessage(chatId, message);
+			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 
 			sendMessage(bot, update, sendMessage);

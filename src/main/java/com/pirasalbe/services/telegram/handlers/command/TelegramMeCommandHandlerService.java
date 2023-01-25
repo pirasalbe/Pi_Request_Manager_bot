@@ -65,6 +65,7 @@ public class TelegramMeCommandHandlerService extends AbstractTelegramHandlerServ
 		checkRequests(stringBuilder, userId, update.message().chat().id());
 
 		SendMessage sendMessage = new SendMessage(update.message().chat().id(), stringBuilder.toString());
+		TelegramUtils.setMessageThreadId(sendMessage, update.message());
 		sendMessage.replyToMessageId(messageId);
 		sendMessage.parseMode(ParseMode.HTML);
 

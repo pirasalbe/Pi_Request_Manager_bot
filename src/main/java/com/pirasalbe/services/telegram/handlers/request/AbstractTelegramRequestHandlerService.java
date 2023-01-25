@@ -172,6 +172,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		stringBuilder.append(TelegramUtils.tagUser(message));
 		stringBuilder.append(errorMessage);
 		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+		TelegramUtils.setMessageThreadId(sendMessage, message);
 		sendMessage.replyToMessageId(message.messageId());
 		sendMessage.parseMode(ParseMode.HTML);
 		sendMessage.disableWebPagePreview(true);
@@ -214,6 +215,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 			}
 
 			SendMessage sendMessage = new SendMessage(chatId, builder.toString());
+			TelegramUtils.setMessageThreadId(sendMessage, message);
 			sendMessage.parseMode(ParseMode.HTML);
 			bot.execute(sendMessage);
 
@@ -267,6 +269,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 			stringBuilder.append(TelegramUtils.tagUser(message));
 			stringBuilder.append(requestResult.getReason());
 			SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+			TelegramUtils.setMessageThreadId(sendMessage, message);
 			sendMessage.parseMode(ParseMode.HTML);
 
 			bot.execute(deleteMessage);

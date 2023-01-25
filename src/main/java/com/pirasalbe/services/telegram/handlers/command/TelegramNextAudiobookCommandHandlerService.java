@@ -72,6 +72,7 @@ public class TelegramNextAudiobookCommandHandlerService extends AbstractTelegram
 						+ RequestUtils.getComeBackAgain(commandDate, nextValidRequest);
 
 				SendMessage sendMessage = new SendMessage(groupId, text);
+				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
 
 				SendResponse response = bot.execute(sendMessage);

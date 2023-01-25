@@ -14,6 +14,7 @@ import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.AdminService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
+import com.pirasalbe.utils.TelegramUtils;
 
 /**
  * Service to manage /help
@@ -46,11 +47,12 @@ public class TelegramHelpCommandHandlerService extends AbstractTelegramHandlerSe
 			break;
 		case USER:
 		default:
-			message = getUserHelp(chatType);
+			message = getUserHelp();
 			break;
 		}
 
 		SendMessage sendMessage = new SendMessage(update.message().chat().id(), message);
+		TelegramUtils.setMessageThreadId(sendMessage, update.message());
 		sendMessage.parseMode(ParseMode.HTML);
 		sendMessage.disableWebPagePreview(true);
 
@@ -64,7 +66,7 @@ public class TelegramHelpCommandHandlerService extends AbstractTelegramHandlerSe
 		deleteMessage(bot, update.message(), delete);
 	}
 
-	private String getUserHelp(Type chatType) {
+	private String getUserHelp() {
 		StringBuilder message = new StringBuilder("<b>User help:</b>").append("\n");
 
 		message.append(TelegramMeCommandHandlerService.COMMAND).append(" - ").append("Show user's info").append("\n");
@@ -83,7 +85,7 @@ public class TelegramHelpCommandHandlerService extends AbstractTelegramHandlerSe
 
 		message.append("\n\n");
 
-		message.append(getUserHelp(chatType));
+		message.append(getUserHelp());
 
 		return message.toString();
 	}

@@ -121,11 +121,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	private boolean replyToMessage(Update update) {
 		return update.message() != null && update.message().replyToMessage() != null
-				&& !isThreadMessage(update.message().replyToMessage());
-	}
-
-	private boolean isThreadMessage(Message message) {
-		return message.messageId().equals(message.messageThreadId());
+				&& !TelegramUtils.isThreadMessage(update.message().replyToMessage());
 	}
 
 	private String getErrorMessage(String command) {
@@ -155,6 +151,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append(requestStatusMessage(link, success, "marked as pending"));
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
 
 				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.SECONDS);
@@ -180,6 +177,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append(requestStatusMessage(link, success, "marked as paused"));
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
 
 				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.SECONDS);
@@ -205,6 +203,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append(requestStatusMessage(link, success, "marked as in progress"));
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
 
 				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.SECONDS);
@@ -426,6 +425,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				StringBuilder notificationBuilder = new StringBuilder();
 				notificationBuilder.append(requestStatusMessage(link, success, "marked as done"));
 				SendMessage sendMessageNotification = new SendMessage(chatId, notificationBuilder.toString());
+				TelegramUtils.setMessageThreadId(sendMessageNotification, update.message());
 				sendMessageNotification.parseMode(ParseMode.HTML);
 
 				sendMessageAndDelete(bot, sendMessageNotification, 5, TimeUnit.SECONDS, true);
@@ -447,6 +447,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				.append("</code>");
 
 		SendMessage sendMessageReply = new SendMessage(chatId, replyBuilder.toString());
+		TelegramUtils.setMessageThreadId(sendMessageReply, update.message());
 		sendMessageReply.parseMode(ParseMode.HTML);
 
 		// reply to the request
@@ -522,6 +523,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append(requestStatusMessage(link, success, "marked as done"));
 				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
 
 				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.SECONDS);
@@ -627,6 +629,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				}
 
 				SendMessage sendMessage = new SendMessage(chatId, message);
+				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
 
 				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.SECONDS);
@@ -668,6 +671,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				}
 
 				SendMessage sendMessage = new SendMessage(chatId, message);
+				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
 
 				sendMessageAndDelete(bot, sendMessage, 5, TimeUnit.SECONDS);
@@ -739,6 +743,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				}
 
 				SendMessage sendMessage = new SendMessage(chatId, message);
+				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
 				sendMessage.disableWebPagePreview(true);
 
