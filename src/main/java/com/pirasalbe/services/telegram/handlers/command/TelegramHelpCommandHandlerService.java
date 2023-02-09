@@ -72,6 +72,9 @@ public class TelegramHelpCommandHandlerService extends AbstractTelegramHandlerSe
 		message.append(TelegramUserInfoCommandHandlerService.ME_COMMAND).append(" - ").append("Shows user's info")
 				.append("\n");
 
+		message.append(TelegramMyRequestsCommandHandlerService.COMMAND).append(" - ").append("Shows my requests")
+				.append("\n");
+
 		return message.toString();
 	}
 
