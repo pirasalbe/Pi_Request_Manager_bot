@@ -87,7 +87,7 @@ public class TelegramService {
 	private TelegramInfoCommandHandlerService infoCommandHandlerService;
 
 	@Autowired
-	private TelegramUserInfoCommandHandlerService meCommandHandlerService;
+	private TelegramUserInfoCommandHandlerService userInfoCommandHandlerService;
 
 	@Autowired
 	private TelegramMyRequestsCommandHandlerService myRequestsCommandHandlerService;
@@ -141,7 +141,7 @@ public class TelegramService {
 
 		// user info
 		bot.register(commandConditionFactory.onCommand(TelegramUserInfoCommandHandlerService.ME_COMMAND),
-				meCommandHandlerService.meHandler());
+				userInfoCommandHandlerService.meHandler());
 
 		// my_requests
 		bot.register(
@@ -358,7 +358,7 @@ public class TelegramService {
 		// user info
 		bot.register(Arrays.asList(groupChatCondition,
 				commandConditionFactory.onCommand(TelegramUserInfoCommandHandlerService.THEM_COMMAND),
-				replyToMessageCondition, contributorRoleCondition), meCommandHandlerService.themHandler());
+				replyToMessageCondition, contributorRoleCondition), userInfoCommandHandlerService.themHandler());
 
 		// done
 		bot.register(Arrays.asList(groupChatCondition,
