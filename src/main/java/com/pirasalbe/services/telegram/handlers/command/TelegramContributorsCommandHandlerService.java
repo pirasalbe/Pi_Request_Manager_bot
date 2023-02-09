@@ -39,6 +39,7 @@ import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.RequestManagementService;
 import com.pirasalbe.services.RequestService;
 import com.pirasalbe.services.telegram.TelegramCommandsService;
+import com.pirasalbe.services.telegram.conditions.TelegramReplyToMessageCondition;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramConditionUtils;
@@ -96,6 +97,9 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	public static final UserRole ROLE = UserRole.CONTRIBUTOR;
 
 	@Autowired
+	private TelegramReplyToMessageCondition replyToMessageCondition;
+
+	@Autowired
 	private TelegramCommandsService commandsService;
 
 	@Autowired
@@ -113,15 +117,6 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			SendMessage sendMessage = new SendMessage(chatId, "Refreshing commands in progress.");
 			bot.execute(sendMessage);
 		};
-	}
-
-	public TelegramCondition replyToMessageCondition() {
-		return this::replyToMessage;
-	}
-
-	private boolean replyToMessage(Update update) {
-		return update.message() != null && update.message().replyToMessage() != null
-				&& !TelegramUtils.isThreadMessage(update.message().replyToMessage());
 	}
 
 	private String getErrorMessage(String command) {
@@ -464,7 +459,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	}
 
 	public TelegramCondition replyToMessageWithFileCondition() {
-		return update -> replyToMessage(update) && isFile(update);
+		return update -> replyToMessageCondition.check(update) && isFile(update);
 	}
 
 	public TelegramCondition fileCondition() {
