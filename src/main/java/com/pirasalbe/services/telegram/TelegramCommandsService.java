@@ -78,6 +78,8 @@ public class TelegramCommandsService {
 		/*
 		 * Contributors commands
 		 */
+		BotCommand them = new BotCommand("them", "Shows another user info");
+
 		BotCommand requests = new BotCommand("requests", "See the requests. Supports filters.");
 
 		BotCommand show = new BotCommand("show", "Shows a request.");
@@ -109,8 +111,8 @@ public class TelegramCommandsService {
 
 		contributorsCommandsPM = new SetMyCommands(start, alive, help, me, myRequests, requests, configureChannel,
 				disableChannel, configureChannels, refreshChannel, stats, trending);
-		contributorsCommandsGroup = new SetMyCommands(start, alive, help, me, requests, show, done, sdone, pending,
-				acceptRequest, pause, inProgress, cancel, remove, nextAudiobook);
+		contributorsCommandsGroup = new SetMyCommands(start, alive, help, me, them, requests, show, done, sdone,
+				pending, acceptRequest, pause, inProgress, cancel, remove, nextAudiobook);
 
 		/*
 		 * Manager commands
@@ -136,7 +138,7 @@ public class TelegramCommandsService {
 
 		managersCommandsPM = new SetMyCommands(start, alive, help, me, myRequests, requests, configureChannel,
 				disableChannel, configureChannels, refreshChannel, stats, trending);
-		managersCommandsGroup = new SetMyCommands(start, alive, help, me, groupInfo, enableGroup, disableGroup,
+		managersCommandsGroup = new SetMyCommands(start, alive, help, me, them, groupInfo, enableGroup, disableGroup,
 				requestLimit, nonenglishAudiobooksDaysWait, englishAudiobooksDaysWait, repeatHoursWait, allow, noRepeat,
 				requests, show, done, sdone, pending, acceptRequest, pause, inProgress, cancel, remove, nextAudiobook);
 
