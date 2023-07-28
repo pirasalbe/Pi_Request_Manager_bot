@@ -84,7 +84,7 @@ public class TelegramUserInfoCommandHandlerService extends AbstractTelegramHandl
 
 		boolean delete = message.chat().type() != Type.Private;
 
-		sendMessageAndDelete(bot, sendMessage, 10, TimeUnit.SECONDS, delete);
+		sendMessageAndDelete(bot, sendMessage, 90, TimeUnit.SECONDS, delete);
 		deleteMessage(bot, message, delete);
 	}
 
