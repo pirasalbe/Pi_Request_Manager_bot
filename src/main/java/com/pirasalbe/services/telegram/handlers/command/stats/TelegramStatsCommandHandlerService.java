@@ -50,6 +50,7 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramStatsCom
 		Optional<Format> format = TelegramConditionUtils.getFormat(text);
 		Optional<Source> source = TelegramConditionUtils.getSource(text);
 		Optional<String> otherTags = TelegramConditionUtils.getOtherTags(text);
+		Optional<Integer> year = TelegramConditionUtils.getYear(text);
 
 		// count
 		AtomicLong requestCount = new AtomicLong();
@@ -143,7 +144,7 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramStatsCom
 		sendStats(chatId, "Requests by Group", requestByGroup, groupNames::get, filteredCount);
 		sendStats(chatId, "Contributions", requestByContributors, adminNames::get, filteredCount);
 
-		sendStatsByDate(chatId, requestAndFulfillmentPerDay);
+		sendStatsByDate(chatId, requestAndFulfillmentPerDay, year.orElse(DateUtils.getNow().getYear()));
 	}
 
 	private <K> void sendStats(Long chatId, String title, Map<K, AtomicLong> map, Function<K, String> keyToString,
@@ -181,18 +182,20 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramStatsCom
 		}
 	}
 
-	private void sendStatsByDate(Long chatId, Map<LocalDate, MultipleCounter> map) {
+	private void sendStatsByDate(Long chatId, Map<LocalDate, MultipleCounter> map, int year) {
 
 		StringBuilder headerBuilder = new StringBuilder();
-		headerBuilder.append("<b>").append("Requests requested/fulfilled per day").append("</b>\n\n");
+		headerBuilder.append("<b>").append("Requests requested/fulfilled per day").append("</b>");
+		headerBuilder.append(" in ").append(year).append("\n\n");
 		String header = headerBuilder.toString();
 
 		StringBuilder builder = new StringBuilder(header);
 
-		List<Entry<LocalDate, MultipleCounter>> entrySet = new ArrayList<>(map.entrySet());
-		entrySet.sort((a, b) -> b.getKey().compareTo(a.getKey()));
+		Iterator<Entry<LocalDate, MultipleCounter>> iterator = map.entrySet().stream()
+				.filter(item -> item.getKey().getYear() == year).sorted((a, b) -> b.getKey().compareTo(a.getKey()))
+				.iterator();
 
-		Iterator<Entry<LocalDate, MultipleCounter>> iterator = entrySet.iterator();
+		int month = DateUtils.getNow().getMonthValue();
 		while (iterator.hasNext()) {
 			Entry<LocalDate, MultipleCounter> entry = iterator.next();
 
@@ -203,8 +206,9 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramStatsCom
 
 			String requestText = requestBuilder.toString();
 
-			// if length is > message limit, send current text
-			if (builder.length() + requestText.length() > 4096) {
+			// if it's a different month or length is > message limit, send current text
+			int requestMonth = entry.getKey().getMonthValue();
+			if (requestMonth != month || builder.length() + requestText.length() > 4096) {
 				sendMessage(chatId, builder.toString());
 				builder = new StringBuilder(header);
 			}
@@ -213,6 +217,7 @@ public class TelegramStatsCommandHandlerService extends AbstractTelegramStatsCom
 			if (!iterator.hasNext()) {
 				sendMessage(chatId, builder.toString());
 			}
+			month = requestMonth;
 		}
 
 	}
