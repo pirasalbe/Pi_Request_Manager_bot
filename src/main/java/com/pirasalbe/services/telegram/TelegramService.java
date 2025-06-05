@@ -15,6 +15,7 @@ import com.pirasalbe.services.telegram.conditions.TelegramCallbackQueryCondition
 import com.pirasalbe.services.telegram.conditions.TelegramChatConditionFactory;
 import com.pirasalbe.services.telegram.conditions.TelegramCommandConditionFactory;
 import com.pirasalbe.services.telegram.conditions.TelegramReplyToCommandConditionFactory;
+import com.pirasalbe.services.telegram.conditions.TelegramReplyToMessageCondition;
 import com.pirasalbe.services.telegram.conditions.TelegramRoleConditionFactory;
 import com.pirasalbe.services.telegram.handlers.command.TelegramAliveCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramChannelCommandHandlerService;
@@ -22,14 +23,17 @@ import com.pirasalbe.services.telegram.handlers.command.TelegramContributorsComm
 import com.pirasalbe.services.telegram.handlers.command.TelegramDeleteCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramGroupsCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramHelpCommandHandlerService;
-import com.pirasalbe.services.telegram.handlers.command.TelegramMeCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.command.TelegramInfoCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramMyRequestsCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramNextAudiobookCommandHandlerService;
-import com.pirasalbe.services.telegram.handlers.command.TelegramStatsCommandHandlerService;
 import com.pirasalbe.services.telegram.handlers.command.TelegramSuperAdminCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.command.TelegramUserInfoCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.command.stats.AbstractTelegramStatsCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.command.stats.TelegramStatsCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.command.stats.TelegramTrendingCommandHandlerService;
+import com.pirasalbe.services.telegram.handlers.request.TelegramAcceptRequestHandlerService;
 import com.pirasalbe.services.telegram.handlers.request.TelegramBumpRequestHandlerService;
 import com.pirasalbe.services.telegram.handlers.request.TelegramNewRequestHandlerService;
-import com.pirasalbe.services.telegram.handlers.request.TelegramUpdateRequestHandlerService;
 
 /**
  * Service to manage the telegram logic
@@ -46,6 +50,9 @@ public class TelegramService {
 	/*
 	 * CONDITIONS
 	 */
+
+	@Autowired
+	private TelegramReplyToMessageCondition replyToMessageCondition;
 
 	@Autowired
 	private TelegramChatConditionFactory chatConditionFactory;
@@ -77,7 +84,10 @@ public class TelegramService {
 	private TelegramAliveCommandHandlerService aliveCommandHandlerService;
 
 	@Autowired
-	private TelegramMeCommandHandlerService meCommandHandlerService;
+	private TelegramInfoCommandHandlerService infoCommandHandlerService;
+
+	@Autowired
+	private TelegramUserInfoCommandHandlerService userInfoCommandHandlerService;
 
 	@Autowired
 	private TelegramMyRequestsCommandHandlerService myRequestsCommandHandlerService;
@@ -95,7 +105,7 @@ public class TelegramService {
 	private TelegramNewRequestHandlerService newRequestHandlerService;
 
 	@Autowired
-	private TelegramUpdateRequestHandlerService updateRequestHandlerService;
+	private TelegramAcceptRequestHandlerService acceptRequestHandlerService;
 
 	@Autowired
 	private TelegramBumpRequestHandlerService bumpRequestHandlerService;
@@ -108,6 +118,9 @@ public class TelegramService {
 
 	@Autowired
 	private TelegramStatsCommandHandlerService statsCommandHandlerService;
+
+	@Autowired
+	private TelegramTrendingCommandHandlerService trendingCommandHandlerService;
 
 	@Autowired
 	private TelegramDeleteCommandHandlerService deleteCommandHandlerService;
@@ -126,9 +139,9 @@ public class TelegramService {
 		bot.register(commandConditionFactory.onCommands(TelegramAliveCommandHandlerService.COMMANDS, false),
 				aliveCommandHandlerService);
 
-		// me
-		bot.register(commandConditionFactory.onCommand(TelegramMeCommandHandlerService.COMMAND),
-				meCommandHandlerService);
+		// user info
+		bot.register(commandConditionFactory.onCommand(TelegramUserInfoCommandHandlerService.ME_COMMAND),
+				userInfoCommandHandlerService.meHandler());
 
 		// my_requests
 		bot.register(
@@ -152,12 +165,7 @@ public class TelegramService {
 		registerContributorsHandlers();
 
 		// stats
-		bot.register(
-				Arrays.asList(
-						chatConditionFactory.onChatTypes(Arrays.asList(Type.Private, Type.group, Type.supergroup)),
-						commandConditionFactory.onCommand(TelegramStatsCommandHandlerService.COMMAND),
-						roleConditionFactory.onRole(TelegramStatsCommandHandlerService.ROLE)),
-				statsCommandHandlerService);
+		registerStatsHandlers();
 
 		// remove all commands
 		bot.register(deleteCommandHandlerService, deleteCommandHandlerService);
@@ -169,6 +177,11 @@ public class TelegramService {
 		TelegramCondition superAdminChatCondition = chatConditionFactory.onChatType(Type.Private);
 		TelegramCondition superAdminRoleCondition = roleConditionFactory
 				.onRole(TelegramSuperAdminCommandHandlerService.ROLE);
+
+		// info
+		bot.register(Arrays.asList(superAdminChatCondition,
+				commandConditionFactory.onCommand(TelegramInfoCommandHandlerService.COMMAND, false),
+				superAdminRoleCondition), infoCommandHandlerService);
 
 		// main command
 		bot.register(Arrays.asList(superAdminChatCondition,
@@ -251,6 +264,13 @@ public class TelegramService {
 						TelegramGroupsCommandHandlerService.COMMAND_ENGLISH_AUDIOBOOK_DAYS_WAIT),
 				groupRoleCondition), groupsCommandHandlerService.updateEnglishAudiobooksDaysWait());
 
+		bot.register(
+				Arrays.asList(groupChatCondition,
+						commandConditionFactory.onCommand(
+								TelegramGroupsCommandHandlerService.COMMAND_REPEAT_HOURS_WAIT),
+						groupRoleCondition),
+				groupsCommandHandlerService.updateRepeatHoursWait());
+
 		bot.register(Arrays.asList(groupChatCondition,
 				commandConditionFactory.onCommand(TelegramGroupsCommandHandlerService.COMMAND_ALLOW),
 				groupRoleCondition), groupsCommandHandlerService.updateAllow());
@@ -293,10 +313,33 @@ public class TelegramService {
 				channelRoleCondition), channelCommandHandlerService.refreshChannel());
 	}
 
+	private void registerStatsHandlers() {
+		TelegramCondition chatTypes = chatConditionFactory
+				.onChatTypes(Arrays.asList(Type.Private, Type.group, Type.supergroup));
+
+		bot.register(
+				Arrays.asList(chatTypes, commandConditionFactory.onCommand(TelegramStatsCommandHandlerService.COMMAND),
+						roleConditionFactory.onRole(AbstractTelegramStatsCommandHandlerService.ROLE)),
+				statsCommandHandlerService);
+
+		bot.register(
+				Arrays.asList(chatTypes,
+						commandConditionFactory.onCommand(TelegramTrendingCommandHandlerService.COMMAND),
+						roleConditionFactory.onRole(AbstractTelegramStatsCommandHandlerService.ROLE)),
+				trendingCommandHandlerService);
+	}
+
 	private void registerRequestsHandlers() {
+		TelegramCondition contributorRoleCondition = roleConditionFactory
+				.onRole(TelegramAcceptRequestHandlerService.ROLE);
+
 		bot.register(newRequestHandlerService.getCondition(), newRequestHandlerService);
-		bot.register(updateRequestHandlerService.getCondition(), updateRequestHandlerService);
 		bot.register(bumpRequestHandlerService.getCondition(), bumpRequestHandlerService);
+
+		bot.register(
+				Arrays.asList(commandConditionFactory.onCommand(TelegramAcceptRequestHandlerService.COMMAND),
+						acceptRequestHandlerService.getCondition(), contributorRoleCondition),
+				acceptRequestHandlerService);
 	}
 
 	private void registerContributorsHandlers() {
@@ -312,6 +355,11 @@ public class TelegramService {
 				commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_REFRESH_COMMANDS),
 				contributorRoleCondition), contributorsCommandHandlerService.refreshCommands());
 
+		// user info
+		bot.register(Arrays.asList(groupChatCondition,
+				commandConditionFactory.onCommand(TelegramUserInfoCommandHandlerService.THEM_COMMAND),
+				replyToMessageCondition, contributorRoleCondition), userInfoCommandHandlerService.themHandler());
+
 		// done
 		bot.register(Arrays.asList(groupChatCondition,
 				contributorsCommandHandlerService.replyToMessageWithFileCondition(), contributorRoleCondition),
@@ -323,13 +371,13 @@ public class TelegramService {
 		bot.register(
 				Arrays.asList(groupChatCondition,
 						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_DONE),
-						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
+						replyToMessageCondition, contributorRoleCondition),
 				contributorsCommandHandlerService.markDone());
 		bot.register(
 				Arrays.asList(groupChatCondition,
 						commandConditionFactory
 								.onCommand(TelegramContributorsCommandHandlerService.COMMAND_SILENT_DONE),
-						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
+						replyToMessageCondition, contributorRoleCondition),
 				contributorsCommandHandlerService.markDoneSilently());
 
 		// requests
@@ -362,14 +410,14 @@ public class TelegramService {
 		bot.register(
 				Arrays.asList(groupChatCondition,
 						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_PENDING),
-						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
+						replyToMessageCondition, contributorRoleCondition),
 				contributorsCommandHandlerService.markPending());
 
 		// pause
 		bot.register(
 				Arrays.asList(groupChatCondition,
 						commandConditionFactory.onCommand(TelegramContributorsCommandHandlerService.COMMAND_PAUSE),
-						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
+						replyToMessageCondition, contributorRoleCondition),
 				contributorsCommandHandlerService.markPaused());
 
 		// penging
@@ -377,7 +425,7 @@ public class TelegramService {
 				Arrays.asList(groupChatCondition,
 						commandConditionFactory
 								.onCommand(TelegramContributorsCommandHandlerService.COMMAND_IN_PROGRESS),
-						contributorsCommandHandlerService.replyToMessageCondition(), contributorRoleCondition),
+						replyToMessageCondition, contributorRoleCondition),
 				contributorsCommandHandlerService.markInProgress());
 
 		// cancel

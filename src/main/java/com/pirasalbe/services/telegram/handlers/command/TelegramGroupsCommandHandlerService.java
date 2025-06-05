@@ -36,6 +36,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 	public static final String COMMAND_REQUEST_LIMIT = "/request_limit";
 	public static final String COMMAND_NONENGLISH_AUDIOBOOK_DAYS_WAIT = "/nonenglish_audiobooks_days_wait";
 	public static final String COMMAND_ENGLISH_AUDIOBOOK_DAYS_WAIT = "/english_audiobooks_days_wait";
+	public static final String COMMAND_REPEAT_HOURS_WAIT = "/repeat_hours_wait";
 	public static final String COMMAND_ALLOW = "/allow";
 	public static final String COMMAND_NO_REPEAT = "/no_repeat";
 
@@ -57,6 +58,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 
 			SendMessage sendMessage = new SendMessage(chatId,
 					optional.isPresent() ? optional.get().toString() : ENABLE_THE_GROUP_FIRST);
+			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 
 			sendMessage(bot, update, sendMessage);
@@ -69,6 +71,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 
 			groupService.insertIfNotExists(chatId, update.message().chat().title());
 			SendMessage sendMessage = new SendMessage(chatId, "Group enabled");
+			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 
 			sendMessage(bot, update, sendMessage);
 		};
@@ -80,6 +83,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 
 			groupService.deleteIfExists(chatId);
 			SendMessage sendMessage = new SendMessage(chatId, "Group disabled");
+			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 
 			sendMessage(bot, update, sendMessage);
 		};
@@ -119,6 +123,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 			}
 
 			SendMessage sendMessage = new SendMessage(chatId, message);
+			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 
 			sendMessage(bot, update, sendMessage);
@@ -147,6 +152,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 			}
 
 			SendMessage sendMessage = new SendMessage(chatId, message);
+			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 
 			sendMessage(bot, update, sendMessage);
@@ -175,6 +181,36 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 			}
 
 			SendMessage sendMessage = new SendMessage(chatId, message);
+			TelegramUtils.setMessageThreadId(sendMessage, update.message());
+			sendMessage.parseMode(ParseMode.HTML);
+
+			sendMessage(bot, update, sendMessage);
+		};
+	}
+
+	public TelegramHandler updateRepeatHoursWait() {
+		return (bot, update) -> {
+			Long chatId = TelegramUtils.getChatId(update);
+			String text = update.message().text();
+
+			String message = null;
+
+			String[] parts = text.split(" ");
+			if (parts.length == 2) {
+				int hoursWait = Integer.parseInt(parts[1]);
+				boolean updateSuccess = groupService.updateRepeatHoursWait(chatId, hoursWait);
+
+				if (updateSuccess) {
+					message = "Updated hours to wait to repeat a request to <b>" + hoursWait + "</b>";
+				} else {
+					message = ENABLE_THE_GROUP_FIRST;
+				}
+			} else {
+				message = rightFormatMessage(COMMAND_REPEAT_HOURS_WAIT, "number of hours to wait");
+			}
+
+			SendMessage sendMessage = new SendMessage(chatId, message);
+			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 
 			sendMessage(bot, update, sendMessage);
@@ -204,6 +240,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 			}
 
 			SendMessage sendMessage = new SendMessage(chatId, message);
+			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 
 			sendMessage(bot, update, sendMessage);
@@ -235,6 +272,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 			}
 
 			SendMessage sendMessage = new SendMessage(chatId, message);
+			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 
 			sendMessage(bot, update, sendMessage);

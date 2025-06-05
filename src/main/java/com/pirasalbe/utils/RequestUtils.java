@@ -300,13 +300,12 @@ public class RequestUtils {
 		return messageBuilder.toString();
 	}
 
-	private static String getUser(TelegramBot bot, Long groupId, Long userId) {
+	public static String getUser(TelegramBot bot, Long groupId, Long userId) {
 		String username = null;
 
 		if (userNames.containsKey(userId)) {
 			username = userNames.get(userId);
 		} else {
-
 			GetChatMember getChatMember = new GetChatMember(groupId, userId);
 			GetChatMemberResponse member = bot.execute(getChatMember);
 
@@ -384,12 +383,22 @@ public class RequestUtils {
 		return callbackBuilder.toString();
 	}
 
-	private static String getActionCallback(Long messageId, Long groupId, ContributorAction action) {
-		return getActionCallback(messageId, groupId, action, Optional.empty(), Optional.empty());
+	public static String getActionCallback(Long messageId, Long groupId, ContributorAction action) {
+		return getActionCallback(messageId, groupId, action, false);
+	}
+
+	public static String getActionCallback(Long messageId, Long groupId, ContributorAction action,
+			boolean forceDelete) {
+		return getActionCallback(messageId, groupId, action, Optional.empty(), Optional.empty(), forceDelete);
 	}
 
 	public static String getActionCallback(Long messageId, Long groupId, ContributorAction action,
 			Optional<Long> refreshMessage, Optional<Long> refreshChat) {
+		return getActionCallback(messageId, groupId, action, refreshMessage, refreshChat, false);
+	}
+
+	public static String getActionCallback(Long messageId, Long groupId, ContributorAction action,
+			Optional<Long> refreshMessage, Optional<Long> refreshChat, boolean forceDelete) {
 		StringBuilder callbackBuilder = new StringBuilder();
 
 		callbackBuilder.append(action.getCode());
@@ -401,6 +410,11 @@ public class RequestUtils {
 			callbackBuilder.append(TelegramConditionUtils.REFRESH_SHOW_MESSAGE_CONDITION).append(refreshMessage.get());
 			callbackBuilder.append(" ");
 			callbackBuilder.append(TelegramConditionUtils.REFRESH_SHOW_CHAT_CONDITION).append(refreshChat.get());
+		}
+
+		if (forceDelete) {
+			callbackBuilder.append(" ");
+			callbackBuilder.append(ContributorAction.FORCE_DELETE);
 		}
 
 		return callbackBuilder.toString();

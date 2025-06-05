@@ -24,7 +24,9 @@ import com.pengrad.telegrambot.response.BaseResponse;
 import com.pengrad.telegrambot.response.SendResponse;
 import com.pirasalbe.configurations.TelegramConfiguration;
 import com.pirasalbe.models.ChannelRuleType;
+import com.pirasalbe.models.LogEvent;
 import com.pirasalbe.models.SyncRequest;
+import com.pirasalbe.models.Validation;
 import com.pirasalbe.models.database.Channel;
 import com.pirasalbe.models.database.ChannelRequest;
 import com.pirasalbe.models.database.ChannelRule;
@@ -34,6 +36,7 @@ import com.pirasalbe.models.database.RequestPK;
 import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
 import com.pirasalbe.services.telegram.TelegramBotService;
+import com.pirasalbe.services.telegram.TelegramLogService;
 import com.pirasalbe.services.telegram.TelegramUserBotService;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramUtils;
@@ -57,6 +60,9 @@ public class ChannelForwardingService {
 
 	@Autowired
 	private TelegramConfiguration configuration;
+
+	@Autowired
+	private TelegramLogService logService;
 
 	@Autowired
 	private ChannelService channelService;
@@ -261,6 +267,14 @@ public class ChannelForwardingService {
 		return result;
 	}
 
+	private String getLogRequestLink(Long groupId, Long messageId) {
+		StringBuilder builder = new StringBuilder();
+
+		builder.append("<a href='").append(TelegramUtils.getLink(groupId, messageId)).append("'>request</a>");
+
+		return builder.toString();
+	}
+
 	private Long forwardRequest(Long channelId, Request request, String groupName) {
 		String message = RequestUtils.getRequestInfo(bot, groupName, request);
 
@@ -281,9 +295,18 @@ public class ChannelForwardingService {
 			LOGGER.debug("Request {} forwarded to channel {} successfully with messageId {}", request.getId(),
 					channelId, messageId);
 		} else {
+
 			String responseDescription = sendResponse.description();
 			LOGGER.error("Error forwarding request {} to channel {}: {}", request.getId(), channelId,
 					responseDescription);
+
+			StringBuilder builder = new StringBuilder("Error forwarding ");
+			builder.append(getLogRequestLink(request.getId().getGroupId(), request.getId().getMessageId()));
+			builder.append(" to ");
+			builder.append("<a href='").append(TelegramUtils.getLink(channelId, 1l)).append("'>channel</a> ");
+			builder.append("[<code>").append(channelId);
+			builder.append("</code>]: ").append(responseDescription);
+			logService.log(new LogEvent(builder.toString()));
 		}
 
 		return messageId;
@@ -320,10 +343,10 @@ public class ChannelForwardingService {
 	private void deleteMessageWithUserBot(Long channelId, Long messageId) {
 		Result<MessageLinkInfo> messageInfo = userBotService.getMessageId(channelId, messageId);
 
+		Validation<String> validation = null;
+
 		if (messageInfo.isError()) {
-			LOGGER.error("Cannot get userBot messageId for request {} from channel {} with errors {}", messageId,
-					channelId, messageInfo.getError());
-			deleteMessageWithBot(channelId, messageId);
+			validation = Validation.invalid("Cannot get userBot messageId, " + messageInfo.getError());
 		} else if (messageInfo.get().message != null && messageInfo.get().message.canBeDeletedForAllUsers) {
 			// read the id
 			long id = messageInfo.get().message.id;
@@ -333,18 +356,25 @@ public class ChannelForwardingService {
 					.sendSync(new TdApi.DeleteMessages(channelId, new long[] { id }, true));
 
 			if (deleteResult.isError()) {
-				LOGGER.error("Error deleting request {} with userbot from channel {} with errors {}", messageId,
-						channelId, deleteResult.getError());
-
-				deleteMessageWithBot(channelId, messageId);
+				validation = Validation.invalid(deleteResult.getError().toString());
 			} else {
 				LOGGER.debug("Request with messageId {} with userBot in channel {} deleted successfully", messageId,
 						channelId);
+				validation = Validation.valid();
 			}
 		} else {
-			LOGGER.error(
-					"Error deleting request {} with userbot from channel {} because not allowed to delete for all users",
-					messageId, channelId);
+			validation = Validation.invalid("not allowed to delete for all users");
+		}
+
+		// delete with bot
+		if (!validation.isValid()) {
+			LOGGER.error("Error deleting request {} with userbot from channel {} with errors {}", messageId, channelId,
+					validation.getReason());
+
+			StringBuilder builder = new StringBuilder("Error deleting ");
+			builder.append(getLogRequestLink(channelId, messageId));
+			builder.append(" using userBot with errors ").append(validation.getReason());
+			logService.log(new LogEvent(builder.toString()));
 
 			deleteMessageWithBot(channelId, messageId);
 		}
@@ -359,6 +389,11 @@ public class ChannelForwardingService {
 			String responseDescription = response.description();
 			LOGGER.error("Error deleting request {} from channel {} with errors {}", messageId, channelId,
 					responseDescription);
+
+			StringBuilder builder = new StringBuilder("Error deleting ");
+			builder.append(getLogRequestLink(channelId, messageId));
+			builder.append(" with errors ").append(responseDescription);
+			logService.log(new LogEvent(builder.toString()));
 		}
 	}
 

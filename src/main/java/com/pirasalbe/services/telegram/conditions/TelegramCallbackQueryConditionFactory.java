@@ -1,6 +1,6 @@
 package com.pirasalbe.services.telegram.conditions;
 
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 
 import org.springframework.stereotype.Component;
 
@@ -23,14 +23,14 @@ public class TelegramCallbackQueryConditionFactory {
 
 		MATCHES((callbackQuery, data) -> data.matches(callbackQuery));
 
-		private BiFunction<String, String, Boolean> function;
+		private BiPredicate<String, String> predicate;
 
-		private Condition(BiFunction<String, String, Boolean> function) {
-			this.function = function;
+		private Condition(BiPredicate<String, String> function) {
+			this.predicate = function;
 		}
 
 		boolean assertCondition(String callbackQuery, String data) {
-			return this.function.apply(callbackQuery, data);
+			return this.predicate.test(callbackQuery, data);
 		}
 	}
 

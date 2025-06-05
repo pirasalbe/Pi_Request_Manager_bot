@@ -31,6 +31,9 @@ public class Group {
 	@Column(name = "ENGLISH_AUDIOBOOKS_DAYS_WAIT")
 	private Integer englishAudiobooksDaysWait;
 
+	@Column(name = "REPEAT_HOURS_WAIT")
+	private Integer repeatHoursWait;
+
 	@Column(name = "ALLOW_EBOOKS")
 	private boolean allowEbooks;
 
@@ -84,6 +87,14 @@ public class Group {
 		this.englishAudiobooksDaysWait = englishAudiobooksDaysWait;
 	}
 
+	public Integer getRepeatHoursWait() {
+		return repeatHoursWait;
+	}
+
+	public void setRepeatHoursWait(Integer repeatHoursWait) {
+		this.repeatHoursWait = repeatHoursWait;
+	}
+
 	public boolean isAllowEbooks() {
 		return allowEbooks;
 	}
@@ -120,6 +131,7 @@ public class Group {
 				.append(END_OF_LINE_TO_STRING);
 		builder.append("Days to wait to request a new English audiobook: <i>").append(englishAudiobooksDaysWait)
 				.append(END_OF_LINE_TO_STRING);
+		builder.append("Hours to wait to bump a request: <i>").append(repeatHoursWait).append(END_OF_LINE_TO_STRING);
 		builder.append("Can request ebooks: <i>").append(allowEbooks).append(END_OF_LINE_TO_STRING);
 		builder.append("Can request audiobooks: <i>").append(allowAudiobooks).append(END_OF_LINE_TO_STRING);
 		builder.append("Forbid repeated requests for: <i>").append(noRepeat).append("</i>");

@@ -8,7 +8,21 @@ package com.pirasalbe.models;
  */
 public class RequestResult {
 	public enum Result {
-		NEW, REPEATED_REQUEST, REQUEST_REPEATED_TOO_EARLY, CANNOT_REPEAT_REQUEST;
+		NEW(true), REPEATED_REQUEST(true), REQUEST_REPEATED_TOO_EARLY, CANNOT_REPEAT_REQUEST, DIFFERENT_GROUP;
+
+		private boolean ok;
+
+		private Result(boolean ok) {
+			this.ok = ok;
+		}
+
+		private Result() {
+			this(false);
+		}
+
+		public boolean isOk() {
+			return ok;
+		}
 	}
 
 	private Result result;

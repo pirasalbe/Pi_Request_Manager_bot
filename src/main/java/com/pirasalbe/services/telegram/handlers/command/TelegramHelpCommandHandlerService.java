@@ -14,6 +14,7 @@ import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.AdminService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
+import com.pirasalbe.utils.TelegramUtils;
 
 /**
  * Service to manage /help
@@ -46,11 +47,12 @@ public class TelegramHelpCommandHandlerService extends AbstractTelegramHandlerSe
 			break;
 		case USER:
 		default:
-			message = getUserHelp(chatType);
+			message = getUserHelp();
 			break;
 		}
 
 		SendMessage sendMessage = new SendMessage(update.message().chat().id(), message);
+		TelegramUtils.setMessageThreadId(sendMessage, update.message());
 		sendMessage.parseMode(ParseMode.HTML);
 		sendMessage.disableWebPagePreview(true);
 
@@ -64,10 +66,14 @@ public class TelegramHelpCommandHandlerService extends AbstractTelegramHandlerSe
 		deleteMessage(bot, update.message(), delete);
 	}
 
-	private String getUserHelp(Type chatType) {
+	private String getUserHelp() {
 		StringBuilder message = new StringBuilder("<b>User help:</b>").append("\n");
 
-		message.append(TelegramMeCommandHandlerService.COMMAND).append(" - ").append("Show user's info").append("\n");
+		message.append(TelegramUserInfoCommandHandlerService.ME_COMMAND).append(" - ").append("Shows user's info")
+				.append("\n");
+
+		message.append(TelegramMyRequestsCommandHandlerService.COMMAND).append(" - ").append("Shows my requests")
+				.append("\n");
 
 		return message.toString();
 	}
@@ -83,7 +89,7 @@ public class TelegramHelpCommandHandlerService extends AbstractTelegramHandlerSe
 
 		message.append("\n\n");
 
-		message.append(getUserHelp(chatType));
+		message.append(getUserHelp());
 
 		return message.toString();
 	}
@@ -97,7 +103,9 @@ public class TelegramHelpCommandHandlerService extends AbstractTelegramHandlerSe
 			message.append(TelegramSuperAdminCommandHandlerService.COMMAND_ADD).append(" [id name <code>")
 					.append(UserRole.getRoles()).append("</code>]").append(" - ").append("Add admin\n");
 			message.append(TelegramSuperAdminCommandHandlerService.COMMAND_REMOVE).append(" [id]").append(" - ")
-					.append("Remove admin");
+					.append("Remove admin\n\n");
+
+			message.append(TelegramInfoCommandHandlerService.COMMAND).append(" - ").append("Show bot info");
 		} else {
 			message.append("Go in PM to see your available commands.");
 		}

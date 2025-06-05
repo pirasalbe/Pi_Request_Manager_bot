@@ -8,6 +8,7 @@ import com.pengrad.telegrambot.model.MessageEntity;
 import com.pengrad.telegrambot.model.MessageEntity.Type;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.User;
+import com.pengrad.telegrambot.request.SendMessage;
 
 /**
  * Utility methods for Telegram
@@ -237,6 +238,13 @@ public class TelegramUtils {
 		return getLink(groupId.toString(), messageId.toString());
 	}
 
+	private static String fixGroupId(String groupId) {
+		if (groupId.startsWith("-100")) {
+			groupId = groupId.substring(4);
+		}
+		return groupId;
+	}
+
 	/**
 	 * Get a link to a message
 	 *
@@ -245,9 +253,7 @@ public class TelegramUtils {
 	 * @return link
 	 */
 	public static String getLink(String groupId, String messageId) {
-		if (groupId.startsWith("-100")) {
-			groupId = groupId.substring(4);
-		}
+		groupId = fixGroupId(groupId);
 
 		return "https://t.me/c/" + groupId + "/" + messageId;
 	}
@@ -306,6 +312,16 @@ public class TelegramUtils {
 			LOGGER.warn("Could not sleep to prevent request limit", e);
 		}
 		LOGGER.debug("End cooldown period");
+	}
+
+	public static boolean isThreadMessage(Message message) {
+		return Boolean.TRUE.equals(message.isTopicMessage()) && message.messageId().equals(message.messageThreadId());
+	}
+
+	public static void setMessageThreadId(SendMessage sendMessage, Message message) {
+		if (Boolean.TRUE.equals(message.isTopicMessage()) && message.messageThreadId() != null) {
+			sendMessage.messageThreadId(message.messageThreadId());
+		}
 	}
 
 }

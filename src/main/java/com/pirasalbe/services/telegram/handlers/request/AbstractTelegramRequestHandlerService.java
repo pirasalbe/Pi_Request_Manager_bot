@@ -11,12 +11,16 @@ import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.ChatPermissions;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
+import com.pengrad.telegrambot.model.User;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.RestrictChatMember;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.BaseResponse;
 import com.pirasalbe.configurations.ErrorConfiguration;
+import com.pirasalbe.configurations.TelegramConfiguration;
+import com.pirasalbe.models.LogEvent;
+import com.pirasalbe.models.LogEventMessage;
 import com.pirasalbe.models.NextValidRequest;
 import com.pirasalbe.models.RequestResult;
 import com.pirasalbe.models.Validation;
@@ -27,6 +31,7 @@ import com.pirasalbe.models.telegram.handlers.TelegramCondition;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.GroupService;
 import com.pirasalbe.services.RequestManagementService;
+import com.pirasalbe.services.telegram.TelegramLogService;
 import com.pirasalbe.utils.DateUtils;
 import com.pirasalbe.utils.RequestUtils;
 import com.pirasalbe.utils.TelegramUtils;
@@ -51,7 +56,13 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 			ARCHIVE_TAG, STORYTEL_TAG, SCRIBD_TAG);
 
 	@Autowired
+	protected TelegramConfiguration telegramConfiguration;
+
+	@Autowired
 	protected ErrorConfiguration errorConfiguration;
+
+	@Autowired
+	private TelegramLogService logService;
 
 	@Autowired
 	protected RequestManagementService requestManagementService;
@@ -91,29 +102,88 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 
 	protected void newRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,
 			LocalDateTime requestTime, Group group) {
+		newRequest(bot, message, chatId, messageId, requestTime, group, false);
+	}
+
+	protected void newRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,
+			LocalDateTime requestTime, Group group, boolean acceptManual) {
 		String content = RequestUtils.getContent(message.text(), message.entities());
 		String link = RequestUtils.getLink(message.text(), message.entities());
 
-		if (link != null) {
-			newRequest(bot, message, chatId, messageId, requestTime, group, content, link);
+		if (link == null) {
+			manageWrongRequest(bot, message, chatId, content, errorConfiguration.getIncompleteRequest());
+		} else if (!acceptManual && !isBotRequest(message) && !hasBotFormat(message)) {
+			manageWrongRequest(bot, message, chatId, content, errorConfiguration.getNonBotRequest());
+		} else if (!acceptManual && !isBotRequest(message)) {
+			manageWrongRequest(bot, message, chatId, content, errorConfiguration.getQuoteBotRequest());
 		} else {
-			manageIncompleteRequest(bot, message, chatId);
+			processNewRequest(bot, message, chatId, messageId, requestTime, group, content, link);
 		}
 	}
 
-	protected void manageIncompleteRequest(TelegramBot bot, Message message, Long chatId) {
+	protected boolean isBotRequest(Message message) {
+		User bot = null;
+
+		if (message.viaBot() != null) {
+			bot = message.viaBot();
+		} else if (message.forwardFrom() != null && message.forwardFrom().isBot()) {
+			bot = message.forwardFrom();
+		}
+
+		boolean botRequest = false;
+
+		if (bot != null) {
+			botRequest = telegramConfiguration.getRequestGenerators().contains(bot.username());
+		}
+
+		return botRequest;
+	}
+
+	protected boolean hasBotFormat(Message message) {
+		String content = RequestUtils.getContent(message.text(), message.entities());
+
+		// search 2 monospace lines
+		int monospace = 0;
+		boolean monospaceSearch = true;
+		int firstMonospace = 0;
+		while (monospaceSearch) {
+			// get begin and end
+			int monospaceBegin = content.indexOf("<code>", firstMonospace);
+			int monospaceEnd = content.indexOf("</code>", firstMonospace);
+
+			if (monospaceBegin > -1 && monospaceEnd > -1) {
+				// if \n there are 2 lines, otherwise one
+				String monospaceText = content.substring(monospaceBegin, monospaceEnd);
+				monospace += monospaceText.contains("\n") ? 2 : 1;
+
+				firstMonospace = monospaceEnd + 1;
+			} else {
+				monospaceSearch = false;
+			}
+		}
+
+		return monospace > 1 && content.contains("<i>") && content.contains("<a href");
+	}
+
+	protected void manageWrongRequest(TelegramBot bot, Message message, Long chatId, String content,
+			String errorMessage) {
 		// notify user of the error
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append(TelegramUtils.tagUser(message));
-		stringBuilder.append(errorConfiguration.getIncompleteRequest());
+		stringBuilder.append(errorMessage);
 		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+		TelegramUtils.setMessageThreadId(sendMessage, message);
 		sendMessage.replyToMessageId(message.messageId());
 		sendMessage.parseMode(ParseMode.HTML);
+		sendMessage.disableWebPagePreview(true);
+
+		logService.log(new LogEvent(message.from().id(), chatId, new LogEventMessage(message.messageId(), content),
+				errorMessage));
 
 		bot.execute(sendMessage);
 	}
 
-	protected void newRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,
+	protected void processNewRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,
 			LocalDateTime requestTime, Group group, String content, String link) {
 		Long userId = message.from().id();
 
@@ -127,6 +197,9 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 			manageRequest(bot, message, chatId, messageId, requestTime, group, content, link, format);
 		} else {
 			NextValidRequest nextValidRequest = validation.getReason();
+
+			logService.log(new LogEvent(userId, chatId, new LogEventMessage(messageId, content),
+					nextValidRequest.getMessage()));
 
 			// mute user
 			boolean muted = muteUser(bot, chatId, userId, nextValidRequest);
@@ -142,6 +215,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 			}
 
 			SendMessage sendMessage = new SendMessage(chatId, builder.toString());
+			TelegramUtils.setMessageThreadId(sendMessage, message);
 			sendMessage.parseMode(ParseMode.HTML);
 			bot.execute(sendMessage);
 
@@ -179,21 +253,23 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		RequestResult requestResult = requestManagementService.manageRequest(messageId.longValue(), content, link,
 				format, source, otherTags, userId, group, requestTime);
 
-		manageRequestResult(bot, message, chatId, messageId, requestResult);
+		manageRequestResult(bot, message, chatId, messageId, requestResult, content);
 	}
 
 	private void manageRequestResult(TelegramBot bot, Message message, Long chatId, Integer messageId,
-			RequestResult requestResult) {
+			RequestResult requestResult, String content) {
 
 		switch (requestResult.getResult()) {
 		case CANNOT_REPEAT_REQUEST:
 		case REQUEST_REPEATED_TOO_EARLY:
+		case DIFFERENT_GROUP:
 			// notify user of the error
 			DeleteMessage deleteMessage = new DeleteMessage(chatId, messageId);
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append(TelegramUtils.tagUser(message));
 			stringBuilder.append(requestResult.getReason());
 			SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+			TelegramUtils.setMessageThreadId(sendMessage, message);
 			sendMessage.parseMode(ParseMode.HTML);
 
 			bot.execute(deleteMessage);
@@ -201,6 +277,11 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 			break;
 		default:
 			break;
+		}
+
+		if (!requestResult.getResult().isOk()) {
+			logService.log(new LogEvent(message.from().id(), chatId, new LogEventMessage(messageId, content),
+					requestResult.getReason()));
 		}
 	}
 

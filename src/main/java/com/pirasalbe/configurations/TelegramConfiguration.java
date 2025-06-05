@@ -1,5 +1,7 @@
 package com.pirasalbe.configurations;
 
+import java.util.List;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,6 +20,10 @@ public class TelegramConfiguration {
 	private String apiHash;
 
 	private Long backupChat;
+
+	private Long logChat;
+
+	private List<String> requestGenerators;
 
 	public String getUsername() {
 		return username;
@@ -65,6 +71,22 @@ public class TelegramConfiguration {
 
 	public void setBackupChat(Long backupChat) {
 		this.backupChat = backupChat;
+	}
+
+	public Long getLogChat() {
+		return logChat;
+	}
+
+	public void setLogChat(Long logChat) {
+		this.logChat = logChat;
+	}
+
+	public List<String> getRequestGenerators() {
+		return requestGenerators;
+	}
+
+	public void setRequestGenerators(List<String> requestGenerators) {
+		this.requestGenerators = requestGenerators;
 	}
 
 }

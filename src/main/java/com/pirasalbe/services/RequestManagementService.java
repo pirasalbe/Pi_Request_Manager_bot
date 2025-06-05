@@ -1,6 +1,7 @@
 package com.pirasalbe.services;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,7 +46,8 @@ public class RequestManagementService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RequestManagementService.class);
 
-	private static final long HOURS_BEFORE_REPEATING_REQUEST = 48l;
+	private static final String REQUEST = "request";
+	private static final String RECEIVED_BOOK = "received book";
 
 	@Autowired
 	private RequestService requestService;
@@ -170,8 +172,7 @@ public class RequestManagementService {
 				stringBuilder.append(" an audiobook in one of our groups on ");
 				stringBuilder.append(DateUtils.formatDate(requestInfo.getDate()));
 				stringBuilder.append(" ")
-						.append(getRequestLink(requestInfo.getRequest(), "request", "received audiobook"))
-						.append(".\n");
+						.append(getRequestLink(requestInfo.getRequest(), REQUEST, "received audiobook")).append(".\n");
 				stringBuilder.append(RequestUtils.getComeBackAgain(DateUtils.getNow(), nextValidRequest));
 				validation = Validation.invalid(new NextValidRequest(nextValidRequest, stringBuilder.toString()));
 			}
@@ -219,7 +220,7 @@ public class RequestManagementService {
 			stringBuilder.append("You’re only allowed to request ").append(requestLimit > 1 ? "up to " : "");
 			stringBuilder.append(requestLimit).append(" book").append(StringUtils.getPlural(requestLimit));
 			stringBuilder.append(" every 24 hours");
-			stringBuilder.append(" ").append(getRequestLink(lastRequest, "request", "received ebook")).append(".\n");
+			stringBuilder.append(" ").append(getRequestLink(lastRequest, REQUEST, "received ebook")).append(".\n");
 			stringBuilder.append(RequestUtils.getComeBackAgain(requestTime, nextValidRequest));
 			validation = Validation.invalid(new NextValidRequest(nextValidRequest, stringBuilder.toString()));
 		}
@@ -271,7 +272,7 @@ public class RequestManagementService {
 			String otherTags, Long userId, Group group, LocalDateTime requestDate) {
 		RequestResult result = null;
 
-		Request request = requestService.findByUniqueKey(group.getId(), userId, link);
+		Request request = requestService.findByUniqueKey(userId, link);
 		if (request == null) {
 			// request doesn't exists
 			insertRequest(messageId, group, link, content, format, source, otherTags, userId, requestDate);
@@ -343,11 +344,20 @@ public class RequestManagementService {
 		LocalDateTime previousRequestDate = request.getRequestDate();
 
 		// new request date should be after a cooldown period
-		LocalDateTime minDateForNewRequest = previousRequestDate.plusHours(HOURS_BEFORE_REPEATING_REQUEST);
+		LocalDateTime minDateForNewRequest = previousRequestDate.plusHours(group.getRepeatHoursWait());
 
 		boolean specialTags = hasSpecialTags(group, request.getSource());
 		boolean isCancelled = request.getStatus() == RequestStatus.CANCELLED;
-		if (isCancelled || (!specialTags && minDateForNewRequest.isBefore(requestDate))) {
+
+		if (!request.getId().getGroupId().equals(group.getId())) {
+			// repeated request in different group
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append("You requested this title on ");
+			stringBuilder.append(DateUtils.formatDate(previousRequestDate));
+			stringBuilder.append(" ").append(getRequestLink(request, REQUEST, RECEIVED_BOOK)).append(".\n");
+			stringBuilder.append("Please keep your request to one place only.");
+			result = new RequestResult(Result.DIFFERENT_GROUP, stringBuilder.toString());
+		} else if (isCancelled || (!specialTags && minDateForNewRequest.isBefore(requestDate))) {
 			// allow repeating cancelled requests
 			// allow repeating no special tags after 48 hours
 			updateOrDeleteInsertRequest(request, group, newMessageId, link, content, format, source, otherTags,
@@ -358,7 +368,7 @@ public class RequestManagementService {
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append("You already requested this title on ");
 			stringBuilder.append(DateUtils.formatDate(previousRequestDate));
-			stringBuilder.append(" ").append(getRequestLink(request, "request", "received book")).append(".\n");
+			stringBuilder.append(" ").append(getRequestLink(request, REQUEST, RECEIVED_BOOK)).append(".\n");
 			stringBuilder.append("No need to bump requests with special hashtags.");
 			result = new RequestResult(Result.CANNOT_REPEAT_REQUEST, stringBuilder.toString());
 		} else {
@@ -369,7 +379,7 @@ public class RequestManagementService {
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append("You already requested this title on ")
 					.append(DateUtils.formatDate(previousRequestDate));
-			stringBuilder.append(" ").append(getRequestLink(request, "request", "received book")).append(".\n");
+			stringBuilder.append(" ").append(getRequestLink(request, REQUEST, RECEIVED_BOOK)).append(".\n");
 			stringBuilder.append(RequestUtils.getComeBackAgain(requestDate, minDateForNewRequest)).append("\n");
 			stringBuilder.append(
 					"If you have requested it many times and still haven't received the book, then it's most likely that the book is not available as of now. It's better if you request again after a month or so.");
@@ -465,7 +475,7 @@ public class RequestManagementService {
 		boolean success = false;
 
 		if (link != null) {
-			Request request = requestService.findByUniqueKey(message.chat().id(), message.from().id(), link);
+			Request request = requestService.findByUniqueKey(message.from().id(), link);
 			if (request != null) {
 				// update status
 				updateStatus(request, group, status, resolvedMessageId, contributor);
@@ -488,16 +498,22 @@ public class RequestManagementService {
 		return requestService.findAll(page, size);
 	}
 
-	public Request lookup(Long groupId, String name, String caption, Format format) {
+	public List<Request> lookup(Long groupId, String name, String caption, Format format) {
 		String sanitizedName = sanitizeForLikeByContent(removeExtension(name));
 		String sanitizedCaption = sanitizeForLikeByContent(caption);
 
-		Request request = requestService.findByContent(groupId, sanitizedName, sanitizedCaption, format);
+		List<Request> requests = null;
 
-		LOGGER.info("Found a request with content [{}] by group=[{}] and content like [{}] or [{}] and format=[{}]",
-				request != null ? request.getContent() : null, groupId, sanitizedName, sanitizedCaption, format);
+		if (sanitizedName != null || sanitizedCaption != null) {
+			requests = requestService.findByContent(groupId, sanitizedName, sanitizedCaption, format);
+		} else {
+			requests = Arrays.asList();
+		}
 
-		return request;
+		LOGGER.info("Found {} requests with content by group=[{}] and content like [{}] or [{}] and format=[{}]",
+				requests.size(), groupId, sanitizedName, sanitizedCaption, format);
+
+		return requests;
 	}
 
 	private String removeExtension(String name) {
@@ -521,15 +537,10 @@ public class RequestManagementService {
 
 		// manage only valid requests
 		if (string != null && !string.isEmpty()) {
-			// take only the first part (the title possibly)
-			String[] parts = string.split("-");
-			String firstPart = parts[0];
-			parts = firstPart.split("by");
-			firstPart = parts[0];
-
 			// split each word
-			String[] words = firstPart.replace("_", " ").replace(":", " ").replace("\n", " ").replace(".", " ")
-					.replace("(", " ").replace(")", " ").replace(",", " ").split(" ");
+			String[] words = string.toLowerCase().replace("_", " ").replace("-", " ").replace("by", " ")
+					.replace(":", " ").replace("\n", " ").replace(".", " ").replace("(", " ").replace(")", " ")
+					.replace(",", " ").replace("&", " ").replace("/", " ").replace("books", "").split(" ");
 
 			// keep only useful words
 			StringBuilder builder = new StringBuilder("%");
@@ -539,7 +550,10 @@ public class RequestManagementService {
 				}
 			}
 
-			result = builder.toString();
+			String likeValue = builder.toString().replaceAll("%+", "%").trim();
+			if (!likeValue.equals("%") && !likeValue.isEmpty()) {
+				result = likeValue;
+			}
 		}
 
 		return result;

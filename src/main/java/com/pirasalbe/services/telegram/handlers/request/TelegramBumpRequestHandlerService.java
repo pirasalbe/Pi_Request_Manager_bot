@@ -30,8 +30,10 @@ import com.pirasalbe.utils.TelegramUtils;
 @Component
 public class TelegramBumpRequestHandlerService extends AbstractTelegramRequestHandlerService {
 
-	protected static final List<String> BUMPS = Arrays.asList("bump", "update", "can i get", "need", "please help",
-			"send", "thank", "repost", "news", "anyone");
+	protected static final List<String> BUMPS = Arrays.asList("bump", "update", "can i get", "can i have", "need",
+			"please help", "send", "thank", "repost", "news", "anyone", "hope", "this one", "not received", "status",
+			"any luck", "any chance", "available", "do you", "please anybody", "check", "help", "anything",
+			"anyone have", "if possible");
 
 	@Autowired
 	private SchedulerService schedulerService;
@@ -106,6 +108,7 @@ public class TelegramBumpRequestHandlerService extends AbstractTelegramRequestHa
 		bumpBuilder.append("'>your request</a>.");
 
 		SendMessage sendMessage = new SendMessage(chatId, bumpBuilder.toString());
+		TelegramUtils.setMessageThreadId(sendMessage, message);
 		sendMessage.replyToMessageId(message.messageId());
 		sendMessage.parseMode(ParseMode.HTML);
 

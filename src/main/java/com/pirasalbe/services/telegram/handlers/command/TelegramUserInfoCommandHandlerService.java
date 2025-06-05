@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Chat.Type;
-import com.pengrad.telegrambot.model.Update;
+import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.NextValidRequest;
@@ -34,9 +34,10 @@ import com.pirasalbe.utils.TelegramUtils;
  *
  */
 @Component
-public class TelegramMeCommandHandlerService extends AbstractTelegramHandlerService implements TelegramHandler {
+public class TelegramUserInfoCommandHandlerService extends AbstractTelegramHandlerService {
 
-	public static final String COMMAND = "/me";
+	public static final String ME_COMMAND = "/me";
+	public static final String THEM_COMMAND = "/them";
 
 	@Autowired
 	private AdminService adminService;
@@ -47,31 +48,44 @@ public class TelegramMeCommandHandlerService extends AbstractTelegramHandlerServ
 	@Autowired
 	private RequestManagementService requestManagementService;
 
-	@Override
-	public void handle(TelegramBot bot, Update update) {
-		// get sender id
-		Long userId = update.message().from().id();
-		Integer messageId = update.message().messageId();
-		if (update.message().replyToMessage() != null) {
-			userId = update.message().replyToMessage().from().id();
-			messageId = update.message().replyToMessage().messageId();
-		}
+	public TelegramHandler meHandler() {
+		return (bot, update) -> {
+			Long userId = update.message().from().id();
+			Integer messageId = update.message().messageId();
+
+			sendUserInfo(bot, update.message(), userId, messageId);
+		};
+	}
+
+	public TelegramHandler themHandler() {
+		return (bot, update) -> {
+			Long userId = update.message().replyToMessage().from().id();
+			Integer messageId = update.message().replyToMessage().messageId();
+
+			sendUserInfo(bot, update.message(), userId, messageId);
+		};
+	}
+
+	private void sendUserInfo(TelegramBot bot, Message message, Long userId, Integer messageId) {
+		Long chatId = message.chat().id();
 
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append("<b>User info</b>:\n");
+		stringBuilder.append("User: ").append(RequestUtils.getUser(bot, chatId, userId)).append("\n");
 		stringBuilder.append("Id: <code>").append(userId).append("</code>\n");
 		stringBuilder.append("Role: <code>").append(adminService.getAuthority(userId)).append("</code>\n");
 
-		checkRequests(stringBuilder, userId, update.message().chat().id());
+		checkRequests(stringBuilder, userId, chatId);
 
-		SendMessage sendMessage = new SendMessage(update.message().chat().id(), stringBuilder.toString());
+		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+		TelegramUtils.setMessageThreadId(sendMessage, message);
 		sendMessage.replyToMessageId(messageId);
 		sendMessage.parseMode(ParseMode.HTML);
 
-		boolean delete = update.message().chat().type() != Type.Private;
+		boolean delete = message.chat().type() != Type.Private;
 
-		sendMessageAndDelete(bot, sendMessage, 10, TimeUnit.SECONDS, delete);
-		deleteMessage(bot, update.message(), delete);
+		sendMessageAndDelete(bot, sendMessage, 90, TimeUnit.SECONDS, delete);
+		deleteMessage(bot, message, delete);
 	}
 
 	private void checkRequests(StringBuilder stringBuilder, Long userId, Long chatId) {

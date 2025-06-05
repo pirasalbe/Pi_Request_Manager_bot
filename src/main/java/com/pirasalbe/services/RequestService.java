@@ -49,8 +49,8 @@ public class RequestService {
 	@PersistenceContext
 	private EntityManager entityManager;
 
-	public Request findByUniqueKey(Long groupId, Long userId, String link) {
-		return repository.findByUniqueKey(groupId, userId, link);
+	public Request findByUniqueKey(Long userId, String link) {
+		return repository.findByUniqueKey(userId, link);
 	}
 
 	public Optional<Request> findById(Long messageId, Long groupId) {
@@ -271,7 +271,7 @@ public class RequestService {
 		return query.getResultList();
 	}
 
-	public Request findByContent(Long groupId, String name, String caption, Format format) {
+	public List<Request> findByContent(Long groupId, String name, String caption, Format format) {
 		CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
 		CriteriaQuery<Request> criteriaQuery = criteriaBuilder.createQuery(Request.class);
 		Root<Request> requestRoot = criteriaQuery.from(Request.class);
@@ -292,8 +292,8 @@ public class RequestService {
 		}
 
 		// content
-		Predicate likeName = criteriaBuilder.like(requestRoot.get("content"), name);
-		Predicate likeCaption = criteriaBuilder.like(requestRoot.get("content"), caption);
+		Predicate likeName = criteriaBuilder.like(criteriaBuilder.lower(requestRoot.get("content")), name);
+		Predicate likeCaption = criteriaBuilder.like(criteriaBuilder.lower(requestRoot.get("content")), caption);
 
 		if (name != null && caption != null) {
 			predicates.add(criteriaBuilder.or(likeName, likeCaption));
@@ -312,15 +312,7 @@ public class RequestService {
 		TypedQuery<Request> query = entityManager.createQuery(criteriaQuery);
 		query.setMaxResults(1);
 
-		// get results
-		List<Request> requests = query.getResultList();
-
-		Request request = null;
-		if (!requests.isEmpty()) {
-			request = requests.get(0);
-		}
-
-		return request;
+		return query.getResultList();
 	}
 
 }

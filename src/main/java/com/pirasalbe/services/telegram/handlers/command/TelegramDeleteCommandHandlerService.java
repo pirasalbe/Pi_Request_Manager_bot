@@ -15,7 +15,7 @@ import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
 
 /**
- * Service to manage /me
+ * Service to delete commands
  *
  * @author pirasalbe
  *

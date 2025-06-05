@@ -26,6 +26,9 @@ public class TelegramConditionUtils {
 	public static final String SOURCE_CONDITION = "source=";
 	public static final String OTHER_CONDITION = "other=";
 	public static final String ORDER_CONDITION = "order=";
+	public static final String LIMIT_CONDITION = "limit=";
+	public static final String SKIP_CONDITION = "skip=";
+	public static final String YEAR_CONDITION = "year=";
 	public static final String REFRESH_SHOW_MESSAGE_CONDITION = "rm=";
 	public static final String REFRESH_SHOW_CHAT_CONDITION = "rc=";
 
@@ -102,6 +105,18 @@ public class TelegramConditionUtils {
 
 	public static Optional<String> getOtherTags(String text) {
 		return getCondition(text, OTHER_CONDITION, String::toLowerCase);
+	}
+
+	public static Optional<Long> getLimit(String text) {
+		return getCondition(text, LIMIT_CONDITION, Long::parseLong);
+	}
+
+	public static Optional<Long> getSkip(String text) {
+		return getCondition(text, SKIP_CONDITION, Long::parseLong);
+	}
+
+	public static Optional<Integer> getYear(String text) {
+		return getCondition(text, YEAR_CONDITION, Integer::parseInt);
 	}
 
 	public static Optional<Boolean> getDescendent(String text) {

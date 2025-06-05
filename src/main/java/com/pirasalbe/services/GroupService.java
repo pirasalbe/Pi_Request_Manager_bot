@@ -58,6 +58,7 @@ public class GroupService {
 			group.setRequestLimit(1);
 			group.setAudiobooksDaysWait(15);
 			group.setEnglishAudiobooksDaysWait(8);
+			group.setRepeatHoursWait(48);
 			group.setAllowEbooks(true);
 			group.setAllowAudiobooks(true);
 
@@ -130,6 +131,26 @@ public class GroupService {
 			repository.save(group);
 			updated = true;
 			LOGGER.info("Update group: [{}] English audiobooks days wait [{}]", id, daysWait);
+		}
+
+		return updated;
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public boolean updateRepeatHoursWait(Long id, int hoursWait) {
+		boolean updated = false;
+
+		// update
+		Optional<Group> optional = repository.findById(id);
+		boolean present = optional.isPresent();
+		if (present) {
+			// add
+			Group group = optional.get();
+			group.setRepeatHoursWait(hoursWait);
+
+			repository.save(group);
+			updated = true;
+			LOGGER.info("Update group: [{}] Repeat hours wait [{}]", id, hoursWait);
 		}
 
 		return updated;

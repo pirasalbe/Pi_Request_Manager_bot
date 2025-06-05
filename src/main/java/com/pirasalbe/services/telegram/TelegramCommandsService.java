@@ -78,6 +78,8 @@ public class TelegramCommandsService {
 		/*
 		 * Contributors commands
 		 */
+		BotCommand them = new BotCommand("them", "Shows another user info");
+
 		BotCommand requests = new BotCommand("requests", "See the requests. Supports filters.");
 
 		BotCommand show = new BotCommand("show", "Shows a request.");
@@ -87,6 +89,7 @@ public class TelegramCommandsService {
 		BotCommand sdone = new BotCommand("sdone", "Marks the request as done.");
 
 		BotCommand pending = new BotCommand("pending", "Marks a request as pending.");
+		BotCommand acceptRequest = new BotCommand("accept_request", "Accept a manual request.");
 		BotCommand pause = new BotCommand("pause", "Marks a request as paused.");
 		BotCommand inProgress = new BotCommand("in_progress", "Marks a request as in progress.");
 
@@ -104,11 +107,12 @@ public class TelegramCommandsService {
 				"Checks all requests in the database and sync them with the one in the channel.");
 
 		BotCommand stats = new BotCommand("stats", "Get statistics.");
+		BotCommand trending = new BotCommand("trending", "Get trending requests.");
 
 		contributorsCommandsPM = new SetMyCommands(start, alive, help, me, myRequests, requests, configureChannel,
-				disableChannel, configureChannels, refreshChannel, stats);
-		contributorsCommandsGroup = new SetMyCommands(start, alive, help, me, requests, show, done, sdone, pending,
-				pause, inProgress, cancel, remove, nextAudiobook);
+				disableChannel, configureChannels, refreshChannel, stats, trending);
+		contributorsCommandsGroup = new SetMyCommands(start, alive, help, me, them, requests, show, done, sdone,
+				pending, acceptRequest, pause, inProgress, cancel, remove, nextAudiobook);
 
 		/*
 		 * Manager commands
@@ -126,15 +130,17 @@ public class TelegramCommandsService {
 				"Define the days to wait after the last audiobook requests/received not in English before requesting a new audiobook to [number of days to wait].");
 		BotCommand englishAudiobooksDaysWait = new BotCommand("english_audiobooks_days_wait",
 				"Define the days to wait after the last English audiobook requests/received before requesting a new audiobook to [number of days to wait].");
+		BotCommand repeatHoursWait = new BotCommand("/repeat_hours_wait",
+				"Define the hours to wait before repeating a request to [number of hours to wait].");
 		BotCommand allow = new BotCommand("allow", "Define what can be requested between ebooks, audiobooks, both.");
 		BotCommand noRepeat = new BotCommand("no_repeat",
 				"Define the tags whose requests can't be repeated. It accepts a list of sources.");
 
 		managersCommandsPM = new SetMyCommands(start, alive, help, me, myRequests, requests, configureChannel,
-				disableChannel, configureChannels, refreshChannel, stats);
-		managersCommandsGroup = new SetMyCommands(start, alive, help, me, groupInfo, enableGroup, disableGroup,
-				requestLimit, nonenglishAudiobooksDaysWait, englishAudiobooksDaysWait, allow, noRepeat, requests, show,
-				done, sdone, pending, pause, inProgress, cancel, remove, nextAudiobook);
+				disableChannel, configureChannels, refreshChannel, stats, trending);
+		managersCommandsGroup = new SetMyCommands(start, alive, help, me, them, groupInfo, enableGroup, disableGroup,
+				requestLimit, nonenglishAudiobooksDaysWait, englishAudiobooksDaysWait, repeatHoursWait, allow, noRepeat,
+				requests, show, done, sdone, pending, acceptRequest, pause, inProgress, cancel, remove, nextAudiobook);
 
 		/*
 		 * Admin commands
@@ -143,8 +149,10 @@ public class TelegramCommandsService {
 		BotCommand adminsAdd = new BotCommand("admins_add", "Add admin");
 		BotCommand adminsRemove = new BotCommand("admins_remove", "Remove admin");
 
-		adminsCommandsPM = new SetMyCommands(start, alive, help, me, myRequests, admins, adminsAdd, adminsRemove,
-				requests, configureChannel, disableChannel, configureChannels, refreshChannel, stats);
+		BotCommand info = new BotCommand("info", "Provides bot information");
+
+		adminsCommandsPM = new SetMyCommands(start, alive, info, help, me, myRequests, admins, adminsAdd, adminsRemove,
+				requests, configureChannel, disableChannel, configureChannels, refreshChannel, stats, trending);
 	}
 
 	public void registerCommandsAsync() {
