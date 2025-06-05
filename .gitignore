@@ -9,7 +9,7 @@ build/
 *.log
 *.tmp
 *.gz
-.cache
+.cache*
 userbot-data
 
 ### STS ###
