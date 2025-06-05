@@ -4,24 +4,31 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.pirasalbe.configurations.TelegramConfiguration;
 import com.pirasalbe.models.exceptions.UserBotException;
 import com.pirasalbe.utils.TelegramUtils;
 
+import it.tdlight.Init;
 import it.tdlight.client.APIToken;
-import it.tdlight.client.AuthenticationData;
+import it.tdlight.client.AuthenticationSupplier;
 import it.tdlight.client.Result;
+import it.tdlight.client.SimpleAuthenticationSupplier;
 import it.tdlight.client.SimpleTelegramClient;
+import it.tdlight.client.SimpleTelegramClientBuilder;
+import it.tdlight.client.SimpleTelegramClientFactory;
 import it.tdlight.client.TDLibSettings;
-import it.tdlight.common.Init;
-import it.tdlight.common.utils.CantLoadLibrary;
 import it.tdlight.jni.TdApi;
 import it.tdlight.jni.TdApi.GetMessageLinkInfo;
 import it.tdlight.jni.TdApi.MessageLinkInfo;
+import it.tdlight.util.UnsupportedNativeLibraryException;
 
 /**
  * Telegram Service for the user bot
@@ -30,19 +37,21 @@ import it.tdlight.jni.TdApi.MessageLinkInfo;
  *
  */
 @Component
-public class TelegramUserBotService {
+public class TelegramUserBotService implements AutoCloseable {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(TelegramLogService.class);
 
 	private static final String USERBOT_PATH = "userbot-data";
 
-	private SimpleTelegramClient client;
+	private static SimpleTelegramClientFactory clientFactory;
+	private static SimpleTelegramClient client;
 
-	public SimpleTelegramClient getClient() {
-		return client;
-	}
-
-	public TelegramUserBotService(TelegramConfiguration configuration) throws InterruptedException, CantLoadLibrary {
+	public TelegramUserBotService(TelegramConfiguration configuration)
+			throws InterruptedException, UnsupportedNativeLibraryException {
 		// Initialize TDLight native libraries
-		Init.start();
+		Init.init();
+
+		clientFactory = new SimpleTelegramClientFactory();
 
 		// Obtain the API token
 		APIToken apiToken = new APIToken(configuration.getApiId(), configuration.getApiHash());
@@ -56,13 +65,22 @@ public class TelegramUserBotService {
 		settings.setDownloadedFilesDirectoryPath(sessionPath.resolve("downloads"));
 
 		// Create a client
-		client = new SimpleTelegramClient(settings);
+		SimpleTelegramClientBuilder clientBuilder = clientFactory.builder(settings);
 
 		// Configure the authentication info
-		AuthenticationData authenticationData = AuthenticationData.user(configuration.getNumber());
+		SimpleAuthenticationSupplier<?> authenticationData = AuthenticationSupplier.user(configuration.getNumber());
 
-		// Start the client
-		client.start(authenticationData);
+		ExecutorService executorService = Executors.newSingleThreadExecutor();
+		executorService.execute(() -> {
+			client = clientBuilder.build(authenticationData);
+			LOGGER.info("User bot initialized");
+		});
+	}
+
+	@Override
+	public void close() throws Exception {
+		client.close();
+		clientFactory.close();
 	}
 
 	/**

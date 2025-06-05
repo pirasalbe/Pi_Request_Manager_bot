@@ -17,16 +17,16 @@ repositories {
 
 if (project.hasProperty('pi')) {
 	dependencies {
-   		implementation 'it.tdlight:tdlight-natives-linux-armhf'
+		implementation group: 'it.tdlight', name: 'tdlight-natives', classifier: 'linux_armhf_gnu_ssl1'
    	}
 } else {
 	dependencies {
-		implementation 'it.tdlight:tdlight-natives-linux-amd64'
+		implementation group: 'it.tdlight', name: 'tdlight-natives', classifier: 'linux_amd64_gnu_ssl1'
    	}
 }
 
 ext {
-	tdlightVersion = "2.8.10.1"
+	tdlightVersion = "3.4.0+td.1.8.26"
 }
 
 eclipse {
@@ -56,7 +56,7 @@ dependencies {
 	
 	// tdlib
 	implementation platform('it.tdlight:tdlight-java-bom:' + tdlightVersion)
-	implementation 'it.tdlight:tdlight-java-8'
+	implementation group: 'it.tdlight', name: 'tdlight-java', classifier: 'jdk8'
 }
 
 test {

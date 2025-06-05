@@ -13,7 +13,7 @@ public class TelegramConfiguration {
 
 	private String token;
 
-	private Long number;
+	private String number;
 
 	private Integer apiId;
 
@@ -37,11 +37,11 @@ public class TelegramConfiguration {
 		this.token = token;
 	}
 
-	public Long getNumber() {
+	public String getNumber() {
 		return number;
 	}
 
-	public void setNumber(Long number) {
+	public void setNumber(String number) {
 		this.number = number;
 	}
 
