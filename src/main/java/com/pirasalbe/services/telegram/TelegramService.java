@@ -2,10 +2,10 @@ package com.pirasalbe.services.telegram;
 
 import java.util.Arrays;
 
-import javax.annotation.PostConstruct;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.model.Chat.Type;
@@ -125,7 +125,7 @@ public class TelegramService {
 	@Autowired
 	private TelegramDeleteCommandHandlerService deleteCommandHandlerService;
 
-	@PostConstruct
+	@EventListener(ApplicationReadyEvent.class)
 	public void initialize() {
 
 		// register commands
@@ -356,9 +356,11 @@ public class TelegramService {
 				contributorRoleCondition), contributorsCommandHandlerService.refreshCommands());
 
 		// user info
-		bot.register(Arrays.asList(groupChatCondition,
-				commandConditionFactory.onCommand(TelegramUserInfoCommandHandlerService.THEM_COMMAND),
-				replyToMessageCondition, contributorRoleCondition), userInfoCommandHandlerService.themHandler());
+		bot.register(
+				Arrays.asList(groupChatCondition,
+						commandConditionFactory.onCommand(TelegramUserInfoCommandHandlerService.THEM_COMMAND),
+						replyToMessageCondition, contributorRoleCondition),
+				userInfoCommandHandlerService.themHandler());
 
 		// done
 		bot.register(Arrays.asList(groupChatCondition,

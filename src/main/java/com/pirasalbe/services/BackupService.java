@@ -187,9 +187,9 @@ public class BackupService {
 				builder.append(request.getId().getMessageId());
 				builder.append(",");
 				builder.append(request.getStatus());
-				builder.append(",");
-				builder.append(request.getContent().replace("\n", "\\n"));
-				builder.append(",");
+				builder.append(",\"");
+				builder.append(request.getContent().replace("\n", "\\n").replace("\"", "\"\""));
+				builder.append("\",");
 				builder.append(request.getLink());
 				builder.append(",");
 				builder.append(request.getFormat());
