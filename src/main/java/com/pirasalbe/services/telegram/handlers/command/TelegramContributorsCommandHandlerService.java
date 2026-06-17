@@ -596,7 +596,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler markCancelled() {
 		return (bot, update) -> {
-			long chatId = TelegramUtils.getChatId(update);
+			Long chatId = TelegramUtils.getChatId(update);
 			String text = update.message().text();
 
 			Optional<Group> optional = groupService.findById(chatId);
@@ -625,7 +625,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 					message = getErrorMessage(COMMAND_CANCEL);
 				}
 
-				SendMessage sendMessage = new SendMessage(chatId, message);
+				SendMessage sendMessage = new SendMessage(chatId.longValue(), message);
 				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
 
