@@ -42,7 +42,7 @@ public class TelegramMyRequestsCommandHandlerService extends AbstractTelegramHan
 		sendRequests(bot, chatId, user, RequestStatus.RESOLVED);
 	}
 
-	private void sendRequests(TelegramBot bot, Long chatId, Optional<Long> user, RequestStatus requestStatus) {
+	private void sendRequests(TelegramBot bot, long chatId, Optional<Long> user, RequestStatus requestStatus) {
 		List<Request> requests = requestService.findRequests(Optional.empty(), requestStatus, user, Optional.empty(),
 				Optional.empty(), Optional.empty(), true);
 

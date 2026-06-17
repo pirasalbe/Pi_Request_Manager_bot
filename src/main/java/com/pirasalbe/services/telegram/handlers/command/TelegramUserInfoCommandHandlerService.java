@@ -11,6 +11,7 @@ import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Chat.Type;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.request.ParseMode;
+import com.pengrad.telegrambot.model.request.ReplyParameters;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.NextValidRequest;
 import com.pirasalbe.models.Validation;
@@ -67,7 +68,7 @@ public class TelegramUserInfoCommandHandlerService extends AbstractTelegramHandl
 	}
 
 	private void sendUserInfo(TelegramBot bot, Message message, Long userId, Integer messageId) {
-		Long chatId = message.chat().id();
+		long chatId = message.chat().id();
 
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append("<b>User info</b>:\n");
@@ -79,7 +80,7 @@ public class TelegramUserInfoCommandHandlerService extends AbstractTelegramHandl
 
 		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 		TelegramUtils.setMessageThreadId(sendMessage, message);
-		sendMessage.replyToMessageId(messageId);
+		sendMessage.replyParameters(new ReplyParameters(messageId));
 		sendMessage.parseMode(ParseMode.HTML);
 
 		boolean delete = message.chat().type() != Type.Private;

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Chat.Type;
 import com.pengrad.telegrambot.model.Update;
+import com.pengrad.telegrambot.model.request.ReplyParameters;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
@@ -28,14 +29,14 @@ public class TelegramAliveCommandHandlerService extends AbstractTelegramHandlerS
 
 	@Override
 	public void handle(TelegramBot bot, Update update) {
-		Long chatId = update.message().chat().id();
+		long chatId = update.message().chat().id();
 
 		SendMessage sendMessage = new SendMessage(chatId, "Bot up!");
 		TelegramUtils.setMessageThreadId(sendMessage, update.message());
 
 		boolean delete = update.message().chat().type() != Type.Private;
 		if (!delete) {
-			sendMessage.replyToMessageId(update.message().messageId());
+			sendMessage.replyParameters(new ReplyParameters(update.message().messageId()));
 		}
 
 		sendMessageAndDelete(bot, sendMessage, 10, TimeUnit.SECONDS, delete);

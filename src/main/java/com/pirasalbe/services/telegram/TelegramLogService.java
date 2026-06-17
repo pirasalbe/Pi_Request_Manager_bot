@@ -13,6 +13,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.LinkPreviewOptions;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
@@ -90,7 +91,7 @@ public class TelegramLogService {
 		String message = messageBuilder.toString();
 
 		SendMessage sendMessage = new SendMessage(configuration.getLogChat(), message);
-		sendMessage.disableWebPagePreview(true);
+		sendMessage.linkPreviewOptions(new LinkPreviewOptions().isDisabled(true));
 		sendMessage.parseMode(ParseMode.HTML);
 
 		SendResponse execute = bot.execute(sendMessage);

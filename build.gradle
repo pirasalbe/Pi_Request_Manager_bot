@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'com.pirasalbe'
-version = '2.5.0-SNAPSHOT'
+version = '2.6.0-SNAPSHOT'
 
 java {
     toolchain {
@@ -31,7 +31,7 @@ if (project.hasProperty('pi')) {
 }
 
 ext {
-	tdlightVersion = "3.4.0+td.1.8.26"
+	tdlightVersion = "3.5.2+td.1.8.64"
 }
 
 eclipse {
@@ -54,7 +54,7 @@ dependencies {
 	implementation 'com.querydsl:querydsl-core'
 	implementation 'org.liquibase:liquibase-core'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
-	implementation 'com.github.pengrad:java-telegram-bot-api:6.3.0'
+	implementation 'com.github.pengrad:java-telegram-bot-api:10.1.0'
 	implementation 'com.squareup.okhttp3:logging-interceptor:4.10.0'
 	implementation 'com.squareup.okhttp3:okhttp:4.10.0'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

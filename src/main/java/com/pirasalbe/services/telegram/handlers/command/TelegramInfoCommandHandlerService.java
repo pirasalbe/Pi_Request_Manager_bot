@@ -30,7 +30,7 @@ public class TelegramInfoCommandHandlerService implements TelegramHandler {
 
 	@Override
 	public void handle(TelegramBot bot, Update update) {
-		Long chatId = update.message().chat().id();
+		long chatId = update.message().chat().id();
 
 		StringBuilder message = new StringBuilder();
 		message.append("<b>Bot Info</b>\n\n");

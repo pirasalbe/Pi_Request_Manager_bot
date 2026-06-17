@@ -13,6 +13,7 @@ import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
+import com.pengrad.telegrambot.model.request.ReplyParameters;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
@@ -100,7 +101,7 @@ public class TelegramBumpRequestHandlerService extends AbstractTelegramRequestHa
 		}
 	}
 
-	private void sendBumpNotification(TelegramBot bot, Message requestMessage, Message message, Long chatId) {
+	private void sendBumpNotification(TelegramBot bot, Message requestMessage, Message message, long chatId) {
 		StringBuilder bumpBuilder = new StringBuilder();
 		bumpBuilder.append(TelegramUtils.tagUser(message));
 		bumpBuilder.append("You asked for an update for <a href='");
@@ -109,7 +110,7 @@ public class TelegramBumpRequestHandlerService extends AbstractTelegramRequestHa
 
 		SendMessage sendMessage = new SendMessage(chatId, bumpBuilder.toString());
 		TelegramUtils.setMessageThreadId(sendMessage, message);
-		sendMessage.replyToMessageId(message.messageId());
+		sendMessage.replyParameters(new ReplyParameters(message.messageId()));
 		sendMessage.parseMode(ParseMode.HTML);
 
 		SendResponse sendResponse = bot.execute(sendMessage);

@@ -17,6 +17,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.LinkPreviewOptions;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.DeleteMessage;
@@ -207,10 +208,10 @@ public class AbstractTelegramHandlerService {
 		return requestBuilder.toString();
 	}
 
-	private void sendRequestListMessage(Long chatId, String message, boolean deleteMessages) {
+	private void sendRequestListMessage(long chatId, String message, boolean deleteMessages) {
 		SendMessage sendMessage = new SendMessage(chatId, message);
 		sendMessage.parseMode(ParseMode.HTML);
-		sendMessage.disableWebPagePreview(true);
+		sendMessage.linkPreviewOptions(new LinkPreviewOptions().isDisabled(true));
 
 		botQueue.add(b -> sendMessageAndDelete(b, sendMessage, 5, TimeUnit.MINUTES, deleteMessages));
 	}

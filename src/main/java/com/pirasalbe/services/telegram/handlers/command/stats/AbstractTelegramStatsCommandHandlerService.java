@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Chat.Type;
+import com.pengrad.telegrambot.model.LinkPreviewOptions;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
@@ -44,7 +45,7 @@ public abstract class AbstractTelegramStatsCommandHandlerService extends Abstrac
 		// delete command
 		deleteMessage(bot, update.message(), update.message().chat().type() != Type.Private);
 
-		Long chatId = update.message().chat().id();
+		long chatId = update.message().chat().id();
 
 		// filters
 		String text = update.message().text();
@@ -111,10 +112,10 @@ public abstract class AbstractTelegramStatsCommandHandlerService extends Abstrac
 		return filters.toString();
 	}
 
-	protected void sendMessage(Long chatId, String message) {
+	protected void sendMessage(long chatId, String message) {
 		SendMessage sendMessage = new SendMessage(chatId, message);
 		sendMessage.parseMode(ParseMode.HTML);
-		sendMessage.disableWebPagePreview(true);
+		sendMessage.linkPreviewOptions(new LinkPreviewOptions().isDisabled(true));
 
 		botQueue.add(bot -> bot.execute(sendMessage));
 	}

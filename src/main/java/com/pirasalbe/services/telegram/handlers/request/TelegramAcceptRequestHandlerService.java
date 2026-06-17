@@ -11,6 +11,7 @@ import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
+import com.pengrad.telegrambot.model.request.ReplyParameters;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.SendResponse;
@@ -70,7 +71,7 @@ public class TelegramAcceptRequestHandlerService extends AbstractTelegramRequest
 		bot.execute(new DeleteMessage(message.chat().id(), message.messageId()));
 	}
 
-	private void sendAcceptNotification(TelegramBot bot, Message message, Long chatId) {
+	private void sendAcceptNotification(TelegramBot bot, Message message, long chatId) {
 		StringBuilder acceptBuilder = new StringBuilder();
 		acceptBuilder.append(TelegramUtils.tagUser(message));
 		acceptBuilder.append("Your <a href='");
@@ -79,7 +80,7 @@ public class TelegramAcceptRequestHandlerService extends AbstractTelegramRequest
 
 		SendMessage sendMessage = new SendMessage(chatId, acceptBuilder.toString());
 		TelegramUtils.setMessageThreadId(sendMessage, message);
-		sendMessage.replyToMessageId(message.messageId());
+		sendMessage.replyParameters(new ReplyParameters(message.messageId()));
 		sendMessage.parseMode(ParseMode.HTML);
 
 		SendResponse sendResponse = bot.execute(sendMessage);

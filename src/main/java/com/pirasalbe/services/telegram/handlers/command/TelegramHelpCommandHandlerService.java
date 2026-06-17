@@ -7,8 +7,10 @@ import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Chat.Type;
+import com.pengrad.telegrambot.model.LinkPreviewOptions;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
+import com.pengrad.telegrambot.model.request.ReplyParameters;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.UserRole;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
@@ -51,15 +53,15 @@ public class TelegramHelpCommandHandlerService extends AbstractTelegramHandlerSe
 			break;
 		}
 
-		SendMessage sendMessage = new SendMessage(update.message().chat().id(), message);
+		SendMessage sendMessage = new SendMessage(update.message().chat().id().longValue(), message);
 		TelegramUtils.setMessageThreadId(sendMessage, update.message());
 		sendMessage.parseMode(ParseMode.HTML);
-		sendMessage.disableWebPagePreview(true);
+		sendMessage.linkPreviewOptions(new LinkPreviewOptions().isDisabled(true));
 
 		// keep message only in private
 		boolean delete = chatType != Type.Private;
 		if (!delete) {
-			sendMessage.replyToMessageId(update.message().messageId());
+			sendMessage.replyParameters(new ReplyParameters(update.message().messageId()));
 		}
 
 		sendMessageAndDelete(bot, sendMessage, 10, TimeUnit.SECONDS, delete);

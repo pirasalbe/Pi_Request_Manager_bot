@@ -65,7 +65,7 @@ public class TelegramConfiguration {
 		this.apiHash = apiHash;
 	}
 
-	public Long getBackupChat() {
+	public long getBackupChat() {
 		return backupChat;
 	}
 
@@ -73,7 +73,7 @@ public class TelegramConfiguration {
 		this.backupChat = backupChat;
 	}
 
-	public Long getLogChat() {
+	public long getLogChat() {
 		return logChat;
 	}
 

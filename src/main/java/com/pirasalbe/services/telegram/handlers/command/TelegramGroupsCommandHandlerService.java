@@ -52,7 +52,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 
 	public TelegramHandler showInfo() {
 		return (bot, update) -> {
-			Long chatId = TelegramUtils.getChatId(update);
+			long chatId = TelegramUtils.getChatId(update);
 
 			Optional<Group> optional = groupService.findById(chatId);
 
@@ -67,7 +67,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 
 	public TelegramHandler enableGroup() {
 		return (bot, update) -> {
-			Long chatId = TelegramUtils.getChatId(update);
+			long chatId = TelegramUtils.getChatId(update);
 
 			groupService.insertIfNotExists(chatId, update.message().chat().title());
 			SendMessage sendMessage = new SendMessage(chatId, "Group enabled");
@@ -79,7 +79,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 
 	public TelegramHandler disableGroup() {
 		return (bot, update) -> {
-			Long chatId = TelegramUtils.getChatId(update);
+			long chatId = TelegramUtils.getChatId(update);
 
 			groupService.deleteIfExists(chatId);
 			SendMessage sendMessage = new SendMessage(chatId, "Group disabled");
@@ -103,7 +103,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 
 	public TelegramHandler updateRequestLimit() {
 		return (bot, update) -> {
-			Long chatId = TelegramUtils.getChatId(update);
+			long chatId = TelegramUtils.getChatId(update);
 			String text = update.message().text();
 
 			String message = null;
@@ -132,7 +132,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 
 	public TelegramHandler updateAudiobooksDaysWait() {
 		return (bot, update) -> {
-			Long chatId = TelegramUtils.getChatId(update);
+			long chatId = TelegramUtils.getChatId(update);
 			String text = update.message().text();
 
 			String message = null;
@@ -161,7 +161,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 
 	public TelegramHandler updateEnglishAudiobooksDaysWait() {
 		return (bot, update) -> {
-			Long chatId = TelegramUtils.getChatId(update);
+			long chatId = TelegramUtils.getChatId(update);
 			String text = update.message().text();
 
 			String message = null;
@@ -190,7 +190,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 
 	public TelegramHandler updateRepeatHoursWait() {
 		return (bot, update) -> {
-			Long chatId = TelegramUtils.getChatId(update);
+			long chatId = TelegramUtils.getChatId(update);
 			String text = update.message().text();
 
 			String message = null;
@@ -219,7 +219,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 
 	public TelegramHandler updateAllow() {
 		return (bot, update) -> {
-			Long chatId = TelegramUtils.getChatId(update);
+			long chatId = TelegramUtils.getChatId(update);
 			String text = update.message().text();
 
 			String message = null;
@@ -249,7 +249,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 
 	public TelegramHandler updateNoRepeat() {
 		return (bot, update) -> {
-			Long chatId = TelegramUtils.getChatId(update);
+			long chatId = TelegramUtils.getChatId(update);
 			String text = update.message().text();
 
 			String message = null;

@@ -9,10 +9,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.ChatPermissions;
+import com.pengrad.telegrambot.model.LinkPreviewOptions;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.User;
+import com.pengrad.telegrambot.model.message.origin.MessageOriginUser;
 import com.pengrad.telegrambot.model.request.ParseMode;
+import com.pengrad.telegrambot.model.request.ReplyParameters;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.RestrictChatMember;
 import com.pengrad.telegrambot.request.SendMessage;
@@ -126,8 +129,11 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 
 		if (message.viaBot() != null) {
 			bot = message.viaBot();
-		} else if (message.forwardFrom() != null && message.forwardFrom().isBot()) {
-			bot = message.forwardFrom();
+		} else if (message.forwardOrigin() != null && message.forwardOrigin() instanceof MessageOriginUser) {
+			MessageOriginUser userOrigin = (MessageOriginUser) message.forwardOrigin();
+			if (Boolean.TRUE.equals(userOrigin.senderUser().isBot())) {
+				bot = userOrigin.senderUser();
+			}
 		}
 
 		boolean botRequest = false;
@@ -165,7 +171,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		return monospace > 1 && content.contains("<i>") && content.contains("<a href");
 	}
 
-	protected void manageWrongRequest(TelegramBot bot, Message message, Long chatId, String content,
+	protected void manageWrongRequest(TelegramBot bot, Message message, long chatId, String content,
 			String errorMessage) {
 		// notify user of the error
 		StringBuilder stringBuilder = new StringBuilder();
@@ -173,9 +179,9 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		stringBuilder.append(errorMessage);
 		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 		TelegramUtils.setMessageThreadId(sendMessage, message);
-		sendMessage.replyToMessageId(message.messageId());
+		sendMessage.replyParameters(new ReplyParameters(message.messageId()));
 		sendMessage.parseMode(ParseMode.HTML);
-		sendMessage.disableWebPagePreview(true);
+		sendMessage.linkPreviewOptions(new LinkPreviewOptions().isDisabled(true));
 
 		logService.log(new LogEvent(message.from().id(), chatId, new LogEventMessage(message.messageId(), content),
 				errorMessage));
@@ -183,7 +189,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		bot.execute(sendMessage);
 	}
 
-	protected void processNewRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,
+	protected void processNewRequest(TelegramBot bot, Message message, long chatId, Integer messageId,
 			LocalDateTime requestTime, Group group, String content, String link) {
 		Long userId = message.from().id();
 
@@ -256,7 +262,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		manageRequestResult(bot, message, chatId, messageId, requestResult, content);
 	}
 
-	private void manageRequestResult(TelegramBot bot, Message message, Long chatId, Integer messageId,
+	private void manageRequestResult(TelegramBot bot, Message message, long chatId, Integer messageId,
 			RequestResult requestResult, String content) {
 
 		switch (requestResult.getResult()) {

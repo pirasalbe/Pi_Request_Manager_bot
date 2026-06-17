@@ -15,12 +15,14 @@ import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Audio;
 import com.pengrad.telegrambot.model.Chat.Type;
 import com.pengrad.telegrambot.model.Document;
+import com.pengrad.telegrambot.model.LinkPreviewOptions;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.User;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.ParseMode;
+import com.pengrad.telegrambot.model.request.ReplyParameters;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.EditMessageReplyMarkup;
@@ -110,7 +112,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler refreshCommands() {
 		return (bot, update) -> {
-			Long chatId = TelegramUtils.getChatId(update);
+			long chatId = TelegramUtils.getChatId(update);
 
 			commandsService.defineAdminCommandsAsync(chatId);
 
@@ -131,7 +133,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler markPending() {
 		return (bot, update) -> {
-			Long chatId = TelegramUtils.getChatId(update);
+			long chatId = TelegramUtils.getChatId(update);
 
 			Optional<Group> optional = groupService.findById(chatId);
 
@@ -157,7 +159,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler markPaused() {
 		return (bot, update) -> {
-			Long chatId = TelegramUtils.getChatId(update);
+			long chatId = TelegramUtils.getChatId(update);
 
 			Optional<Group> optional = groupService.findById(chatId);
 
@@ -183,7 +185,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler markInProgress() {
 		return (bot, update) -> {
-			Long chatId = TelegramUtils.getChatId(update);
+			long chatId = TelegramUtils.getChatId(update);
 
 			Optional<Group> optional = groupService.findById(chatId);
 
@@ -263,8 +265,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 			// delete previous message if in private
 			if (isCallbackMessageFromPM(update)
 					|| update.callbackQuery().data().endsWith(ContributorAction.FORCE_DELETE)) {
-				DeleteMessage deleteMessage = new DeleteMessage(update.callbackQuery().message().chat().id(),
-						update.callbackQuery().message().messageId());
+				Message message = TelegramUtils.getCallbackQueryMessage(update);
+				DeleteMessage deleteMessage = new DeleteMessage(message.chat().id(), message.messageId());
 				bot.execute(deleteMessage);
 			}
 
@@ -272,8 +274,8 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 	}
 
 	private boolean isCallbackMessageFromPM(Update update) {
-		return update.callbackQuery().message() != null
-				&& update.callbackQuery().message().chat().type() == Type.Private;
+		Message message = TelegramUtils.getCallbackQueryMessage(update);
+		return message != null && message.chat().type() == Type.Private;
 	}
 
 	private String performAction(TelegramBot bot, ContributorAction action, Long messageId, Long groupId,
@@ -305,7 +307,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		return result;
 	}
 
-	private Long notifyDone(TelegramBot bot, Long groupId, Long messageId, User contributor, Optional<Request> optional,
+	private Long notifyDone(TelegramBot bot, long groupId, Long messageId, User contributor, Optional<Request> optional,
 			boolean showUndo) {
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append("Hey there 👋 Here's your requested book. Happy ");
@@ -321,7 +323,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				.append("</code>");
 		SendMessage sendMessage = new SendMessage(groupId, stringBuilder.toString());
 		sendMessage.parseMode(ParseMode.HTML);
-		sendMessage.replyToMessageId(messageId.intValue());
+		sendMessage.replyParameters(new ReplyParameters(messageId.intValue()));
 
 		// undo button
 		if (showUndo) {
@@ -395,7 +397,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	private TelegramHandler markDone(boolean reply) {
 		return (bot, update) -> {
-			Long chatId = TelegramUtils.getChatId(update);
+			long chatId = TelegramUtils.getChatId(update);
 
 			Optional<Group> optional = groupService.findById(chatId);
 
@@ -430,7 +432,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		};
 	}
 
-	private Integer markDoneWithMessage(TelegramBot bot, Update update, Long chatId, Message message) {
+	private Integer markDoneWithMessage(TelegramBot bot, Update update, long chatId, Message message) {
 		StringBuilder replyBuilder = new StringBuilder();
 
 		String text = TelegramUtils.removeCommand(update.message().text(), update.message().entities()).trim();
@@ -446,7 +448,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		sendMessageReply.parseMode(ParseMode.HTML);
 
 		// reply to the request
-		sendMessageReply.replyToMessageId(message.messageId());
+		sendMessageReply.replyParameters(new ReplyParameters(message.messageId()));
 
 		SendResponse response = bot.execute(sendMessageReply);
 
@@ -504,7 +506,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler markDoneWithFile() {
 		return (bot, update) -> {
-			Long chatId = TelegramUtils.getChatId(update);
+			long chatId = TelegramUtils.getChatId(update);
 
 			Optional<Group> optional = groupService.findById(chatId);
 
@@ -594,7 +596,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler markCancelled() {
 		return (bot, update) -> {
-			Long chatId = TelegramUtils.getChatId(update);
+			long chatId = TelegramUtils.getChatId(update);
 			String text = update.message().text();
 
 			Optional<Group> optional = groupService.findById(chatId);
@@ -665,7 +667,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 					message = getErrorMessage(COMMAND_REMOVE);
 				}
 
-				SendMessage sendMessage = new SendMessage(chatId, message);
+				SendMessage sendMessage = new SendMessage(chatId.longValue(), message);
 				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
 
@@ -676,7 +678,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler findRequests() {
 		return (bot, update) -> {
-			Long chatId = TelegramUtils.getChatId(update);
+			long chatId = TelegramUtils.getChatId(update);
 
 			String text = update.message().text();
 			boolean isPrivate = update.message().chat().type() == Type.Private;
@@ -713,7 +715,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler showRequest() {
 		return (bot, update) -> {
-			Long chatId = TelegramUtils.getChatId(update);
+			long chatId = TelegramUtils.getChatId(update);
 			String text = update.message().text();
 
 			Optional<Group> optional = groupService.findById(chatId);
@@ -740,7 +742,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				SendMessage sendMessage = new SendMessage(chatId, message);
 				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
-				sendMessage.disableWebPagePreview(true);
+				sendMessage.linkPreviewOptions(new LinkPreviewOptions().isDisabled(true));
 
 				sendMessageAndDelete(bot, sendMessage, 60, TimeUnit.SECONDS);
 				deleteMessage(bot, update.message());
@@ -771,7 +773,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		};
 	}
 
-	private void sendRequestWithAction(TelegramBot bot, Long chatId, Long groupId, Long messageId) {
+	private void sendRequestWithAction(TelegramBot bot, long chatId, Long groupId, Long messageId) {
 		Optional<Group> optional = groupService.findById(groupId);
 		if (optional.isPresent()) {
 
@@ -782,7 +784,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				String message = getRequestInfo(bot, optional.get(), requestOptional);
 				SendMessage sendMessage = new SendMessage(chatId, message);
 				sendMessage.parseMode(ParseMode.HTML);
-				sendMessage.disableWebPagePreview(true);
+				sendMessage.linkPreviewOptions(new LinkPreviewOptions().isDisabled(true));
 				InlineKeyboardMarkup inlineKeyboard = RequestUtils.getRequestKeyboard(configuration.getUsername(),
 						groupId, messageId, status, "📝 Refresh");
 
@@ -832,14 +834,15 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 						.append("'>this request.</a>\n");
 				stringBuilder.append("Are you sure you want to continue?\n");
 				stringBuilder.append("<i>This message will disappear in 1 minute.</i>");
-				SendMessage sendMessage = new SendMessage(update.callbackQuery().from().id(), stringBuilder.toString());
+				SendMessage sendMessage = new SendMessage(update.callbackQuery().from().id().longValue(),
+						stringBuilder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
 
 				// get previous message
 				Long showRequestMessageId = null;
 				Long showRequestChatId = null;
 				if (isCallbackMessageFromPM(update)) {
-					showRequestMessageId = update.callbackQuery().message().messageId().longValue();
+					showRequestMessageId = TelegramUtils.getCallbackQueryMessage(update).messageId().longValue();
 					showRequestChatId = update.callbackQuery().from().id();
 				}
 

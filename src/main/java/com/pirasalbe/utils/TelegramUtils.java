@@ -271,7 +271,22 @@ public class TelegramUtils {
 		} else if (update.channelPost() != null) {
 			message = update.channelPost();
 		} else if (update.callbackQuery() != null) {
-			message = update.callbackQuery().message();
+			message = getCallbackQueryMessage(update);
+		}
+
+		return message;
+	}
+
+	/**
+	 * Get message from update
+	 *
+	 * @param update Update
+	 * @return Message
+	 */
+	public static Message getCallbackQueryMessage(Update update) {
+		Message message = null;
+		if (update.callbackQuery() != null && update.callbackQuery().maybeInaccessibleMessage() instanceof Message) {
+			message = (Message) update.callbackQuery().maybeInaccessibleMessage();
 		}
 
 		return message;

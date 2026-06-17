@@ -7,12 +7,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ForceReply;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.Keyboard;
 import com.pengrad.telegrambot.model.request.ParseMode;
+import com.pengrad.telegrambot.model.request.ReplyParameters;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
@@ -51,8 +53,9 @@ public class TelegramSuperAdminCommandHandlerService {
 	 */
 	public TelegramHandler showActions() {
 		return (bot, update) -> {
-			SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update), "What do you want to do?");
-			sendMessage.replyToMessageId(TelegramUtils.getMessageId(update));
+			SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update).longValue(),
+					"What do you want to do?");
+			sendMessage.replyParameters(new ReplyParameters(TelegramUtils.getMessageId(update)));
 
 			sendMessage.replyMarkup(getAdminsKeyboard());
 
@@ -85,7 +88,10 @@ public class TelegramSuperAdminCommandHandlerService {
 				page = Integer.parseInt(parts[0]);
 				size = Integer.parseInt(parts[1]);
 
-				deleteMessage(bot, update.callbackQuery().from().id(), update.callbackQuery().message().messageId());
+				Message message = TelegramUtils.getCallbackQueryMessage(update);
+				if (message != null) {
+					deleteMessage(bot, update.callbackQuery().from().id(), message.messageId());
+				}
 			}
 
 			emptyAnswerCallbackQuery(bot, update.callbackQuery().id());
@@ -103,14 +109,15 @@ public class TelegramSuperAdminCommandHandlerService {
 		builder.append("Page ").append(page + 1).append(" of ").append(pagination.getTotalPages());
 
 		// create message
-		SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update), builder.toString());
+		SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update).longValue(), builder.toString());
 		sendMessage.parseMode(ParseMode.HTML);
 
 		// prepare keyboard
 		InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
 		sendMessage.replyMarkup(keyboard);
-		pagination.getElements().forEach(admin -> keyboard.addRow(
-				new InlineKeyboardButton(admin.getName() + " - (" + admin.getId() + ") - " + admin.getRole().name())
+		pagination.getElements()
+				.forEach(admin -> keyboard.addRow(new InlineKeyboardButton(
+						admin.getName() + " - (" + admin.getId() + ") - " + admin.getRole().name())
 						.callbackData(COMMAND_COPY + " " + admin.getId())));
 
 		// add navigation buttons
@@ -146,7 +153,8 @@ public class TelegramSuperAdminCommandHandlerService {
 
 			emptyAnswerCallbackQuery(bot, update.callbackQuery().id());
 
-			SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update), "<code>" + id + "</code>");
+			SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update).longValue(),
+					"<code>" + id + "</code>");
 			sendMessage.parseMode(ParseMode.HTML);
 
 			bot.execute(sendMessage);
@@ -159,7 +167,7 @@ public class TelegramSuperAdminCommandHandlerService {
 			StringBuilder builder = new StringBuilder(COMMAND_ADD).append("\n");
 			builder.append("Send the ID of the user and the role").append("\n");
 			builder.append("Format: id name <code>").append(UserRole.getRoles()).append("</code>");
-			SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update), builder.toString());
+			SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update).longValue(), builder.toString());
 			sendMessage.parseMode(ParseMode.HTML);
 			sendMessage.replyMarkup(new ForceReply().inputFieldPlaceholder("id name " + UserRole.getRoles()));
 
@@ -188,7 +196,7 @@ public class TelegramSuperAdminCommandHandlerService {
 		};
 	}
 
-	private SendMessage addUser(Long chatId, String text) {
+	private SendMessage addUser(long chatId, String text) {
 		SendMessage sendMessage = null;
 
 		String[] parts = text.trim().split(" ");
@@ -218,7 +226,7 @@ public class TelegramSuperAdminCommandHandlerService {
 			builder.append("Send the ID of the user to remove").append("\n");
 			String placeholder = "id";
 			builder.append("Format: <code>").append(placeholder).append("</code>");
-			SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update), builder.toString());
+			SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update).longValue(), builder.toString());
 			sendMessage.parseMode(ParseMode.HTML);
 			sendMessage.replyMarkup(new ForceReply().inputFieldPlaceholder(placeholder));
 
@@ -247,7 +255,7 @@ public class TelegramSuperAdminCommandHandlerService {
 		};
 	}
 
-	private SendMessage removeUser(Long chatId, String text) {
+	private SendMessage removeUser(long chatId, String text) {
 		SendMessage sendMessage = null;
 
 		// add user
