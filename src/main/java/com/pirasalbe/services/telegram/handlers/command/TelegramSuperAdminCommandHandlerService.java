@@ -195,7 +195,7 @@ public class TelegramSuperAdminCommandHandlerService {
 		};
 	}
 
-	private SendMessage addUser(long chatId, String text) {
+	private SendMessage addUser(Long chatId, String text) {
 		SendMessage sendMessage = null;
 
 		String[] parts = text.trim().split(" ");
@@ -254,7 +254,7 @@ public class TelegramSuperAdminCommandHandlerService {
 		};
 	}
 
-	private SendMessage removeUser(long chatId, String text) {
+	private SendMessage removeUser(Long chatId, String text) {
 		SendMessage sendMessage = null;
 
 		// add user

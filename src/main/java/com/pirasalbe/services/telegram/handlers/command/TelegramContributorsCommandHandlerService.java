@@ -832,7 +832,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 						.append("'>this request.</a>\n");
 				stringBuilder.append("Are you sure you want to continue?\n");
 				stringBuilder.append("<i>This message will disappear in 1 minute.</i>");
-				SendMessage sendMessage = TelegramUtils.sendMessage(update.callbackQuery().from().id().longValue(),
+				SendMessage sendMessage = TelegramUtils.sendMessage(update.callbackQuery().from().id(),
 						stringBuilder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
 
