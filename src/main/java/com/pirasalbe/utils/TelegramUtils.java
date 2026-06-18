@@ -3,11 +3,13 @@ package com.pirasalbe.utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.pengrad.telegrambot.model.LinkPreviewOptions;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.MessageEntity;
 import com.pengrad.telegrambot.model.MessageEntity.Type;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.User;
+import com.pengrad.telegrambot.model.request.ReplyParameters;
 import com.pengrad.telegrambot.request.SendMessage;
 
 /**
@@ -333,10 +335,49 @@ public class TelegramUtils {
 		return Boolean.TRUE.equals(message.isTopicMessage()) && message.messageId().equals(message.messageThreadId());
 	}
 
+	/**
+	 * Creates a new message to send
+	 *
+	 * @param chatId Chat where to send the message
+	 * @param text   Text of the message
+	 * @return new message to send
+	 */
+	public static SendMessage sendMessage(Long chatId, String text) {
+		if (chatId == null) {
+			throw new IllegalArgumentException("Cannot send message [" + text + "] to null chat id [" + chatId + "]");
+		}
+		return new SendMessage(chatId.longValue(), text);
+	}
+
+	/**
+	 * Adds message thread id to message to send
+	 *
+	 * @param sendMessage Message to send
+	 * @param message     Original message
+	 */
 	public static void setMessageThreadId(SendMessage sendMessage, Message message) {
 		if (Boolean.TRUE.equals(message.isTopicMessage()) && message.messageThreadId() != null) {
 			sendMessage.messageThreadId(message.messageThreadId());
 		}
+	}
+
+	/**
+	 * Disables the preview of a message to send
+	 *
+	 * @param sendMessage Message to send
+	 */
+	public static void disablePreview(SendMessage sendMessage) {
+		sendMessage.linkPreviewOptions(new LinkPreviewOptions().isDisabled(true));
+	}
+
+	/**
+	 * Replies to a message
+	 *
+	 * @param sendMessage Message to send
+	 * @param message     Message to reply to
+	 */
+	public static void replyToMessage(SendMessage sendMessage, Message message) {
+		sendMessage.replyParameters(new ReplyParameters(message.messageId()));
 	}
 
 }
