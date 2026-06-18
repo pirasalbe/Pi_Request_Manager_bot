@@ -282,7 +282,7 @@ public class ChannelForwardingService {
 
 		SendMessage sendMessage = new SendMessage(channelId, message);
 		sendMessage.parseMode(ParseMode.HTML);
-		sendMessage.linkPreviewOptions(new LinkPreviewOptions().isDisabled(true));
+		TelegramUtils.disablePreview(sendMessage);
 
 		InlineKeyboardMarkup inlineKeyboard = RequestUtils.getRequestKeyboard(configuration.getUsername(),
 				request.getId().getGroupId(), request.getId().getMessageId(), request.getStatus(), "⚙️ Actions in PM");

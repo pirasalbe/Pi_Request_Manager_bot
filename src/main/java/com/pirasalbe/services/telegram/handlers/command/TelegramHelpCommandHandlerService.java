@@ -56,7 +56,7 @@ public class TelegramHelpCommandHandlerService extends AbstractTelegramHandlerSe
 		SendMessage sendMessage = new SendMessage(update.message().chat().id().longValue(), message);
 		TelegramUtils.setMessageThreadId(sendMessage, update.message());
 		sendMessage.parseMode(ParseMode.HTML);
-		sendMessage.linkPreviewOptions(new LinkPreviewOptions().isDisabled(true));
+		TelegramUtils.disablePreview(sendMessage);
 
 		// keep message only in private
 		boolean delete = chatType != Type.Private;

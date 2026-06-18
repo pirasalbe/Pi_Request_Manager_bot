@@ -211,7 +211,7 @@ public class AbstractTelegramHandlerService {
 	private void sendRequestListMessage(long chatId, String message, boolean deleteMessages) {
 		SendMessage sendMessage = new SendMessage(chatId, message);
 		sendMessage.parseMode(ParseMode.HTML);
-		sendMessage.linkPreviewOptions(new LinkPreviewOptions().isDisabled(true));
+		TelegramUtils.disablePreview(sendMessage);
 
 		botQueue.add(b -> sendMessageAndDelete(b, sendMessage, 5, TimeUnit.MINUTES, deleteMessages));
 	}

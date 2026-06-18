@@ -115,7 +115,7 @@ public abstract class AbstractTelegramStatsCommandHandlerService extends Abstrac
 	protected void sendMessage(long chatId, String message) {
 		SendMessage sendMessage = new SendMessage(chatId, message);
 		sendMessage.parseMode(ParseMode.HTML);
-		sendMessage.linkPreviewOptions(new LinkPreviewOptions().isDisabled(true));
+		TelegramUtils.disablePreview(sendMessage);
 
 		botQueue.add(bot -> bot.execute(sendMessage));
 	}

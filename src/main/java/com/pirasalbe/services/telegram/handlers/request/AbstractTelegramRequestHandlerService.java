@@ -179,9 +179,9 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		stringBuilder.append(errorMessage);
 		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
 		TelegramUtils.setMessageThreadId(sendMessage, message);
-		sendMessage.replyParameters(new ReplyParameters(message.messageId()));
+		TelegramUtils.replyToMessage(sendMessage, message);
 		sendMessage.parseMode(ParseMode.HTML);
-		sendMessage.linkPreviewOptions(new LinkPreviewOptions().isDisabled(true));
+		TelegramUtils.disablePreview(sendMessage);
 
 		logService.log(new LogEvent(message.from().id(), chatId, new LogEventMessage(message.messageId(), content),
 				errorMessage));

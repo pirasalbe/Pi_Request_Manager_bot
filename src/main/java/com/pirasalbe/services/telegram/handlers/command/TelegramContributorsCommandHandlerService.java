@@ -448,7 +448,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		sendMessageReply.parseMode(ParseMode.HTML);
 
 		// reply to the request
-		sendMessageReply.replyParameters(new ReplyParameters(message.messageId()));
+		TelegramUtils.replyToMessage(sendMessageReply, message);
 
 		SendResponse response = bot.execute(sendMessageReply);
 
@@ -742,7 +742,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				SendMessage sendMessage = new SendMessage(chatId, message);
 				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
-				sendMessage.linkPreviewOptions(new LinkPreviewOptions().isDisabled(true));
+				TelegramUtils.disablePreview(sendMessage);
 
 				sendMessageAndDelete(bot, sendMessage, 60, TimeUnit.SECONDS);
 				deleteMessage(bot, update.message());
@@ -784,7 +784,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				String message = getRequestInfo(bot, optional.get(), requestOptional);
 				SendMessage sendMessage = new SendMessage(chatId, message);
 				sendMessage.parseMode(ParseMode.HTML);
-				sendMessage.linkPreviewOptions(new LinkPreviewOptions().isDisabled(true));
+				TelegramUtils.disablePreview(sendMessage);
 				InlineKeyboardMarkup inlineKeyboard = RequestUtils.getRequestKeyboard(configuration.getUsername(),
 						groupId, messageId, status, "📝 Refresh");
 
