@@ -430,7 +430,7 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 			Long chatId = TelegramUtils.getChatId(update);
 
 			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, "Refresh in progress");
-			sendMessage.replyParameters(new ReplyParameters(update.message().messageId()));
+			Telegram.replyToMessage(sendMessage, update.message());
 			SendResponse sendResponse = bot.execute(sendMessage);
 
 			schedulerService.schedule(() -> refreshChannel(chatId, sendResponse, channelId), 10, TimeUnit.MILLISECONDS);
