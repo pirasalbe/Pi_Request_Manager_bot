@@ -430,7 +430,7 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 			Long chatId = TelegramUtils.getChatId(update);
 
 			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, "Refresh in progress");
-			Telegram.replyToMessage(sendMessage, update.message());
+			TelegramUtils.replyToMessage(sendMessage, update.message());
 			SendResponse sendResponse = bot.execute(sendMessage);
 
 			schedulerService.schedule(() -> refreshChannel(chatId, sendResponse, channelId), 10, TimeUnit.MILLISECONDS);
@@ -443,7 +443,7 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 
 		SendMessage sendMessage = TelegramUtils.sendMessage(chatId, "Requests detected. Operation in progress.");
 		if (sendResponse.isOk()) {
-			sendMessage.replyParameters(new ReplyParameters(sendResponse.message().messageId()));
+			TelegramUtils.replyToMessage(sendMessage, sendResponse.message());
 		}
 
 		telegramBotService.getBot().execute(sendMessage);

@@ -54,7 +54,7 @@ public class TelegramSuperAdminCommandHandlerService {
 		return (bot, update) -> {
 			SendMessage sendMessage = TelegramUtils.sendMessage(TelegramUtils.getChatId(update),
 					"What do you want to do?");
-			sendMessage.replyParameters(new ReplyParameters(TelegramUtils.getMessageId(update)));
+			TelegramUtils.replyToMessage(sendMessage, TelegramUtils.getMessageId(update));
 
 			sendMessage.replyMarkup(getAdminsKeyboard());
 

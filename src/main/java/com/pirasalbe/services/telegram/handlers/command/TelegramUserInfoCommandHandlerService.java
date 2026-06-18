@@ -79,7 +79,7 @@ public class TelegramUserInfoCommandHandlerService extends AbstractTelegramHandl
 
 		SendMessage sendMessage = TelegramUtils.sendMessage(chatId, stringBuilder.toString());
 		TelegramUtils.setMessageThreadId(sendMessage, message);
-		sendMessage.replyParameters(new ReplyParameters(messageId));
+		TelegramUtils.replyToMessage(sendMessage, messageId);
 		sendMessage.parseMode(ParseMode.HTML);
 
 		boolean delete = message.chat().type() != Type.Private;

@@ -321,7 +321,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				.append("</code>");
 		SendMessage sendMessage = TelegramUtils.sendMessage(groupId, stringBuilder.toString());
 		sendMessage.parseMode(ParseMode.HTML);
-		sendMessage.replyParameters(new ReplyParameters(messageId.intValue()));
+		TelegramUtils.replyToMessage(sendMessage, messageId.intValue());
 
 		// undo button
 		if (showUndo) {

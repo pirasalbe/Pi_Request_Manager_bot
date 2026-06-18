@@ -35,7 +35,7 @@ public class TelegramAliveCommandHandlerService extends AbstractTelegramHandlerS
 
 		boolean delete = update.message().chat().type() != Type.Private;
 		if (!delete) {
-			Telegram.replyToMessage(sendMessage, update.message());
+			TelegramUtils.replyToMessage(sendMessage, update.message());
 		}
 
 		sendMessageAndDelete(bot, sendMessage, 10, TimeUnit.SECONDS, delete);

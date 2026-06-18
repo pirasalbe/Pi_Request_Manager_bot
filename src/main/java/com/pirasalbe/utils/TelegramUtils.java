@@ -377,7 +377,17 @@ public class TelegramUtils {
 	 * @param message     Message to reply to
 	 */
 	public static void replyToMessage(SendMessage sendMessage, Message message) {
-		sendMessage.replyParameters(new ReplyParameters(message.messageId()));
+		TelegramUtils.replyToMessage(sendMessage, message.messageId());
+	}
+
+	/**
+	 * Replies to a message
+	 *
+	 * @param sendMessage Message to send
+	 * @param messageId   Message to reply to
+	 */
+	public static void replyToMessage(SendMessage sendMessage, int messageId) {
+		sendMessage.replyParameters(new ReplyParameters(messageId));
 	}
 
 }

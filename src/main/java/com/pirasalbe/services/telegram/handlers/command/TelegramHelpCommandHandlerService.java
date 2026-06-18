@@ -59,7 +59,7 @@ public class TelegramHelpCommandHandlerService extends AbstractTelegramHandlerSe
 		// keep message only in private
 		boolean delete = chatType != Type.Private;
 		if (!delete) {
-			Telegram.replyToMessage(sendMessage, update.message());
+			TelegramUtils.replyToMessage(sendMessage, update.message());
 		}
 
 		sendMessageAndDelete(bot, sendMessage, 10, TimeUnit.SECONDS, delete);
