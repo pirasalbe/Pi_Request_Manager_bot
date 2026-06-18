@@ -51,7 +51,7 @@ public class TelegramMyRequestsCommandHandlerService extends AbstractTelegramHan
 		String title = titleBuilder.toString();
 
 		if (requests.isEmpty()) {
-			SendMessage sendMessage = new SendMessage(chatId, title + "No requests found");
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, title + "No requests found");
 			sendMessage.parseMode(ParseMode.HTML);
 			bot.execute(sendMessage);
 		} else {

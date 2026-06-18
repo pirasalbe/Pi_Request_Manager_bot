@@ -30,12 +30,12 @@ public class TelegramAliveCommandHandlerService extends AbstractTelegramHandlerS
 	public void handle(TelegramBot bot, Update update) {
 		Long chatId = update.message().chat().id();
 
-		SendMessage sendMessage = new SendMessage(chatId, "Bot up!");
+		SendMessage sendMessage = TelegramUtils.sendMessage(chatId, "Bot up!");
 		TelegramUtils.setMessageThreadId(sendMessage, update.message());
 
 		boolean delete = update.message().chat().type() != Type.Private;
 		if (!delete) {
-			sendMessage.replyToMessageId(update.message().messageId());
+			TelegramUtils.replyToMessage(sendMessage, update.message());
 		}
 
 		sendMessageAndDelete(bot, sendMessage, 10, TimeUnit.SECONDS, delete);

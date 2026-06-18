@@ -12,6 +12,7 @@ import com.pengrad.telegrambot.model.ChatPermissions;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.User;
+import com.pengrad.telegrambot.model.message.origin.MessageOriginUser;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.RestrictChatMember;
@@ -126,8 +127,11 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 
 		if (message.viaBot() != null) {
 			bot = message.viaBot();
-		} else if (message.forwardFrom() != null && message.forwardFrom().isBot()) {
-			bot = message.forwardFrom();
+		} else if (message.forwardOrigin() != null && message.forwardOrigin() instanceof MessageOriginUser) {
+			MessageOriginUser userOrigin = (MessageOriginUser) message.forwardOrigin();
+			if (Boolean.TRUE.equals(userOrigin.senderUser().isBot())) {
+				bot = userOrigin.senderUser();
+			}
 		}
 
 		boolean botRequest = false;
@@ -171,11 +175,11 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append(TelegramUtils.tagUser(message));
 		stringBuilder.append(errorMessage);
-		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+		SendMessage sendMessage = TelegramUtils.sendMessage(chatId, stringBuilder.toString());
 		TelegramUtils.setMessageThreadId(sendMessage, message);
-		sendMessage.replyToMessageId(message.messageId());
+		TelegramUtils.replyToMessage(sendMessage, message);
 		sendMessage.parseMode(ParseMode.HTML);
-		sendMessage.disableWebPagePreview(true);
+		TelegramUtils.disablePreview(sendMessage);
 
 		logService.log(new LogEvent(message.from().id(), chatId, new LogEventMessage(message.messageId(), content),
 				errorMessage));
@@ -214,7 +218,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 				builder.append("\n").append("You have been muted until then.");
 			}
 
-			SendMessage sendMessage = new SendMessage(chatId, builder.toString());
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, builder.toString());
 			TelegramUtils.setMessageThreadId(sendMessage, message);
 			sendMessage.parseMode(ParseMode.HTML);
 			bot.execute(sendMessage);
@@ -268,7 +272,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append(TelegramUtils.tagUser(message));
 			stringBuilder.append(requestResult.getReason());
-			SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, stringBuilder.toString());
 			TelegramUtils.setMessageThreadId(sendMessage, message);
 			sendMessage.parseMode(ParseMode.HTML);
 

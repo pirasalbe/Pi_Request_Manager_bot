@@ -51,15 +51,15 @@ public class TelegramHelpCommandHandlerService extends AbstractTelegramHandlerSe
 			break;
 		}
 
-		SendMessage sendMessage = new SendMessage(update.message().chat().id(), message);
+		SendMessage sendMessage = TelegramUtils.sendMessage(update.message().chat().id(), message);
 		TelegramUtils.setMessageThreadId(sendMessage, update.message());
 		sendMessage.parseMode(ParseMode.HTML);
-		sendMessage.disableWebPagePreview(true);
+		TelegramUtils.disablePreview(sendMessage);
 
 		// keep message only in private
 		boolean delete = chatType != Type.Private;
 		if (!delete) {
-			sendMessage.replyToMessageId(update.message().messageId());
+			TelegramUtils.replyToMessage(sendMessage, update.message());
 		}
 
 		sendMessageAndDelete(bot, sendMessage, 10, TimeUnit.SECONDS, delete);

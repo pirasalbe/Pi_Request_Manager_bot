@@ -9,6 +9,7 @@ import com.pengrad.telegrambot.model.Chat.Type;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pirasalbe.models.telegram.handlers.TelegramCondition;
+import com.pirasalbe.utils.TelegramUtils;
 
 /**
  * Command conditions factory
@@ -62,7 +63,7 @@ public class TelegramChatConditionFactory {
 		if (update.message() != null) {
 			message = update.message();
 		} else if (update.callbackQuery() != null) {
-			message = update.callbackQuery().message();
+			message = TelegramUtils.getCallbackQueryMessage(update);
 		} else if (update.channelPost() != null) {
 			message = update.channelPost();
 		}

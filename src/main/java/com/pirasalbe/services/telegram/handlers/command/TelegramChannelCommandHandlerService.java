@@ -77,7 +77,7 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append("Channel id: ");
 			stringBuilder.append("<code>").append(chatId).append("</code>");
-			SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, stringBuilder.toString());
 			sendMessage.parseMode(ParseMode.HTML);
 
 			sendMessageAndDelete(bot, sendMessage, 30, TimeUnit.SECONDS);
@@ -99,7 +99,7 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 			Long chatId = TelegramUtils.getChatId(update);
 
 			channelManagementService.deleteIfExists(channelId);
-			SendMessage sendMessage = new SendMessage(chatId, "Channel disabled");
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, "Channel disabled");
 
 			bot.execute(sendMessage);
 		};
@@ -109,7 +109,7 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 		return (bot, update) -> {
 			Long chatId = TelegramUtils.getChatId(update);
 
-			SendMessage sendMessage = new SendMessage(chatId, "Choose the channel you want to configure");
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, "Choose the channel you want to configure");
 			sendMessage.parseMode(ParseMode.HTML);
 
 			// prepare keyboard
@@ -148,7 +148,7 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 
 				sendGroupConfiguration(bot, chatId, channelId);
 			} else {
-				SendMessage sendMessage = new SendMessage(chatId, "Add me first to the channel");
+				SendMessage sendMessage = TelegramUtils.sendMessage(chatId, "Add me first to the channel");
 				bot.execute(sendMessage);
 			}
 		};
@@ -162,34 +162,38 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 	public TelegramHandler configuration() {
 		return (bot, update) -> {
 			answerCallbackQueryEmpty(bot, update);
-			deleteMessage(bot, update.callbackQuery().message());
 
-			Long chatId = update.callbackQuery().message().chat().id();
-			String text = update.callbackQuery().data();
+			Message message = TelegramUtils.getCallbackQueryMessage(update);
+			if (message != null) {
+				deleteMessage(bot, message);
 
-			Optional<Long> channelIdOptional = TelegramConditionUtils.getChannelId(text);
+				Long chatId = message.chat().id();
+				String text = update.callbackQuery().data();
 
-			if (channelIdOptional.isPresent()) {
-				Long channelId = channelIdOptional.get();
+				Optional<Long> channelIdOptional = TelegramConditionUtils.getChannelId(text);
 
-				if (text.contains(TelegramConditionUtils.GROUP_CONDITION)) {
-					manageGroupCondition(channelId, text);
+				if (channelIdOptional.isPresent()) {
+					Long channelId = channelIdOptional.get();
 
-					sendGroupConfiguration(bot, chatId, channelId);
-				} else if (text.contains(TelegramConditionUtils.FORMAT_CONDITION)) {
-					manageFormatCondition(channelId, text);
+					if (text.contains(TelegramConditionUtils.GROUP_CONDITION)) {
+						manageGroupCondition(channelId, text);
 
-					sendFormatConfiguration(bot, chatId, channelId);
-				} else if (text.contains(TelegramConditionUtils.SOURCE_CONDITION)) {
-					manageSourceCondition(channelId, text);
+						sendGroupConfiguration(bot, chatId, channelId);
+					} else if (text.contains(TelegramConditionUtils.FORMAT_CONDITION)) {
+						manageFormatCondition(channelId, text);
 
-					sendSourceConfiguration(bot, chatId, channelId);
-				} else if (text.contains(TelegramConditionUtils.STATUS_CONDITION)) {
-					manageStatusCondition(channelId, text);
+						sendFormatConfiguration(bot, chatId, channelId);
+					} else if (text.contains(TelegramConditionUtils.SOURCE_CONDITION)) {
+						manageSourceCondition(channelId, text);
 
-					sendStatusConfiguration(bot, chatId, channelId);
-				} else {
-					sendConfigurationEnd(bot, chatId, channelId);
+						sendSourceConfiguration(bot, chatId, channelId);
+					} else if (text.contains(TelegramConditionUtils.STATUS_CONDITION)) {
+						manageStatusCondition(channelId, text);
+
+						sendStatusConfiguration(bot, chatId, channelId);
+					} else {
+						sendConfigurationEnd(bot, chatId, channelId);
+					}
 				}
 			}
 		};
@@ -214,7 +218,7 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 			ChannelRuleType type, String condition, List<T> possibleValues, Function<T, String> valueFunction,
 			Function<T, String> buttonNameFunction, InlineKeyboardButton previousButton,
 			InlineKeyboardButton nextButton) {
-		SendMessage sendMessage = new SendMessage(chatId, messageText);
+		SendMessage sendMessage = TelegramUtils.sendMessage(chatId, messageText);
 		sendMessage.parseMode(ParseMode.HTML);
 
 		// prepare keyboard
@@ -373,7 +377,7 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 		stringBuilder.append("Configurations saved.\n");
 		stringBuilder.append("Send <code>").append(COMMAND_REFRESH).append(" ").append(channelId)
 				.append("</code> to reload the requests.");
-		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+		SendMessage sendMessage = TelegramUtils.sendMessage(chatId, stringBuilder.toString());
 		sendMessage.parseMode(ParseMode.HTML);
 		bot.execute(sendMessage);
 
@@ -390,7 +394,7 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 				.append("</i>\n");
 		configurationBuilder.append("Statuses: <i>").append(getRulesByType(channelRules, ChannelRuleType.STATUS))
 				.append("</i>");
-		SendMessage sendConfigurationMessage = new SendMessage(channelId, configurationBuilder.toString());
+		SendMessage sendConfigurationMessage = TelegramUtils.sendMessage(channelId, configurationBuilder.toString());
 		sendConfigurationMessage.parseMode(ParseMode.HTML);
 		SendResponse sendResponse = bot.execute(sendConfigurationMessage);
 
@@ -425,8 +429,8 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 			Long channelId = getChannelIdFromText(update);
 			Long chatId = TelegramUtils.getChatId(update);
 
-			SendMessage sendMessage = new SendMessage(chatId, "Refresh in progress");
-			sendMessage.replyToMessageId(update.message().messageId());
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, "Refresh in progress");
+			TelegramUtils.replyToMessage(sendMessage, update.message());
 			SendResponse sendResponse = bot.execute(sendMessage);
 
 			schedulerService.schedule(() -> refreshChannel(chatId, sendResponse, channelId), 10, TimeUnit.MILLISECONDS);
@@ -437,9 +441,9 @@ public class TelegramChannelCommandHandlerService extends AbstractTelegramHandle
 	private void refreshChannel(Long chatId, SendResponse sendResponse, Long channelId) {
 		channelForwardingService.refreshChannel(channelId);
 
-		SendMessage sendMessage = new SendMessage(chatId, "Requests detected. Operation in progress.");
+		SendMessage sendMessage = TelegramUtils.sendMessage(chatId, "Requests detected. Operation in progress.");
 		if (sendResponse.isOk()) {
-			sendMessage.replyToMessageId(sendResponse.message().messageId());
+			TelegramUtils.replyToMessage(sendMessage, sendResponse.message());
 		}
 
 		telegramBotService.getBot().execute(sendMessage);

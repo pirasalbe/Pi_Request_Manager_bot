@@ -20,6 +20,7 @@ import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.AdminService;
 import com.pirasalbe.services.RequestManagementService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
+import com.pirasalbe.utils.TelegramUtils;
 
 /**
  * Service to manage stats
@@ -54,7 +55,7 @@ public abstract class AbstractTelegramStatsCommandHandlerService extends Abstrac
 
 		// check if the context is valid, either enabled group or PM
 		if (groupService.existsById(chatId) || isPrivate) {
-			SendMessage sendMessage = new SendMessage(chatId, "Preparing stats..");
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, "Preparing stats..");
 			sendMessageAndDelete(bot, sendMessage, 10, TimeUnit.SECONDS);
 
 			getAndSendStats(chatId, group, text);
@@ -112,9 +113,9 @@ public abstract class AbstractTelegramStatsCommandHandlerService extends Abstrac
 	}
 
 	protected void sendMessage(Long chatId, String message) {
-		SendMessage sendMessage = new SendMessage(chatId, message);
+		SendMessage sendMessage = TelegramUtils.sendMessage(chatId, message);
 		sendMessage.parseMode(ParseMode.HTML);
-		sendMessage.disableWebPagePreview(true);
+		TelegramUtils.disablePreview(sendMessage);
 
 		botQueue.add(bot -> bot.execute(sendMessage));
 	}

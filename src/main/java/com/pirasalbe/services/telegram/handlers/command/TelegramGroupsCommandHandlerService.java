@@ -56,7 +56,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 
 			Optional<Group> optional = groupService.findById(chatId);
 
-			SendMessage sendMessage = new SendMessage(chatId,
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId,
 					optional.isPresent() ? optional.get().toString() : ENABLE_THE_GROUP_FIRST);
 			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
@@ -70,7 +70,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 			Long chatId = TelegramUtils.getChatId(update);
 
 			groupService.insertIfNotExists(chatId, update.message().chat().title());
-			SendMessage sendMessage = new SendMessage(chatId, "Group enabled");
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, "Group enabled");
 			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 
 			sendMessage(bot, update, sendMessage);
@@ -82,7 +82,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 			Long chatId = TelegramUtils.getChatId(update);
 
 			groupService.deleteIfExists(chatId);
-			SendMessage sendMessage = new SendMessage(chatId, "Group disabled");
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, "Group disabled");
 			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 
 			sendMessage(bot, update, sendMessage);
@@ -122,7 +122,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 				message = rightFormatMessage(COMMAND_REQUEST_LIMIT, "number of request per day");
 			}
 
-			SendMessage sendMessage = new SendMessage(chatId, message);
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, message);
 			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 
@@ -151,7 +151,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 				message = rightFormatMessage(COMMAND_NONENGLISH_AUDIOBOOK_DAYS_WAIT, "number of days to wait");
 			}
 
-			SendMessage sendMessage = new SendMessage(chatId, message);
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, message);
 			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 
@@ -180,7 +180,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 				message = rightFormatMessage(COMMAND_ENGLISH_AUDIOBOOK_DAYS_WAIT, "number of days to wait");
 			}
 
-			SendMessage sendMessage = new SendMessage(chatId, message);
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, message);
 			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 
@@ -209,7 +209,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 				message = rightFormatMessage(COMMAND_REPEAT_HOURS_WAIT, "number of hours to wait");
 			}
 
-			SendMessage sendMessage = new SendMessage(chatId, message);
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, message);
 			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 
@@ -239,7 +239,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 				message = rightFormatMessage(COMMAND_ALLOW, "ebooks/audiobooks/both");
 			}
 
-			SendMessage sendMessage = new SendMessage(chatId, message);
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, message);
 			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 
@@ -271,7 +271,7 @@ public class TelegramGroupsCommandHandlerService extends AbstractTelegramHandler
 				message = rightFormatMessage(COMMAND_NO_REPEAT, Arrays.asList(Source.values()).toString());
 			}
 
-			SendMessage sendMessage = new SendMessage(chatId, message);
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, message);
 			TelegramUtils.setMessageThreadId(sendMessage, update.message());
 			sendMessage.parseMode(ParseMode.HTML);
 

@@ -44,6 +44,7 @@ import com.pirasalbe.utils.TelegramUtils;
 import it.tdlight.client.Result;
 import it.tdlight.jni.TdApi;
 import it.tdlight.jni.TdApi.MessageLinkInfo;
+import it.tdlight.jni.TdApi.MessageProperties;
 import it.tdlight.jni.TdApi.Ok;
 
 /**
@@ -278,9 +279,9 @@ public class ChannelForwardingService {
 	private Long forwardRequest(Long channelId, Request request, String groupName) {
 		String message = RequestUtils.getRequestInfo(bot, groupName, request);
 
-		SendMessage sendMessage = new SendMessage(channelId, message);
+		SendMessage sendMessage = TelegramUtils.sendMessage(channelId, message);
 		sendMessage.parseMode(ParseMode.HTML);
-		sendMessage.disableWebPagePreview(true);
+		TelegramUtils.disablePreview(sendMessage);
 
 		InlineKeyboardMarkup inlineKeyboard = RequestUtils.getRequestKeyboard(configuration.getUsername(),
 				request.getId().getGroupId(), request.getId().getMessageId(), request.getStatus(), "⚙️ Actions in PM");
@@ -347,22 +348,30 @@ public class ChannelForwardingService {
 
 		if (messageInfo.isError()) {
 			validation = Validation.invalid("Cannot get userBot messageId, " + messageInfo.getError());
-		} else if (messageInfo.get().message != null && messageInfo.get().message.canBeDeletedForAllUsers) {
+		} else if (messageInfo.get().message != null) {
 			// read the id
 			long id = messageInfo.get().message.id;
 
-			// delete message with userbot
-			Result<Ok> deleteResult = userBotService
-					.sendSync(new TdApi.DeleteMessages(channelId, new long[] { id }, true));
+			Result<MessageProperties> properties = userBotService.getMessageProperties(channelId, id);
 
-			if (deleteResult.isError()) {
-				validation = Validation.invalid(deleteResult.getError().toString());
-			} else {
-				LOGGER.debug("Request with messageId {} with userBot in channel {} deleted successfully", messageId,
-						channelId);
-				validation = Validation.valid();
+			if (properties.isError()) {
+				validation = Validation.invalid("Cannot get userBot message properties, " + messageInfo.getError());
+			} else if (properties.get() != null && properties.get().canBeDeletedForAllUsers) {
+				// delete message with userbot
+				Result<Ok> deleteResult = userBotService
+						.sendSync(new TdApi.DeleteMessages(channelId, new long[] { id }, true));
+
+				if (deleteResult.isError()) {
+					validation = Validation.invalid(deleteResult.getError().toString());
+				} else {
+					LOGGER.debug("Request with messageId {} with userBot in channel {} deleted successfully", messageId,
+							channelId);
+					validation = Validation.valid();
+				}
 			}
-		} else {
+		}
+
+		if (validation == null) {
 			validation = Validation.invalid("not allowed to delete for all users");
 		}
 

@@ -77,9 +77,9 @@ public class TelegramAcceptRequestHandlerService extends AbstractTelegramRequest
 		acceptBuilder.append(TelegramUtils.getLink(message));
 		acceptBuilder.append("'>request</a> has been accepted.");
 
-		SendMessage sendMessage = new SendMessage(chatId, acceptBuilder.toString());
+		SendMessage sendMessage = TelegramUtils.sendMessage(chatId, acceptBuilder.toString());
 		TelegramUtils.setMessageThreadId(sendMessage, message);
-		sendMessage.replyToMessageId(message.messageId());
+		TelegramUtils.replyToMessage(sendMessage, message);
 		sendMessage.parseMode(ParseMode.HTML);
 
 		SendResponse sendResponse = bot.execute(sendMessage);

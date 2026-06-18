@@ -27,7 +27,9 @@ import it.tdlight.client.SimpleTelegramClientFactory;
 import it.tdlight.client.TDLibSettings;
 import it.tdlight.jni.TdApi;
 import it.tdlight.jni.TdApi.GetMessageLinkInfo;
+import it.tdlight.jni.TdApi.GetMessageProperties;
 import it.tdlight.jni.TdApi.MessageLinkInfo;
+import it.tdlight.jni.TdApi.MessageProperties;
 import it.tdlight.util.UnsupportedNativeLibraryException;
 
 /**
@@ -122,5 +124,16 @@ public class TelegramUserBotService implements AutoCloseable {
 	 */
 	public Result<MessageLinkInfo> getMessageId(Long groupId, Long messageId) {
 		return sendSync(new GetMessageLinkInfo(TelegramUtils.getLink(groupId, messageId)));
+	}
+
+	/**
+	 * Get tdlib message properties
+	 *
+	 * @param groupId   Group Id
+	 * @param messageId User bot message id
+	 * @return tdlib message id
+	 */
+	public Result<MessageProperties> getMessageProperties(Long groupId, Long messageId) {
+		return sendSync(new GetMessageProperties(groupId, messageId));
 	}
 }
