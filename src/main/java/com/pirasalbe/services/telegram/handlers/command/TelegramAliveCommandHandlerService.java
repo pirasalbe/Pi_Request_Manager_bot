@@ -29,9 +29,9 @@ public class TelegramAliveCommandHandlerService extends AbstractTelegramHandlerS
 
 	@Override
 	public void handle(TelegramBot bot, Update update) {
-		long chatId = update.message().chat().id();
+		Long chatId = update.message().chat().id();
 
-		SendMessage sendMessage = new SendMessage(chatId, "Bot up!");
+		SendMessage sendMessage = TelegramUtils.sendMessage(chatId, "Bot up!");
 		TelegramUtils.setMessageThreadId(sendMessage, update.message());
 
 		boolean delete = update.message().chat().type() != Type.Private;

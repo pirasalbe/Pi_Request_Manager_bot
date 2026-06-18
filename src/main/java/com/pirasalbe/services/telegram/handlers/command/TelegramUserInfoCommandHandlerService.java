@@ -68,7 +68,7 @@ public class TelegramUserInfoCommandHandlerService extends AbstractTelegramHandl
 	}
 
 	private void sendUserInfo(TelegramBot bot, Message message, Long userId, Integer messageId) {
-		long chatId = message.chat().id();
+		Long chatId = message.chat().id();
 
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append("<b>User info</b>:\n");
@@ -78,7 +78,7 @@ public class TelegramUserInfoCommandHandlerService extends AbstractTelegramHandl
 
 		checkRequests(stringBuilder, userId, chatId);
 
-		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+		SendMessage sendMessage = TelegramUtils.sendMessage(chatId, stringBuilder.toString());
 		TelegramUtils.setMessageThreadId(sendMessage, message);
 		sendMessage.replyParameters(new ReplyParameters(messageId));
 		sendMessage.parseMode(ParseMode.HTML);

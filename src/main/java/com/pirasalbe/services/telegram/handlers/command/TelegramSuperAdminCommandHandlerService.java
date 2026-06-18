@@ -53,7 +53,7 @@ public class TelegramSuperAdminCommandHandlerService {
 	 */
 	public TelegramHandler showActions() {
 		return (bot, update) -> {
-			SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update).longValue(),
+			SendMessage sendMessage = TelegramUtils.sendMessage(TelegramUtils.getChatId(update),
 					"What do you want to do?");
 			sendMessage.replyParameters(new ReplyParameters(TelegramUtils.getMessageId(update)));
 
@@ -109,7 +109,7 @@ public class TelegramSuperAdminCommandHandlerService {
 		builder.append("Page ").append(page + 1).append(" of ").append(pagination.getTotalPages());
 
 		// create message
-		SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update).longValue(), builder.toString());
+		SendMessage sendMessage = TelegramUtils.sendMessage(TelegramUtils.getChatId(update), builder.toString());
 		sendMessage.parseMode(ParseMode.HTML);
 
 		// prepare keyboard
@@ -153,7 +153,7 @@ public class TelegramSuperAdminCommandHandlerService {
 
 			emptyAnswerCallbackQuery(bot, update.callbackQuery().id());
 
-			SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update).longValue(),
+			SendMessage sendMessage = TelegramUtils.sendMessage(TelegramUtils.getChatId(update),
 					"<code>" + id + "</code>");
 			sendMessage.parseMode(ParseMode.HTML);
 
@@ -167,7 +167,7 @@ public class TelegramSuperAdminCommandHandlerService {
 			StringBuilder builder = new StringBuilder(COMMAND_ADD).append("\n");
 			builder.append("Send the ID of the user and the role").append("\n");
 			builder.append("Format: id name <code>").append(UserRole.getRoles()).append("</code>");
-			SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update).longValue(), builder.toString());
+			SendMessage sendMessage = TelegramUtils.sendMessage(TelegramUtils.getChatId(update), builder.toString());
 			sendMessage.parseMode(ParseMode.HTML);
 			sendMessage.replyMarkup(new ForceReply().inputFieldPlaceholder("id name " + UserRole.getRoles()));
 
@@ -207,13 +207,13 @@ public class TelegramSuperAdminCommandHandlerService {
 				String name = parts[1];
 				UserRole adminRole = UserRole.valueOf(parts[2].toUpperCase());
 				adminService.insertUpdate(adminId, name, adminRole);
-				sendMessage = new SendMessage(chatId,
+				sendMessage = TelegramUtils.sendMessage(chatId,
 						"Admin " + name + " (" + adminId + ") with role " + adminRole.name() + " added");
 			} else {
-				sendMessage = new SendMessage(chatId, "You can't add/edit your user");
+				sendMessage = TelegramUtils.sendMessage(chatId, "You can't add/edit your user");
 			}
 		} else {
-			sendMessage = new SendMessage(chatId, "There is something wrong with your message. Try again.");
+			sendMessage = TelegramUtils.sendMessage(chatId, "There is something wrong with your message. Try again.");
 		}
 
 		return sendMessage;
@@ -226,7 +226,7 @@ public class TelegramSuperAdminCommandHandlerService {
 			builder.append("Send the ID of the user to remove").append("\n");
 			String placeholder = "id";
 			builder.append("Format: <code>").append(placeholder).append("</code>");
-			SendMessage sendMessage = new SendMessage(TelegramUtils.getChatId(update).longValue(), builder.toString());
+			SendMessage sendMessage = TelegramUtils.sendMessage(TelegramUtils.getChatId(update), builder.toString());
 			sendMessage.parseMode(ParseMode.HTML);
 			sendMessage.replyMarkup(new ForceReply().inputFieldPlaceholder(placeholder));
 
@@ -262,9 +262,9 @@ public class TelegramSuperAdminCommandHandlerService {
 		long adminId = Long.parseLong(text.trim());
 		if (chatId != adminId) {
 			adminService.deleteIfExists(adminId);
-			sendMessage = new SendMessage(chatId, "Admin " + adminId + " removed");
+			sendMessage = TelegramUtils.sendMessage(chatId, "Admin " + adminId + " removed");
 		} else {
-			sendMessage = new SendMessage(chatId, "You can't remove your user");
+			sendMessage = TelegramUtils.sendMessage(chatId, "You can't remove your user");
 		}
 
 		return sendMessage;

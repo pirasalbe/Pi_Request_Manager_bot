@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Chat.Type;
-import com.pengrad.telegrambot.model.LinkPreviewOptions;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
@@ -21,6 +20,7 @@ import com.pirasalbe.models.telegram.handlers.TelegramHandler;
 import com.pirasalbe.services.AdminService;
 import com.pirasalbe.services.RequestManagementService;
 import com.pirasalbe.services.telegram.handlers.AbstractTelegramHandlerService;
+import com.pirasalbe.utils.TelegramUtils;
 
 /**
  * Service to manage stats
@@ -45,7 +45,7 @@ public abstract class AbstractTelegramStatsCommandHandlerService extends Abstrac
 		// delete command
 		deleteMessage(bot, update.message(), update.message().chat().type() != Type.Private);
 
-		long chatId = update.message().chat().id();
+		Long chatId = update.message().chat().id();
 
 		// filters
 		String text = update.message().text();
@@ -55,7 +55,7 @@ public abstract class AbstractTelegramStatsCommandHandlerService extends Abstrac
 
 		// check if the context is valid, either enabled group or PM
 		if (groupService.existsById(chatId) || isPrivate) {
-			SendMessage sendMessage = new SendMessage(chatId, "Preparing stats..");
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, "Preparing stats..");
 			sendMessageAndDelete(bot, sendMessage, 10, TimeUnit.SECONDS);
 
 			getAndSendStats(chatId, group, text);
@@ -112,8 +112,8 @@ public abstract class AbstractTelegramStatsCommandHandlerService extends Abstrac
 		return filters.toString();
 	}
 
-	protected void sendMessage(long chatId, String message) {
-		SendMessage sendMessage = new SendMessage(chatId, message);
+	protected void sendMessage(Long chatId, String message) {
+		SendMessage sendMessage = TelegramUtils.sendMessage(chatId, message);
 		sendMessage.parseMode(ParseMode.HTML);
 		TelegramUtils.disablePreview(sendMessage);
 

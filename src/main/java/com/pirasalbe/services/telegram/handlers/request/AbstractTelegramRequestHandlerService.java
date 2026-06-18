@@ -171,13 +171,13 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		return monospace > 1 && content.contains("<i>") && content.contains("<a href");
 	}
 
-	protected void manageWrongRequest(TelegramBot bot, Message message, long chatId, String content,
+	protected void manageWrongRequest(TelegramBot bot, Message message, Long chatId, String content,
 			String errorMessage) {
 		// notify user of the error
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append(TelegramUtils.tagUser(message));
 		stringBuilder.append(errorMessage);
-		SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+		SendMessage sendMessage = TelegramUtils.sendMessage(chatId, stringBuilder.toString());
 		TelegramUtils.setMessageThreadId(sendMessage, message);
 		TelegramUtils.replyToMessage(sendMessage, message);
 		sendMessage.parseMode(ParseMode.HTML);
@@ -189,7 +189,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		bot.execute(sendMessage);
 	}
 
-	protected void processNewRequest(TelegramBot bot, Message message, long chatId, Integer messageId,
+	protected void processNewRequest(TelegramBot bot, Message message, Long chatId, Integer messageId,
 			LocalDateTime requestTime, Group group, String content, String link) {
 		Long userId = message.from().id();
 
@@ -220,7 +220,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 				builder.append("\n").append("You have been muted until then.");
 			}
 
-			SendMessage sendMessage = new SendMessage(chatId, builder.toString());
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, builder.toString());
 			TelegramUtils.setMessageThreadId(sendMessage, message);
 			sendMessage.parseMode(ParseMode.HTML);
 			bot.execute(sendMessage);
@@ -262,7 +262,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 		manageRequestResult(bot, message, chatId, messageId, requestResult, content);
 	}
 
-	private void manageRequestResult(TelegramBot bot, Message message, long chatId, Integer messageId,
+	private void manageRequestResult(TelegramBot bot, Message message, Long chatId, Integer messageId,
 			RequestResult requestResult, String content) {
 
 		switch (requestResult.getResult()) {
@@ -274,7 +274,7 @@ public abstract class AbstractTelegramRequestHandlerService implements TelegramH
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append(TelegramUtils.tagUser(message));
 			stringBuilder.append(requestResult.getReason());
-			SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, stringBuilder.toString());
 			TelegramUtils.setMessageThreadId(sendMessage, message);
 			sendMessage.parseMode(ParseMode.HTML);
 

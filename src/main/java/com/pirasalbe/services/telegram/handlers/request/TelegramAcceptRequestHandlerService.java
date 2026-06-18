@@ -71,14 +71,14 @@ public class TelegramAcceptRequestHandlerService extends AbstractTelegramRequest
 		bot.execute(new DeleteMessage(message.chat().id(), message.messageId()));
 	}
 
-	private void sendAcceptNotification(TelegramBot bot, Message message, long chatId) {
+	private void sendAcceptNotification(TelegramBot bot, Message message, Long chatId) {
 		StringBuilder acceptBuilder = new StringBuilder();
 		acceptBuilder.append(TelegramUtils.tagUser(message));
 		acceptBuilder.append("Your <a href='");
 		acceptBuilder.append(TelegramUtils.getLink(message));
 		acceptBuilder.append("'>request</a> has been accepted.");
 
-		SendMessage sendMessage = new SendMessage(chatId, acceptBuilder.toString());
+		SendMessage sendMessage = TelegramUtils.sendMessage(chatId, acceptBuilder.toString());
 		TelegramUtils.setMessageThreadId(sendMessage, message);
 		TelegramUtils.replyToMessage(sendMessage, message);
 		sendMessage.parseMode(ParseMode.HTML);

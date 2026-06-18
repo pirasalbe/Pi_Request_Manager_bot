@@ -53,7 +53,7 @@ public class TelegramHelpCommandHandlerService extends AbstractTelegramHandlerSe
 			break;
 		}
 
-		SendMessage sendMessage = new SendMessage(update.message().chat().id().longValue(), message);
+		SendMessage sendMessage = TelegramUtils.sendMessage(update.message().chat().id(), message);
 		TelegramUtils.setMessageThreadId(sendMessage, update.message());
 		sendMessage.parseMode(ParseMode.HTML);
 		TelegramUtils.disablePreview(sendMessage);

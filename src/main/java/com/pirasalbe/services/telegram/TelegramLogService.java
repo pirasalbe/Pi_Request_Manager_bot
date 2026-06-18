@@ -90,7 +90,7 @@ public class TelegramLogService {
 
 		String message = messageBuilder.toString();
 
-		SendMessage sendMessage = new SendMessage(configuration.getLogChat(), message);
+		SendMessage sendMessage = TelegramUtils.sendMessage(configuration.getLogChat(), message);
 		TelegramUtils.disablePreview(sendMessage);
 		sendMessage.parseMode(ParseMode.HTML);
 

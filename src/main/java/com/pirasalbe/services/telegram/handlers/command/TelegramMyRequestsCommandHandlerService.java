@@ -42,7 +42,7 @@ public class TelegramMyRequestsCommandHandlerService extends AbstractTelegramHan
 		sendRequests(bot, chatId, user, RequestStatus.RESOLVED);
 	}
 
-	private void sendRequests(TelegramBot bot, long chatId, Optional<Long> user, RequestStatus requestStatus) {
+	private void sendRequests(TelegramBot bot, Long chatId, Optional<Long> user, RequestStatus requestStatus) {
 		List<Request> requests = requestService.findRequests(Optional.empty(), requestStatus, user, Optional.empty(),
 				Optional.empty(), Optional.empty(), true);
 
@@ -51,7 +51,7 @@ public class TelegramMyRequestsCommandHandlerService extends AbstractTelegramHan
 		String title = titleBuilder.toString();
 
 		if (requests.isEmpty()) {
-			SendMessage sendMessage = new SendMessage(chatId, title + "No requests found");
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, title + "No requests found");
 			sendMessage.parseMode(ParseMode.HTML);
 			bot.execute(sendMessage);
 		} else {

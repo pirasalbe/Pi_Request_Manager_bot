@@ -14,6 +14,7 @@ import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.ParseMode;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.telegram.handlers.TelegramHandler;
+import com.pirasalbe.utils.TelegramUtils;
 
 /**
  * Service to manage /alive and /start
@@ -30,13 +31,13 @@ public class TelegramInfoCommandHandlerService implements TelegramHandler {
 
 	@Override
 	public void handle(TelegramBot bot, Update update) {
-		long chatId = update.message().chat().id();
+		Long chatId = update.message().chat().id();
 
 		StringBuilder message = new StringBuilder();
 		message.append("<b>Bot Info</b>\n\n");
 		message.append("Addresses:\n").append(getIpAddresses());
 
-		SendMessage sendMessage = new SendMessage(chatId, message.toString());
+		SendMessage sendMessage = TelegramUtils.sendMessage(chatId, message.toString());
 		sendMessage.parseMode(ParseMode.HTML);
 
 		bot.execute(sendMessage);

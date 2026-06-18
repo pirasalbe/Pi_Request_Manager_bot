@@ -101,14 +101,14 @@ public class TelegramBumpRequestHandlerService extends AbstractTelegramRequestHa
 		}
 	}
 
-	private void sendBumpNotification(TelegramBot bot, Message requestMessage, Message message, long chatId) {
+	private void sendBumpNotification(TelegramBot bot, Message requestMessage, Message message, Long chatId) {
 		StringBuilder bumpBuilder = new StringBuilder();
 		bumpBuilder.append(TelegramUtils.tagUser(message));
 		bumpBuilder.append("You asked for an update for <a href='");
 		bumpBuilder.append(TelegramUtils.getLink(requestMessage));
 		bumpBuilder.append("'>your request</a>.");
 
-		SendMessage sendMessage = new SendMessage(chatId, bumpBuilder.toString());
+		SendMessage sendMessage = TelegramUtils.sendMessage(chatId, bumpBuilder.toString());
 		TelegramUtils.setMessageThreadId(sendMessage, message);
 		TelegramUtils.replyToMessage(sendMessage, message);
 		sendMessage.parseMode(ParseMode.HTML);

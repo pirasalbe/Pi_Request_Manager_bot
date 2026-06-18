@@ -47,7 +47,7 @@ public class TelegramNextAudiobookCommandHandlerService extends AbstractTelegram
 
 	@Override
 	public void handle(TelegramBot bot, Update update) {
-		long groupId = TelegramUtils.getChatId(update);
+		Long groupId = TelegramUtils.getChatId(update);
 		User user = update.message().replyToMessage().from();
 		Long userId = user.id();
 
@@ -71,7 +71,7 @@ public class TelegramNextAudiobookCommandHandlerService extends AbstractTelegram
 				String text = TelegramUtils.tagUser(user) + ""
 						+ RequestUtils.getComeBackAgain(commandDate, nextValidRequest);
 
-				SendMessage sendMessage = new SendMessage(groupId, text);
+				SendMessage sendMessage = TelegramUtils.sendMessage(groupId, text);
 				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
 

@@ -112,11 +112,11 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler refreshCommands() {
 		return (bot, update) -> {
-			long chatId = TelegramUtils.getChatId(update);
+			Long chatId = TelegramUtils.getChatId(update);
 
 			commandsService.defineAdminCommandsAsync(chatId);
 
-			SendMessage sendMessage = new SendMessage(chatId, "Refreshing commands in progress.");
+			SendMessage sendMessage = TelegramUtils.sendMessage(chatId, "Refreshing commands in progress.");
 			bot.execute(sendMessage);
 		};
 	}
@@ -133,7 +133,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler markPending() {
 		return (bot, update) -> {
-			long chatId = TelegramUtils.getChatId(update);
+			Long chatId = TelegramUtils.getChatId(update);
 
 			Optional<Group> optional = groupService.findById(chatId);
 
@@ -147,7 +147,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				String link = TelegramUtils.getLink(message);
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append(requestStatusMessage(link, success, "marked as pending"));
-				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+				SendMessage sendMessage = TelegramUtils.sendMessage(chatId, stringBuilder.toString());
 				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
 
@@ -159,7 +159,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler markPaused() {
 		return (bot, update) -> {
-			long chatId = TelegramUtils.getChatId(update);
+			Long chatId = TelegramUtils.getChatId(update);
 
 			Optional<Group> optional = groupService.findById(chatId);
 
@@ -173,7 +173,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				String link = TelegramUtils.getLink(message);
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append(requestStatusMessage(link, success, "marked as paused"));
-				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+				SendMessage sendMessage = TelegramUtils.sendMessage(chatId, stringBuilder.toString());
 				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
 
@@ -185,7 +185,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler markInProgress() {
 		return (bot, update) -> {
-			long chatId = TelegramUtils.getChatId(update);
+			Long chatId = TelegramUtils.getChatId(update);
 
 			Optional<Group> optional = groupService.findById(chatId);
 
@@ -199,7 +199,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				String link = TelegramUtils.getLink(message);
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append(requestStatusMessage(link, success, "marked as in progress"));
-				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+				SendMessage sendMessage = TelegramUtils.sendMessage(chatId, stringBuilder.toString());
 				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
 
@@ -307,7 +307,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		return result;
 	}
 
-	private Long notifyDone(TelegramBot bot, long groupId, Long messageId, User contributor, Optional<Request> optional,
+	private Long notifyDone(TelegramBot bot, Long groupId, Long messageId, User contributor, Optional<Request> optional,
 			boolean showUndo) {
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append("Hey there 👋 Here's your requested book. Happy ");
@@ -321,7 +321,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		stringBuilder.append("!\n");
 		stringBuilder.append("Request fulfilled by <code>").append(TelegramUtils.getUserName(contributor))
 				.append("</code>");
-		SendMessage sendMessage = new SendMessage(groupId, stringBuilder.toString());
+		SendMessage sendMessage = TelegramUtils.sendMessage(groupId, stringBuilder.toString());
 		sendMessage.parseMode(ParseMode.HTML);
 		sendMessage.replyParameters(new ReplyParameters(messageId.intValue()));
 
@@ -397,7 +397,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	private TelegramHandler markDone(boolean reply) {
 		return (bot, update) -> {
-			long chatId = TelegramUtils.getChatId(update);
+			Long chatId = TelegramUtils.getChatId(update);
 
 			Optional<Group> optional = groupService.findById(chatId);
 
@@ -421,7 +421,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				// send a message to notify operation
 				StringBuilder notificationBuilder = new StringBuilder();
 				notificationBuilder.append(requestStatusMessage(link, success, "marked as done"));
-				SendMessage sendMessageNotification = new SendMessage(chatId, notificationBuilder.toString());
+				SendMessage sendMessageNotification = TelegramUtils.sendMessage(chatId, notificationBuilder.toString());
 				TelegramUtils.setMessageThreadId(sendMessageNotification, update.message());
 				sendMessageNotification.parseMode(ParseMode.HTML);
 
@@ -432,7 +432,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		};
 	}
 
-	private Integer markDoneWithMessage(TelegramBot bot, Update update, long chatId, Message message) {
+	private Integer markDoneWithMessage(TelegramBot bot, Update update, Long chatId, Message message) {
 		StringBuilder replyBuilder = new StringBuilder();
 
 		String text = TelegramUtils.removeCommand(update.message().text(), update.message().entities()).trim();
@@ -443,7 +443,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		replyBuilder.append("Request fulfilled by <code>").append(TelegramUtils.getUserName(update.message().from()))
 				.append("</code>");
 
-		SendMessage sendMessageReply = new SendMessage(chatId, replyBuilder.toString());
+		SendMessage sendMessageReply = TelegramUtils.sendMessage(chatId, replyBuilder.toString());
 		TelegramUtils.setMessageThreadId(sendMessageReply, update.message());
 		sendMessageReply.parseMode(ParseMode.HTML);
 
@@ -506,7 +506,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler markDoneWithFile() {
 		return (bot, update) -> {
-			long chatId = TelegramUtils.getChatId(update);
+			Long chatId = TelegramUtils.getChatId(update);
 
 			Optional<Group> optional = groupService.findById(chatId);
 
@@ -519,7 +519,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				String link = TelegramUtils.getLink(message);
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.append(requestStatusMessage(link, success, "marked as done"));
-				SendMessage sendMessage = new SendMessage(chatId, stringBuilder.toString());
+				SendMessage sendMessage = TelegramUtils.sendMessage(chatId, stringBuilder.toString());
 				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
 
@@ -625,7 +625,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 					message = getErrorMessage(COMMAND_CANCEL);
 				}
 
-				SendMessage sendMessage = new SendMessage(chatId.longValue(), message);
+				SendMessage sendMessage = TelegramUtils.sendMessage(chatId.longValue(), message);
 				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
 
@@ -667,7 +667,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 					message = getErrorMessage(COMMAND_REMOVE);
 				}
 
-				SendMessage sendMessage = new SendMessage(chatId.longValue(), message);
+				SendMessage sendMessage = TelegramUtils.sendMessage(chatId, message);
 				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
 
@@ -678,7 +678,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler findRequests() {
 		return (bot, update) -> {
-			long chatId = TelegramUtils.getChatId(update);
+			Long chatId = TelegramUtils.getChatId(update);
 
 			String text = update.message().text();
 			boolean isPrivate = update.message().chat().type() == Type.Private;
@@ -703,7 +703,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				String title = getTitle(requestStatus, group, user, format, source, otherTags, descendent);
 
 				if (requests.isEmpty()) {
-					SendMessage sendMessage = new SendMessage(chatId, title + "No requests found");
+					SendMessage sendMessage = TelegramUtils.sendMessage(chatId, title + "No requests found");
 					sendMessage.parseMode(ParseMode.HTML);
 					sendMessageAndDelete(bot, sendMessage, 30, TimeUnit.SECONDS, group.isPresent());
 				} else {
@@ -715,7 +715,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 
 	public TelegramHandler showRequest() {
 		return (bot, update) -> {
-			long chatId = TelegramUtils.getChatId(update);
+			Long chatId = TelegramUtils.getChatId(update);
 			String text = update.message().text();
 
 			Optional<Group> optional = groupService.findById(chatId);
@@ -739,7 +739,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 					message = getErrorMessage(COMMAND_SHOW);
 				}
 
-				SendMessage sendMessage = new SendMessage(chatId, message);
+				SendMessage sendMessage = TelegramUtils.sendMessage(chatId, message);
 				TelegramUtils.setMessageThreadId(sendMessage, update.message());
 				sendMessage.parseMode(ParseMode.HTML);
 				TelegramUtils.disablePreview(sendMessage);
@@ -773,7 +773,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 		};
 	}
 
-	private void sendRequestWithAction(TelegramBot bot, long chatId, Long groupId, Long messageId) {
+	private void sendRequestWithAction(TelegramBot bot, Long chatId, Long groupId, Long messageId) {
 		Optional<Group> optional = groupService.findById(groupId);
 		if (optional.isPresent()) {
 
@@ -782,7 +782,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 				RequestStatus status = requestOptional.get().getStatus();
 
 				String message = getRequestInfo(bot, optional.get(), requestOptional);
-				SendMessage sendMessage = new SendMessage(chatId, message);
+				SendMessage sendMessage = TelegramUtils.sendMessage(chatId, message);
 				sendMessage.parseMode(ParseMode.HTML);
 				TelegramUtils.disablePreview(sendMessage);
 				InlineKeyboardMarkup inlineKeyboard = RequestUtils.getRequestKeyboard(configuration.getUsername(),
@@ -834,7 +834,7 @@ public class TelegramContributorsCommandHandlerService extends AbstractTelegramH
 						.append("'>this request.</a>\n");
 				stringBuilder.append("Are you sure you want to continue?\n");
 				stringBuilder.append("<i>This message will disappear in 1 minute.</i>");
-				SendMessage sendMessage = new SendMessage(update.callbackQuery().from().id().longValue(),
+				SendMessage sendMessage = TelegramUtils.sendMessage(update.callbackQuery().from().id().longValue(),
 						stringBuilder.toString());
 				sendMessage.parseMode(ParseMode.HTML);
 

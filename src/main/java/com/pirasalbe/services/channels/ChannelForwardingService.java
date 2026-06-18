@@ -277,10 +277,10 @@ public class ChannelForwardingService {
 		return builder.toString();
 	}
 
-	private Long forwardRequest(long channelId, Request request, String groupName) {
+	private Long forwardRequest(Long channelId, Request request, String groupName) {
 		String message = RequestUtils.getRequestInfo(bot, groupName, request);
 
-		SendMessage sendMessage = new SendMessage(channelId, message);
+		SendMessage sendMessage = TelegramUtils.sendMessage(channelId, message);
 		sendMessage.parseMode(ParseMode.HTML);
 		TelegramUtils.disablePreview(sendMessage);
 

@@ -208,8 +208,8 @@ public class AbstractTelegramHandlerService {
 		return requestBuilder.toString();
 	}
 
-	private void sendRequestListMessage(long chatId, String message, boolean deleteMessages) {
-		SendMessage sendMessage = new SendMessage(chatId, message);
+	private void sendRequestListMessage(Long chatId, String message, boolean deleteMessages) {
+		SendMessage sendMessage = TelegramUtils.sendMessage(chatId, message);
 		sendMessage.parseMode(ParseMode.HTML);
 		TelegramUtils.disablePreview(sendMessage);
 
