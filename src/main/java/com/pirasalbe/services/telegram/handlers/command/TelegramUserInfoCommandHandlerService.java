@@ -11,7 +11,6 @@ import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Chat.Type;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.request.ParseMode;
-import com.pengrad.telegrambot.model.request.ReplyParameters;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pirasalbe.models.NextValidRequest;
 import com.pirasalbe.models.Validation;

@@ -9,13 +9,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.ChatPermissions;
-import com.pengrad.telegrambot.model.LinkPreviewOptions;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.User;
 import com.pengrad.telegrambot.model.message.origin.MessageOriginUser;
 import com.pengrad.telegrambot.model.request.ParseMode;
-import com.pengrad.telegrambot.model.request.ReplyParameters;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.RestrictChatMember;
 import com.pengrad.telegrambot.request.SendMessage;
